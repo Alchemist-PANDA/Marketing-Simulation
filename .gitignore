@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.log
+*.json
+!data/*.json
+c.txt
+report.json
+server.log
+.DS_Store
+.env
+.claude/
+.vscode/
+node_modules/

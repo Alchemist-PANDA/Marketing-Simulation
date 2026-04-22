@@ -1,4 +1,7 @@
-# src/core/world.py
+"""
+World environment for the marketing simulation.
+"""
+
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
 from .agent import Agent
@@ -18,15 +21,11 @@ class World:
         return self.agents.get(agent_id)
 
     def step(self, delta_minutes: int = 60):
-        """
-        Advance the world's internal time.
-        """
+        """Advance the world's internal time."""
         self.current_time += timedelta(minutes=delta_minutes)
 
     def log_event(self, event_type: str, actor_id: str, data: Dict[str, Any]):
-        """
-        Record significant events that happen in the world.
-        """
+        """Record significant events that happen in the world."""
         self.events.append({
             "timestamp": self.current_time,
             "type": event_type,

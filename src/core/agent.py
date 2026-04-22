@@ -1,31 +1,63 @@
-# src/core/agent.py
+"""
+Agent definition with Big Five personality traits.
+Zero API cost. Pure psychographic modeling.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional
 import uuid
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+import random
+
+@dataclass
+class Personality:
+    """Big Five Personality Traits (OCEAN) + Marketing specifics"""
+    # Big Five (0.0 to 1.0)
+    openness: float = 0.5
+    conscientiousness: float = 0.5
+    extraversion: float = 0.5
+    agreeableness: float = 0.5
+    neuroticism: float = 0.5
+
+    # Marketing specific traits
+    price_sensitivity: float = 0.5
+    ad_skepticism: float = 0.5
+    social_influence: float = 0.5
+    impulse_control: float = 0.5
+    brand_loyalty: float = 0.5
+
+@dataclass
+class AgentState:
+    """Dynamic state of an agent during simulation"""
+    money: float = 100.0
+    happiness: float = 50.0
+    brand_affinity: Dict[str, float] = field(default_factory=dict)
+    purchases: List[Dict] = field(default_factory=list)
+    inventory: Dict[str, int] = field(default_factory=dict)
 
 class Agent:
     def __init__(
         self,
         name: str,
-        persona: Dict[str, Any],
+        personality_dict: Dict[str, float],
         initial_wealth: float = 100.0,
         interests: List[str] = None
     ):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.persona = persona
-        self.wealth = initial_wealth
+        self.personality = Personality(**personality_dict)
+        self.state = AgentState(money=initial_wealth)
         self.interests = interests or []
-        self.inventory: Dict[str, int] = {}
         self.memory_keys: List[str] = []
-        self.social_links: Dict[str, float] = {}  # agent_id -> relationship_strength
         self.created_at = datetime.now()
 
     def update_wealth(self, amount: float):
-        self.wealth += amount
+        self.state.money += amount
 
-    def add_to_inventory(self, item_id: str, quantity: int = 1):
-        self.inventory[item_id] = self.inventory.get(item_id, 0) + quantity
+    def deterministic_random(self, seed_suffix: str) -> random.Random:
+        """Returns a seeded RNG for consistent behavior"""
+        seed = f"{self.id}_{seed_suffix}"
+        return random.Random(seed)
 
     def __repr__(self):
-        return f"Agent(name={self.name}, wealth={self.wealth})"
+        return f"Agent(name={self.name}, wealth={self.state.money:.2f})"

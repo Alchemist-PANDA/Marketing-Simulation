@@ -1,10 +1,17 @@
-# src/core/decision_engine.py
-from typing import Dict, Any, List
+"""
+Decision Engine using Big Five traits for behavioral modeling.
+Zero API cost. Pure mathematical utility functions.
+"""
+
+from typing import Dict, Any, List, Optional
+import math
 from .agent import Agent
 
 class DecisionEngine:
-    def __init__(self, model_name: str = "gpt-3.5-turbo"):
-        self.model_name = model_name
+    """
+    Mathematical model of consumer choice.
+    Uses psychographic weights to drive behavior.
+    """
 
     def decide_action(
         self,
@@ -13,20 +20,43 @@ class DecisionEngine:
         options: List[str]
     ) -> str:
         """
-        Takes an agent, their current context, and available options,
-        and uses logic or LLM to select an action.
+        Calculates utility for each option based on agent personality.
         """
-        # For a basic implementation, we just return a random action or a placeholder.
-        # In a real scenario, this would involve prompting an LLM.
-        if "buy" in options and agent.wealth > 20:
-            return "buy"
-        elif "interact" in options:
-            return "interact"
-        else:
-            return options[0] if options else "idle"
+        if not options:
+            return "idle"
 
-    def evaluate_outcome(self, action: str, result: Dict[str, Any]) -> float:
-        """
-        Evaluate how successful an action was.
-        """
-        return result.get("utility", 0.0)
+        utilities = {}
+        for option in options:
+            utilities[option] = self._calculate_utility(agent, option, context)
+
+        # Softmax selection or simple max
+        return max(utilities, key=utilities.get)
+
+    def _calculate_utility(self, agent: Agent, option: str, context: Dict[str, Any]) -> float:
+        """Utility function driven by Big Five traits"""
+        utility = 0.0
+
+        if option == "buy":
+            # Price vs sensitivity
+            price = context.get("price", 10.0)
+            if agent.state.money < price:
+                return -100.0 # Can't afford
+
+            price_pain = price * agent.personality.price_sensitivity
+            quality_gain = 20.0 * (1 - agent.personality.ad_skepticism)
+
+            # Conscientiousness = careful spending
+            # Extraversion = social signalling value
+            social_value = 5.0 * agent.personality.extraversion
+
+            utility = quality_gain - price_pain + social_value
+
+        elif option == "share":
+            # Extraversion and Agreeableness drive sharing
+            utility = (agent.personality.extraversion * 0.7 +
+                       agent.personality.agreeableness * 0.3) * 10.0
+
+        elif option == "rest":
+            utility = 5.0 # Baseline
+
+        return utility
