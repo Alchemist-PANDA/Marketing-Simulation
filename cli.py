@@ -28,5 +28,13 @@ def main():
     print(f"Winner: Ad {result['winner']}")
     print(f"Lift: {result['lift_percentage']:.2f}%")
 
+    print("\n--- FORENSIC ANALYSIS (Ad A) ---")
+    for reason in result['ad_a']['analysis']['failure_reasons']:
+        print(f"⚠️  {reason}")
+
+    print("\n--- FORENSIC ANALYSIS (Ad B) ---")
+    for reason in result['ad_b']['analysis']['failure_reasons']:
+        print(f"⚠️  {reason}")
+
 if __name__ == "__main__":
     main()

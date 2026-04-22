@@ -50,6 +50,18 @@ if run_sim:
     fig = px.bar(df, x="Metric", y="Count", color="Ad", barmode="group", title="Engagement Comparison")
     st.plotly_chart(fig, use_container_width=True)
 
+    # Forensic Analysis
+    st.header("🕵️ Forensic Feedback")
+    fa1, fa2 = st.columns(2)
+    with fa1:
+        st.subheader("Ad A Analysis")
+        for reason in result['ad_a']['analysis']['failure_reasons']:
+            st.warning(reason)
+    with fa2:
+        st.subheader("Ad B Analysis")
+        for reason in result['ad_b']['analysis']['failure_reasons']:
+            st.warning(reason)
+
     with st.expander("View Raw Data"):
         st.write(result)
 else:
