@@ -1,0 +1,31 @@
+# Campaign Templates
+campaigns:
+  - type: "Discount Email"
+    channel: "Email"
+    base_cost: 0.05
+    effectiveness_modifier: 0.8
+    trait_target: "price_sensitivity"
+
+  - type: "Social Influencer Post"
+    channel: "Social Media"
+    base_cost: 2.50
+    effectiveness_modifier: 1.2
+    trait_target: "digital_savviness"
+
+  - type: "Google Search Ad"
+    channel: "Web Search"
+    base_cost: 0.75
+    effectiveness_modifier: 1.0
+    trait_target: "digital_savviness"
+
+  - type: "Brand Awareness TV"
+    channel: "TV Ad"
+    base_cost: 15.00
+    effectiveness_modifier: 0.5
+    trait_target: "brand_loyalty"
+
+  - type: "Referral Program"
+    channel: "In-App"
+    base_cost: 0.50
+    effectiveness_modifier: 1.5
+    trait_target: "brand_loyalty"

@@ -1,0 +1,19 @@
+# Simulation Configuration
+simulation:
+  name: "Spring 2026 Baseline"
+  duration_days: 30
+  time_step: "daily"
+  random_seed: 42
+
+  global_parameters:
+    inflation_rate: 0.03
+    competitor_activity: "moderate"
+    economic_sentiment: 0.65
+
+  agent_source: "config/agents_10.yaml"
+  campaign_source: "config/campaign_templates.yaml"
+
+  output:
+    results_dir: "results/"
+    format: "csv"
+    include_agent_level_data: true

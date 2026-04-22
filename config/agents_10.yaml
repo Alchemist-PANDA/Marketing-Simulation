@@ -1,0 +1,71 @@
+# Population of 10 Agent Personas
+agents:
+  - id: 1
+    persona: "Budget-Conscious Senior"
+    price_sensitivity: 0.95
+    brand_loyalty: 0.80
+    digital_savviness: 0.20
+    preferred_channel: "Direct Mail"
+
+  - id: 2
+    persona: "Early Adopter Gen Z"
+    price_sensitivity: 0.40
+    brand_loyalty: 0.20
+    digital_savviness: 0.98
+    preferred_channel: "Social Media"
+
+  - id: 3
+    persona: "Premium Professional"
+    price_sensitivity: 0.15
+    brand_loyalty: 0.75
+    digital_savviness: 0.85
+    preferred_channel: "Email"
+
+  - id: 4
+    persona: "Impulse Buyer"
+    price_sensitivity: 0.30
+    brand_loyalty: 0.10
+    digital_savviness: 0.90
+    preferred_channel: "Mobile App"
+
+  - id: 5
+    persona: "Loyal Researcher"
+    price_sensitivity: 0.60
+    brand_loyalty: 0.95
+    digital_savviness: 0.70
+    preferred_channel: "Web Search"
+
+  - id: 6
+    persona: "Casual Consumer"
+    price_sensitivity: 0.50
+    brand_loyalty: 0.40
+    digital_savviness: 0.50
+    preferred_channel: "TV Ad"
+
+  - id: 7
+    persona: "Ethical Enthusiast"
+    price_sensitivity: 0.25
+    brand_loyalty: 0.85
+    digital_savviness: 0.75
+    preferred_channel: "Podcast"
+
+  - id: 8
+    persona: "Deal Hunter"
+    price_sensitivity: 0.99
+    brand_loyalty: 0.05
+    digital_savviness: 0.80
+    preferred_channel: "Coupon App"
+
+  - id: 9
+    persona: "Late Adopter"
+    price_sensitivity: 0.70
+    brand_loyalty: 0.60
+    digital_savviness: 0.30
+    preferred_channel: "Radio"
+
+  - id: 10
+    persona: "Tech Savy Parent"
+    price_sensitivity: 0.55
+    brand_loyalty: 0.65
+    digital_savviness: 0.92
+    preferred_channel: "Youtube"
