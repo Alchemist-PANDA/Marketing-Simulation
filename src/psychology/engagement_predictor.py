@@ -25,9 +25,9 @@ class EngagementPredictor:
         base -= personality.neuroticism * 0.05
 
         # Ad score modifiers (Crucial for sensitivity)
-        base += ad.price_score * 0.2
-        base += ad.trust_score * 0.2
-        base += ad.urgency_score * 0.1
+        base += ad.price_score * 0.1
+        base += ad.trust_score * 0.25
+        base += ad.urgency_score * 0.4  # Increased from 0.1 for behavioral fidelity
 
         # Channel modifiers
         if ad.channel in ['tiktok', 'instagram']:
