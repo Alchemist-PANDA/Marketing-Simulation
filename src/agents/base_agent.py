@@ -28,6 +28,34 @@ class Agent:
         self.personality = personality
         self.state = initial_state
 
+        # Sensitivity weights derived from personality (OCEAN)
+        # Price: conscientious people are more careful with money
+        self.price_sensitivity = personality.conscientiousness * 0.8
+
+        # Trust: agreeable people value social proof/trust more
+        self.trust_sensitivity = personality.agreeableness * 0.7
+
+        # Urgency: extroverts and high-neuroticism agents are more FOMO-prone
+        self.urgency_sensitivity = (personality.extraversion * 0.5 + personality.neuroticism * 0.4)
+
+        # Skepticism: high neuroticism leads to general skepticism
+        self.skepticism = personality.neuroticism * 0.3
+
+    def evaluate_ad(self, ad: 'Ad') -> float:
+        """
+        Computes a weighted archetype score based on ad attributes.
+        Returns a float where higher means more positive evaluation.
+        """
+        # Weighted sum of features
+        weighted_score = (
+            ad.price_score * self.price_sensitivity +
+            ad.trust_score * self.trust_sensitivity +
+            ad.urgency_score * self.urgency_sensitivity
+        )
+
+        # Subtract skepticism as a barrier
+        return weighted_score - self.skepticism
+
     def __repr__(self):
         return f"Agent(name={self.name}, wealth={self.state.money:.2f}, extraversion={self.personality.extraversion})"
 

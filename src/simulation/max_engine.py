@@ -36,13 +36,18 @@ class MaxSimulation:
             # 1. Emotional response
             emotional_mod = self.emotion.predict(agent.personality, ad)
 
-            # 2. Compute utility via Prospect Theory
-            # Base utility from price and quality (simplified)
+            # 2. Archetype evaluation
+            archetype_score = agent.evaluate_ad(ad)
+
+            # 3. Compute utility via Prospect Theory
+            # Base utility from price and quality
             price_disutility = self.prospect.apply(-ad.price, reference=0)
-            perceived_value = 50.0 * (1 + emotional_mod)
+
+            # Perceived value combines emotional response and archetype fit
+            perceived_value = 50.0 * (1 + emotional_mod + archetype_score)
             utility = perceived_value + price_disutility
 
-            # 3. Decision to purchase
+            # 4. Decision to purchase
             # Convert utility to probability (logistic)
             prob_buy = 1 / (1 + math.exp(-utility / 10.0))
             bought = random.random() < prob_buy
