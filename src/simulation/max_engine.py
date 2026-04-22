@@ -26,12 +26,23 @@ class MaxSimulation:
         self.engagement = EngagementPredictor()
         self.tick = 0
 
-        # Load archetype calibration
-        self.archetype_calibration = {}
-        config_path = 'config/archetype_calibration.json'
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                self.archetype_calibration = json.load(f)
+        # Default weights (uncalibrated)
+        self.weights = {
+            'w_emotional': 1.0,
+            'w_archetype': 1.0,
+            'w_fomo': 0.5,
+            'w_trust': 0.5,
+            'w_price': 0.05,
+            'bias': -4.0,
+            'sigmoid_scale': 1.0
+        }
+
+        # Load optimized weights if available
+        weights_path = 'config/simulation_weights.json'
+        if os.path.exists(weights_path):
+            with open(weights_path, 'r') as f:
+                self.weights.update(json.load(f))
+                print(f"Loaded calibrated weights from {weights_path}")
 
     def simulate_exposure(self, ad: Ad) -> Dict[str, Any]:
         """Simulates one round of ad exposure to all agents"""
@@ -42,6 +53,8 @@ class MaxSimulation:
             'details': []
         }
 
+        w = self.weights
+
         for agent in self.agents:
             # 1. Emotional response
             emotional_mod = self.emotion.predict(agent.personality, ad)
@@ -49,28 +62,28 @@ class MaxSimulation:
             # 2. Archetype evaluation
             archetype_score = agent.evaluate_ad(ad)
 
-            # 3. Compute utility via Prospect Theory
-            # Base utility from price and quality
-            price_disutility = self.prospect.apply(-ad.price, reference=0)
+            # 3. Compute utility
+            # Base price disutility from prospect theory
+            # price_disutility = self.prospect.apply(-ad.price, reference=0)
+            price_disutility = -ad.price / 10.0 # Simpler linear price impact
 
-            # Perceived value combines emotional response and archetype fit
-            # We add a FOMO-multiplier: Urgency triggers Loss Aversion (x2 impact)
-            fomo_impact = ad.urgency_score * 0.5
-            perceived_value = 10.0 * (1 + emotional_mod + archetype_score + fomo_impact)
-            utility = perceived_value + price_disutility
+            # Weighted utility calculation (Calibrated)
+            utility = (
+                w['w_emotional'] * emotional_mod +
+                w['w_archetype'] * archetype_score +
+                w['w_fomo'] * ad.urgency_score +
+                w['w_trust'] * ad.trust_score +
+                w['w_price'] * price_disutility +
+                w['bias']
+            )
 
-            # 4. Decision to purchase
-            # Convert utility to probability (logistic)
-            prob_buy = 1 / (1 + math.exp(-utility / 10.0))
+            # 4. Decision to purchase (Conversion)
+            prob_buy = 1 / (1 + math.exp(-utility / w['sigmoid_scale']))
             bought = random.random() < prob_buy
 
             # 4. Engagement (Likes/Shares)
-            like_prob = self.engagement.predict_like_probability(agent.personality, ad)
+            like_prob = 1 / (1 + math.exp(-utility / w['sigmoid_scale'])) # Use utility for likes too
             share_prob = self.engagement.predict_share_probability(agent.personality, ad)
-
-            # Apply per-archetype calibration boost
-            calibration_factor = self.archetype_calibration.get(agent.archetype, 1.0)
-            like_prob *= calibration_factor
 
             liked = random.random() < like_prob
             shared = random.random() < share_prob
