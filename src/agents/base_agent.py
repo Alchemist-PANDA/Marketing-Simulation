@@ -59,24 +59,81 @@ class Agent:
     def __repr__(self):
         return f"Agent(name={self.name}, wealth={self.state.money:.2f}, extraversion={self.personality.extraversion})"
 
-def create_persona_set(num_agents: int = 10) -> List[Agent]:
-    """Generates a varied set of agent personalities"""
-    agents = []
-    names = ["Brian", "Linda", "Ian", "Sarah", "Kevin", "Mia", "James", "Elena", "Tom", "Chloe"]
+def create_archetype_agent(name: str, archetype: str) -> Agent:
+    """Creates an agent with personality traits matching a specific archetype."""
+    money = random.uniform(50, 2000)
+    s = AgentState(money=money)
 
-    for i in range(num_agents):
-        name = names[i % len(names)] if i < len(names) else f"Agent_{i}"
-
-        # Varied personalities
+    if archetype == 'price_sensitive':
         p = Personality(
-            openness=random.random(),
-            conscientiousness=random.random(),
-            extraversion=random.random(),
-            agreeableness=random.random(),
-            neuroticism=random.random()
+            openness=random.uniform(0.3, 0.6),
+            conscientiousness=random.uniform(0.8, 1.0),
+            extraversion=random.uniform(0.2, 0.5),
+            agreeableness=random.uniform(0.4, 0.7),
+            neuroticism=random.uniform(0.1, 0.4)
+        )
+    elif archetype == 'impulsive':
+        p = Personality(
+            openness=random.uniform(0.6, 0.9),
+            conscientiousness=random.uniform(0.1, 0.4),
+            extraversion=random.uniform(0.8, 1.0),
+            agreeableness=random.uniform(0.4, 0.7),
+            neuroticism=random.uniform(0.6, 0.9)
+        )
+    elif archetype == 'social_proof':
+        p = Personality(
+            openness=random.uniform(0.5, 0.8),
+            conscientiousness=random.uniform(0.4, 0.7),
+            extraversion=random.uniform(0.6, 0.9),
+            agreeableness=random.uniform(0.8, 1.0),
+            neuroticism=random.uniform(0.2, 0.5)
+        )
+    else: # skeptical
+        p = Personality(
+            openness=random.uniform(0.1, 0.4),
+            conscientiousness=random.uniform(0.5, 0.8),
+            extraversion=random.uniform(0.1, 0.4),
+            agreeableness=random.uniform(0.1, 0.4),
+            neuroticism=random.uniform(0.8, 1.0)
         )
 
-        s = AgentState(money=random.uniform(50, 2000))
-        agents.append(Agent(name=name, personality=p, initial_state=s))
+    return Agent(name=name, personality=p, initial_state=s)
+
+def generate_agents(n: int, distribution: Dict[str, float] = None, seed: int = None) -> List[Agent]:
+    """
+    Generate a population of n agents with a specific archetype distribution.
+    Default distribution: 30% PriceSensitive, 25% Impulsive, 25% SocialProof, 20% Skeptical.
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    if distribution is None:
+        distribution = {
+            'price_sensitive': 0.30,
+            'impulsive': 0.25,
+            'social_proof': 0.25,
+            'skeptical': 0.20
+        }
+
+    types = []
+    for agent_type, weight in distribution.items():
+        count = int(n * weight)
+        types.extend([agent_type] * count)
+
+    # Fix rounding
+    while len(types) < n:
+        types.append(random.choice(list(distribution.keys())))
+    while len(types) > n:
+        types.pop()
+
+    random.shuffle(types)
+
+    agents = []
+    for i, t in enumerate(types):
+        agents.append(create_archetype_agent(f"Agent_{i}", t))
 
     return agents
+
+def create_persona_set(num_agents: int = 10) -> List[Agent]:
+    """Legacy helper: now uses the balanced archetype distribution"""
+    return generate_agents(num_agents)
