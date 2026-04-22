@@ -98,7 +98,7 @@ def create_archetype_agent(name: str, archetype: str) -> Agent:
             neuroticism=random.uniform(0.8, 1.0)
         )
 
-    return Agent(name=name, personality=p, initial_state=s, archetype=archetype)
+    return Agent(name=name, personality=p, initial_state=s)
 
 def generate_agents(n: int, distribution: Dict[str, float] = None, seed: int = None) -> List[Agent]:
     """

@@ -26,13 +26,6 @@ class MaxSimulation:
         self.engagement = EngagementPredictor()
         self.tick = 0
 
-        # Load archetype calibration
-        self.archetype_calibration = {}
-        config_path = 'config/archetype_calibration.json'
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                self.archetype_calibration = json.load(f)
-
     def simulate_exposure(self, ad: Ad) -> Dict[str, Any]:
         """Simulates one round of ad exposure to all agents"""
         round_results = {
@@ -65,10 +58,6 @@ class MaxSimulation:
             # 4. Engagement (Likes/Shares)
             like_prob = self.engagement.predict_like_probability(agent.personality, ad)
             share_prob = self.engagement.predict_share_probability(agent.personality, ad)
-
-            # Apply per-archetype calibration boost
-            calibration_factor = self.archetype_calibration.get(agent.archetype, 1.0)
-            like_prob *= calibration_factor
 
             liked = random.random() < like_prob
             shared = random.random() < share_prob

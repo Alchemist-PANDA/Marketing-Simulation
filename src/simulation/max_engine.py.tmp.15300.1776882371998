@@ -66,10 +66,6 @@ class MaxSimulation:
             like_prob = self.engagement.predict_like_probability(agent.personality, ad)
             share_prob = self.engagement.predict_share_probability(agent.personality, ad)
 
-            # Apply per-archetype calibration boost
-            calibration_factor = self.archetype_calibration.get(agent.archetype, 1.0)
-            like_prob *= calibration_factor
-
             liked = random.random() < like_prob
             shared = random.random() < share_prob
 
