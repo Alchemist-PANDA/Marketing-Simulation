@@ -113,3 +113,58 @@ class PersistenceService:
             "id": None,
             "message": result.get("message", "Unknown error saving simulation run")
         }
+
+    def list_campaigns(self, user_id: str, limit: int = 50) -> Dict[str, Any]:
+        """List campaigns for a user, ordered by created_at desc."""
+        if not is_auth_enabled() or not self.manager.enabled:
+            return self._disabled_response()
+
+        result = self.manager.select("campaigns", filters={"user_id": user_id})
+
+        if result.get("status") == "success":
+            data = result.get("data", [])
+            # Sort by created_at desc (manager select doesn't support order yet)
+            data.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return {
+                "status": "success",
+                "data": data[:limit]
+            }
+
+        return {
+            "status": "error",
+            "message": result.get("message", "Unknown error listing campaigns"),
+            "data": []
+        }
+
+    def get_campaign_details(self, campaign_id: str, user_id: str) -> Dict[str, Any]:
+        """Fetch variants and runs for a specific campaign."""
+        if not is_auth_enabled() or not self.manager.enabled:
+            return self._disabled_response()
+
+        # 1. Verify campaign belongs to user and get it
+        camp_res = self.manager.select("campaigns", filters={"id": campaign_id, "user_id": user_id})
+        if camp_res.get("status") != "success" or not camp_res.get("data"):
+            return {"status": "error", "message": "Campaign not found or access denied"}
+
+        campaign = camp_res["data"][0]
+
+        # 2. Get variants
+        var_res = self.manager.select("ad_variants", filters={"campaign_id": campaign_id, "user_id": user_id})
+        if var_res.get("status") != "success":
+            return {"status": "error", "message": "Failed to load variants"}
+
+        variants = var_res.get("data", [])
+
+        # 3. Get runs for each variant
+        full_variants = []
+        for variant in variants:
+            run_res = self.manager.select("simulation_runs", filters={"variant_id": variant["id"], "user_id": user_id})
+            runs = run_res.get("data", []) if run_res.get("status") == "success" else []
+            variant["runs"] = runs
+            full_variants.append(variant)
+
+        return {
+            "status": "success",
+            "campaign": campaign,
+            "variants": full_variants
+        }

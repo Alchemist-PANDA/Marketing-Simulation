@@ -102,3 +102,37 @@ def test_persistence_error_handling(monkeypatch):
     assert res["saved"] is False
     assert res["id"] is None
     assert "Database full" in res["message"]
+
+def test_list_campaigns_local_mode(monkeypatch):
+    """Verify list_campaigns respects local mode."""
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_ANON_KEY", raising=False)
+
+    service = PersistenceService()
+    res = service.list_campaigns("u1")
+    assert res["status"] == "disabled"
+    assert "data" not in res
+
+def test_list_campaigns_success(monkeypatch):
+    """Verify list_campaigns correctly queries and sorts."""
+    class MockManager:
+        enabled = True
+        def select(self, table, filters):
+            assert table == "campaigns"
+            assert filters == {"user_id": "u1"}
+            return {"status": "success", "data": [
+                {"id": "1", "created_at": "2026-05-01"},
+                {"id": "2", "created_at": "2026-05-03"},
+                {"id": "3", "created_at": "2026-05-02"}
+            ]}
+
+    monkeypatch.setenv("SUPABASE_URL", "http://test.co")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "key")
+
+    service = PersistenceService()
+    service.manager = MockManager()
+
+    res = service.list_campaigns("u1")
+    assert res["status"] == "success"
+    # Should be sorted desc
+    assert [c["id"] for c in res["data"]] == ["2", "3", "1"]
