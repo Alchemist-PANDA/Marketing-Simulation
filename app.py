@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from src.simulation.ab_test_runner import ABTestRunner
+from src.ui.auth_ui import render_auth_sidebar
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
@@ -12,6 +13,8 @@ This simulation uses **Big Five Personality Traits** and **Prospect Theory** to 
 """)
 
 with st.sidebar:
+    render_auth_sidebar()
+    st.divider()
     st.header("Simulation Settings")
     num_agents = st.slider("Number of Agents", 100, 2000, 500)
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
