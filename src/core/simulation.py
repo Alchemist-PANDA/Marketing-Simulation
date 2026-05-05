@@ -9,11 +9,19 @@ from .decision_engine import DecisionEngine
 from .social_graph import SocialGraph
 
 class Simulation:
-    def __init__(self, name: str, world_size: int = 100):
+    def __init__(self, name: str = "DefaultSim", world_size: int = 100):
         self.world = World(name, world_size)
         self.decision_engine = DecisionEngine()
         self.social_graph = SocialGraph()
         self.steps_run = 0
+
+    def add_agent(self, name_or_agent: Any, personality_dict: Dict = None):
+        """Legacy helper: adds an agent to the simulation world"""
+        if isinstance(name_or_agent, Agent):
+            self.world.add_agent(name_or_agent)
+        else:
+            agent = Agent(name_or_agent, personality_dict or {})
+            self.world.add_agent(agent)
 
     def step(self):
         """Main loop for one iteration of the entire simulation."""

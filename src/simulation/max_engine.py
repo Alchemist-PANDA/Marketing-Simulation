@@ -18,9 +18,11 @@ from src.psychology.engagement_predictor import EngagementPredictor
 from src.ad_processing.ad import Ad
 
 class MaxSimulation:
-    def __init__(self, num_agents: int = 100):
+    def __init__(self, num_agents: int = 100, seed: int = None):
         self.num_agents = num_agents
-        self.agents = create_persona_set(num_agents)
+        self.seed = seed
+        self.rng = random.Random(seed) if seed is not None else random.Random()
+        self.agents = create_persona_set(num_agents, seed=seed)
         self.prospect = ProspectTheoryEngine()
         self.emotion = EmotionEngine()
         self.engagement = EngagementPredictor()
@@ -30,8 +32,11 @@ class MaxSimulation:
         self.archetype_calibration = {}
         config_path = 'config/archetype_calibration.json'
         if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                self.archetype_calibration = json.load(f)
+            try:
+                with open(config_path, 'r') as f:
+                    self.archetype_calibration = json.load(f)
+            except Exception:
+                pass
 
     def simulate_exposure(self, ad: Ad) -> Dict[str, Any]:
         """Simulates one round of ad exposure to all agents"""
@@ -62,7 +67,7 @@ class MaxSimulation:
             # 4. Decision to purchase
             # Convert utility to probability (logistic)
             prob_buy = 1 / (1 + math.exp(-utility / 10.0))
-            bought = random.random() < prob_buy
+            bought = self.rng.random() < prob_buy
 
             # 4. Engagement (Likes/Shares)
             like_prob = self.engagement.predict_like_probability(agent.personality, ad)
@@ -72,11 +77,13 @@ class MaxSimulation:
             calibration_factor = self.archetype_calibration.get(agent.archetype, 1.0)
             like_prob *= calibration_factor
 
-            liked = random.random() < like_prob
-            shared = random.random() < share_prob
+            liked = self.rng.random() < like_prob
+            shared = self.rng.random() < share_prob
 
             if bought:
                 agent.state.money -= ad.price
+                if not hasattr(agent.state, 'purchase_history'):
+                    agent.state.purchase_history = []
                 agent.state.purchase_history.append({'ad': ad.text, 'price': ad.price})
                 round_results['conversions'] += 1
 

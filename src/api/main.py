@@ -2,12 +2,21 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import uuid
 import random
+import os
+import sys
 from datetime import datetime
 
-from .models import CampaignRequest, SimulationResult, AgentProfile, SegmentType
+# Add root to path to import src modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+from src.ad_processing.ad import Ad
+from src.simulation.max_engine import MaxSimulation
+from src.simulation.calibrator import Calibrator
+from src.simulation.failure_analysis import analyze_failure
+from .models import CampaignRequest, SimulationResult, AgentProfile, SegmentType, AdRequest, SimulateResponse, CalibrationRecord
 
 app = FastAPI(
     title="Marketing Simulation API",
@@ -15,9 +24,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# In-memory storage for simplicity in this prototype
-simulations: Dict[str, SimulationResult] = {}
-agents: List[AgentProfile] = [
+# --- Persistence & Setup ---
+DEFAULT_HISTORICAL = [
+    {"predicted_ctr": 0.05, "actual_ctr": 0.04, "predicted_cvr": 0.10, "actual_cvr": 0.08},
+    {"predicted_ctr": 0.08, "actual_ctr": 0.07, "predicted_cvr": 0.12, "actual_cvr": 0.10},
+    {"predicted_ctr": 0.03, "actual_ctr": 0.03, "predicted_cvr": 0.09, "actual_cvr": 0.09},
+    {"predicted_ctr": 0.10, "actual_ctr": 0.09, "predicted_cvr": 0.15, "actual_cvr": 0.13},
+]
+
+_calibrator = Calibrator(reference_n=10)
+_calibrator.fit(DEFAULT_HISTORICAL)
+
+simulations: Dict[str, Any] = {}
+agents_list: List[AgentProfile] = [
     AgentProfile(
         id=str(uuid.uuid4()),
         name=f"Agent_{i}",
@@ -203,24 +222,96 @@ DASHBOARD_HTML = """
 </html>
 """
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return DASHBOARD_HTML
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "version": "1.0.0"}
+
+@app.get("/api/health")
+async def api_health():
+    return await health()
+
+@app.post("/simulate", response_model=SimulateResponse)
+async def simulate(request: AdRequest):
+    try:
+        # 1. Initialize Ad and Simulation
+        ad = Ad(
+            text=request.text,
+            channel=request.channel.value if hasattr(request.channel, 'value') else request.channel,
+            creative_type='text',
+            price=request.price,
+            category=request.category,
+            social_proof=request.social_proof,
+            urgency=request.urgency
+        )
+
+        sim = MaxSimulation(num_agents=request.agents, seed=request.seed)
+
+        # 2. Run Simulation
+        results = sim.simulate_exposure(ad)
+
+        # 3. Calculate Raw Metrics
+        raw_ctr = results['likes'] / request.agents
+        raw_cvr = results['conversions'] / max(1, results['likes'])
+
+        # 4. Apply Calibration
+        adj_ctr, adj_cvr, confidence = _calibrator.calibrate(raw_ctr, raw_cvr)
+
+        # 5. Forensic Failure Analysis
+        analysis = analyze_failure(
+            ad.price_score, ad.trust_score, ad.urgency_score,
+            ctr=raw_ctr, cvr=raw_cvr
+        )
+
+        return SimulateResponse(
+            predicted_ctr=round(adj_ctr, 6),
+            predicted_cvr=round(adj_cvr, 6),
+            confidence_score=round(confidence, 4),
+            raw_metrics={
+                "likes": results['likes'],
+                "conversions": results['conversions'],
+                "shares": results['shares']
+            },
+            failure_reasons=analysis['failure_reasons']
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/simulate", response_model=SimulateResponse)
+async def api_simulate(request: AdRequest):
+    return await simulate(request)
+
+@app.post("/calibrate")
+async def add_calibration_data(record: CalibrationRecord):
+    """Add a new historical record and update the calibrator."""
+    global DEFAULT_HISTORICAL, _calibrator
+    DEFAULT_HISTORICAL.append(record.model_dump())
+    _calibrator.fit(DEFAULT_HISTORICAL)
+    return {
+        "status": "calibrator updated",
+        "num_samples": _calibrator.num_samples,
+        "ctr_factor": round(_calibrator.ctr_factor, 4),
+        "cvr_factor": round(_calibrator.cvr_factor, 4)
+    }
+
+@app.post("/api/calibrate")
+async def api_add_calibration_data(record: CalibrationRecord):
+    return await add_calibration_data(record)
 
 @app.get("/agents", response_model=List[AgentProfile])
 async def get_agents(segment: Optional[SegmentType] = None):
     if segment:
-        return [a for a in agents if a.segment == segment]
-    return agents
+        return [a for a in agents_list if a.segment == segment]
+    return agents_list
 
-@app.post("/simulate", response_model=SimulationResult)
-async def run_simulation(request: CampaignRequest):
+@app.post("/legacy_simulate", response_model=SimulationResult)
+async def run_legacy_simulation(request: CampaignRequest):
     # Simulation Logic
     conversions = 0
-    target_agents = [a for a in agents if a.segment in request.target_segments]
+    target_agents = [a for a in agents_list if a.segment in request.target_segments]
 
     if not target_agents:
-        target_agents = agents # Default to all if none specified
+        target_agents = agents_list # Default to all if none specified
 
     for agent in target_agents:
         # Simplified probability calculation

@@ -3,6 +3,9 @@ __pycache__/
 *.log
 *.json
 !data/*.json
+!simulation_params.yaml
+!config/*.yaml
+!config/*.json
 c.txt
 report.json
 server.log
@@ -11,3 +14,11 @@ server.log
 .claude/
 .vscode/
 node_modules/
+.pytest_cache/
+.venv/
+env/
+tmp/
+temp/
+models/*.pkl
+validation_output.zip
+simulation_last_run.json
