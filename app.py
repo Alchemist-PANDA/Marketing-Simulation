@@ -5,6 +5,7 @@ from src.simulation.ab_test_runner import ABTestRunner
 from src.ui.auth_ui import render_auth_sidebar
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.history_ui import render_history_tab
+from src.ui.export_ui import render_export_buttons
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
@@ -72,6 +73,9 @@ with tab1:
 
         # Save Results Section
         render_save_results_section(result, ad1_text, ad2_text, channel, num_agents)
+
+        # Export Section
+        render_export_buttons(result)
 
         with st.expander("View Raw Data"):
             st.write(result)
