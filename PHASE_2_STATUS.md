@@ -48,6 +48,27 @@
 
 **Status:** Streamlit UI has visible auth state and login flow.
 
+### Phase 2C-1: Persistence Service ✅
+**Commit:** 5550637
+
+- Added `src/services/persistence_service.py` with database write methods
+- Implements `save_campaign()`, `save_ad_variant()`, `save_simulation_run()`
+- Strict local-mode behavior: returns `saved=False`, `id=None`, no silent saves
+- Added comprehensive tests in `tests/test_persistence_service.py` (5 passing)
+
+**Status:** Persistence service ready for integration into simulation flow.
+
+### Phase 2C-2: Wire Simulation Save Flow ✅
+**Commit:** 3af4727
+
+- Added `src/ui/save_results_ui.py` with save button and persistence logic
+- Modified `app.py` to render save results section (4 lines added)
+- Button-triggered save (not automatic)
+- Saves campaign + 2 ad variants + 2 simulation runs per A/B test
+- Proper error handling with early returns on failure
+
+**Status:** Simulation results can be saved to Supabase when authenticated.
+
 ## Current Auth Behavior
 
 ### Local Mode (No Supabase Credentials)
@@ -90,20 +111,43 @@
 - Invalid/expired token → 401
 - Supabase client failure → error message, no silent fallback to local mode
 
+## Current Persistence Behavior
+
+### Local Mode (No Supabase Credentials)
+- "Save Results" button is **disabled**
+- Tooltip: "Persistence disabled in local mode"
+- No database writes attempted
+- No false success messages
+
+### Supabase Mode - Not Authenticated
+- "Save Results" button is **disabled**
+- Tooltip: "Log in to save results"
+- No database writes attempted
+
+### Supabase Mode - Authenticated
+- "Save Results" button is **enabled**
+- Clicking saves:
+  1. Campaign record (auto-generated name with timestamp)
+  2. Ad A variant (text, scores, metadata)
+  3. Ad A simulation run (full results JSON)
+  4. Ad B variant (text, scores, metadata)
+  5. Ad B simulation run (full results JSON)
+- Success message only after all 5 writes succeed
+- Partial failure shows error and stops save chain
+- All records linked to authenticated user via RLS
+
 ## Not Yet Implemented
 
-### Phase 2C: Persistence (Planned)
-- [ ] Save campaigns to `campaigns` table
-- [ ] Save ad variants to `ad_variants` table
-- [ ] Save simulation runs to `simulation_runs` table
-- [ ] Link runs to authenticated user via RLS
-- [ ] API endpoints for CRUD operations
-
-### Phase 2D: Dashboard UX (Planned)
-- [ ] Dashboard history view
+### Phase 2C-3: Dashboard History UI (Planned)
+- [ ] View saved campaigns list
 - [ ] Load previous simulation results
-- [ ] Export reports (CSV/PDF)
-- [ ] Campaign comparison view
+- [ ] Compare past A/B tests
+- [ ] Filter by channel/date
+
+### Phase 2D: Report Export (Planned)
+- [ ] Export simulation results to CSV
+- [ ] Export simulation results to PDF
+- [ ] Campaign comparison reports
 
 ### Phase 2E: Deployment (Planned)
 - [ ] Streamlit Community Cloud deployment guide
