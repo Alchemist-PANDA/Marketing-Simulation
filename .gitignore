@@ -22,3 +22,10 @@ temp/
 models/*.pkl
 validation_output.zip
 simulation_last_run.json
+Marketing_Simulation_Case_Study.pdf
+simulation_facebook_ads.csv
+simulation_results.txt
+outputs/*.png
+outputs/*.jpg
+outputs/*.pdf
+outputs/*.txt
