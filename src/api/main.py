@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends, Header
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Optional, Any
@@ -16,6 +16,8 @@ from src.ad_processing.ad import Ad
 from src.simulation.max_engine import MaxSimulation
 from src.simulation.calibrator import Calibrator
 from src.simulation.failure_analysis import analyze_failure
+from src.api.auth_handler import get_current_user_logic
+from src.core.auth_utils import is_auth_enabled
 from .models import CampaignRequest, SimulationResult, AgentProfile, SegmentType, AdRequest, SimulateResponse, CalibrationRecord
 
 app = FastAPI(
@@ -229,6 +231,40 @@ async def health():
 @app.get("/api/health")
 async def api_health():
     return await health()
+
+# --- Auth Dependency ---
+async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
+    """
+    FastAPI dependency for retrieving the current user.
+
+    Behavior:
+    - Local mode (no Supabase credentials): returns local developer user
+    - Supabase mode with missing token: raises 401
+    - Supabase mode with invalid token: raises 401
+    - Supabase mode with valid token: returns authenticated user
+    """
+    # Local mode: always return local user
+    if not is_auth_enabled():
+        return get_current_user_logic(None)
+
+    # Supabase mode: require valid token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+
+    token = authorization.split(" ")[1]
+    user = get_current_user_logic(token)
+
+    # If token verification failed, get_current_user_logic returns local user
+    # In Supabase mode, this means the token was invalid → reject
+    if user.get("mode") == "local":
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    return user
+
+@app.get("/api/me")
+async def get_me(user: Dict[str, Any] = Depends(get_current_user)):
+    """Protected endpoint returning current user information."""
+    return user
 
 @app.post("/simulate", response_model=SimulateResponse)
 async def simulate(request: AdRequest):
