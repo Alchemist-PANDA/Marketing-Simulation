@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ui.auth_ui import render_auth_sidebar
+from src.ui.save_results_ui import render_save_results_section
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
@@ -64,6 +65,9 @@ if run_sim:
         st.subheader("Ad B Analysis")
         for reason in result['ad_b']['analysis']['failure_reasons']:
             st.warning(reason)
+
+    # Save Results Section
+    render_save_results_section(result, ad1_text, ad2_text, channel, num_agents)
 
     with st.expander("View Raw Data"):
         st.write(result)
