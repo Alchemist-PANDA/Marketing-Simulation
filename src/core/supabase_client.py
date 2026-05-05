@@ -79,5 +79,64 @@ class SupabaseManager:
         except Exception as e:
             return {"status": "error", "data": [], "message": str(e)}
 
+    def sign_in(self, email: str, password: str) -> Dict[str, Any]:
+        """Sign in with email and password."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+
+        try:
+            response = client.auth.sign_in_with_password({"email": email, "password": password})
+            return {
+                "status": "success",
+                "session": response.session,
+                "user": response.user
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def sign_up(self, email: str, password: str) -> Dict[str, Any]:
+        """Sign up a new user with email and password."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+
+        try:
+            response = client.auth.sign_up({"email": email, "password": password})
+            return {
+                "status": "success",
+                "session": response.session,
+                "user": response.user
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def get_user(self, jwt: str) -> Dict[str, Any]:
+        """Verify JWT and retrieve user information."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+
+        try:
+            response = client.auth.get_user(jwt)
+            return {
+                "status": "success",
+                "user": response.user
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def sign_out(self, jwt: str) -> Dict[str, Any]:
+        """Sign out the current user."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+
+        try:
+            client.auth.sign_out()
+            return {"status": "success", "message": "Signed out successfully."}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
 # Singleton instance
 supabase_manager = SupabaseManager()

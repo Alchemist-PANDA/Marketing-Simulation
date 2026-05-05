@@ -67,3 +67,16 @@ class SimulationResult(BaseModel):
     total_spend: float
     estimated_roi: float
     segment_performance: Dict[str, Dict[str, float]]
+
+class User(BaseModel):
+    id: str
+    email: str
+    is_authenticated: bool
+    mode: str
+
+class AuthSession(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    refresh_token: Optional[str] = None
+    user: User
