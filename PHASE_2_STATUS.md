@@ -69,6 +69,17 @@
 
 **Status:** Simulation results can be saved to Supabase when authenticated.
 
+### Phase 2C-3: Dashboard History UI ✅
+**Commit:** 57b76a8
+
+- Added `src/ui/history_ui.py` with a main-area "History" tab
+- Extended `PersistenceService` with `list_campaigns()` and `get_campaign_details()`
+- Lists user's saved campaigns with name, channel, and timestamp
+- Expandable details showing Ad A/Ad B comparison side-by-side
+- Strict access control: no database queries in local or unauthenticated modes
+
+**Status:** Users can view and browse their saved simulation history.
+
 ## Current Auth Behavior
 
 ### Local Mode (No Supabase Credentials)
@@ -136,13 +147,24 @@
 - Partial failure shows error and stops save chain
 - All records linked to authenticated user via RLS
 
-## Not Yet Implemented
+## Current History Behavior
 
-### Phase 2C-3: Dashboard History UI (Planned)
-- [ ] View saved campaigns list
-- [ ] Load previous simulation results
-- [ ] Compare past A/B tests
-- [ ] Filter by channel/date
+### Local Mode (No Supabase Credentials)
+- History tab shows: "History unavailable in local mode"
+- No database queries attempted
+
+### Supabase Mode - Not Authenticated
+- History tab shows: "Log in via the sidebar to view your saved campaigns"
+- No database queries attempted
+
+### Supabase Mode - Authenticated
+- History tab shows a list of the user's saved campaigns
+- Expandable entries show date, name, and channel
+- "Load Details" button fetches ad text and metrics (likes, conversions, CTR, CVR)
+- Comparison of Ad A and Ad B shown side-by-side
+- Results are filtered by current `user_id`
+
+## Not Yet Implemented
 
 ### Phase 2D: Report Export (Planned)
 - [ ] Export simulation results to CSV
@@ -154,11 +176,11 @@
 - [ ] Environment variable configuration
 - [ ] Production readiness checklist
 
-### Out of Scope
-- Billing/payment integration
-- Multi-tenant organization support
-- Advanced role-based access control (RBAC)
-- Token refresh automation (manual re-login required)
+### Phase 2F: Advanced Management (Planned)
+- [ ] Campaign editing/deletion
+- [ ] Advanced history filtering (by channel, date range)
+- [ ] Billing/payment integration
+- [ ] Multi-tenant organization support
 
 ## How to Run
 
