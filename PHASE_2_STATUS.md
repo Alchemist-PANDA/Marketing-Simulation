@@ -1,6 +1,6 @@
 # Phase 2 Implementation Status
 
-**Last Updated:** 2026-05-05
+**Last Updated:** 2026-05-07
 
 ## Completed Phases
 
@@ -79,6 +79,17 @@
 - Strict access control: no database queries in local or unauthenticated modes
 
 **Status:** Users can view and browse their saved simulation history.
+
+### Phase 2D-1: Current Result Export ✅
+**Commit:** a8b1358
+
+- Added `src/ui/export_ui.py` with export button components
+- Modified `app.py` to render export section after simulation results (4 lines added)
+- JSON export: full result object with all metrics and analysis
+- CSV export: one row per ad with likes, conversions, CTR, CVR
+- Added comprehensive tests in `tests/test_export_ui.py` (6 passing)
+
+**Status:** Users can export current simulation results as JSON or CSV.
 
 ## Current Auth Behavior
 
@@ -164,12 +175,34 @@
 - Comparison of Ad A and Ad B shown side-by-side
 - Results are filtered by current `user_id`
 
+## Current Export Behavior
+
+### JSON Export
+- Exports full current simulation result object
+- Includes: winner, lift_percentage, ad_a, ad_b, analysis, all metrics
+- Works in both local mode and Supabase mode
+- Does not require authentication or persistence
+- File name: `simulation_result.json`
+
+### CSV Export
+- Exports one row per ad (Ad A and Ad B)
+- Columns: Ad, Likes, Conversions, CTR, CVR
+- Missing fields default to 0
+- Works in both local mode and Supabase mode
+- Does not require authentication or persistence
+- File name: `simulation_result.csv`
+
 ## Not Yet Implemented
 
-### Phase 2D: Report Export (Planned)
-- [ ] Export simulation results to CSV
-- [ ] Export simulation results to PDF
+### Phase 2D-2: Saved Campaign Export (Planned)
+- [ ] Export saved campaigns from History tab
+- [ ] Batch export multiple campaigns
 - [ ] Campaign comparison reports
+
+### Phase 2D-3: PDF Export (Planned)
+- [ ] PDF generation for simulation results
+- [ ] PDF generation for saved campaigns
+- [ ] Branded report templates
 
 ### Phase 2E: Deployment (Planned)
 - [ ] Streamlit Community Cloud deployment guide
@@ -225,7 +258,7 @@ python -m pytest tests/test_api_auth.py
 python -m pytest -v
 ```
 
-**Current Test Status:** 44 passed, 5 skipped
+**Current Test Status:** 57 passed, 5 skipped
 
 ### Run API Server (Optional)
 ```bash
