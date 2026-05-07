@@ -38,6 +38,36 @@ def apply_theme():
 
     .block-container {{
         background-color: transparent;
+        padding-top: 1rem;
+    }}
+
+    /* Top Header Integration */
+    header[data-testid="stHeader"] {{
+        background: linear-gradient(135deg, #1A1D29 0%, #252936 100%);
+        border-bottom: 1px solid {BORDER};
+    }}
+
+    [data-testid="stToolbar"] {{
+        background-color: transparent;
+    }}
+
+    [data-testid="stToolbar"] button {{
+        color: {TEXT_SECONDARY};
+    }}
+
+    [data-testid="stToolbar"] button:hover {{
+        color: {TEXT_PRIMARY};
+    }}
+
+    /* Sidebar Alignment */
+    [data-testid="stSidebar"] {{
+        background-color: {CARD_BG};
+        border-right: 1px solid {BORDER};
+        padding-top: 0;
+    }}
+
+    [data-testid="stSidebarContent"] {{
+        padding-top: 1rem;
     }}
 
     /* Typography */
