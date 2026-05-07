@@ -91,6 +91,19 @@
 
 **Status:** Users can export current simulation results as JSON or CSV.
 
+### Phase 2D-2: Saved Campaign Export ✅
+**Commit:** ea19951
+
+- Extended `src/ui/export_ui.py` with campaign export functions
+- Modified `src/ui/history_ui.py` to render export buttons after campaign details (4 lines added)
+- JSON export: includes campaign metadata, variants, and runs
+- CSV export: one row per variant with latest run metrics
+- Campaign-specific filenames: `campaign_{id_slug}.json` / `campaign_{id_slug}.csv`
+- Handles campaigns with no runs gracefully (defaults to 0)
+- Added comprehensive tests in `tests/test_campaign_export.py` (7 passing)
+
+**Status:** Users can export saved campaigns from History tab as JSON or CSV.
+
 ## Current Auth Behavior
 
 ### Local Mode (No Supabase Credentials)
@@ -177,30 +190,27 @@
 
 ## Current Export Behavior
 
-### JSON Export
-- Exports full current simulation result object
-- Includes: winner, lift_percentage, ad_a, ad_b, analysis, all metrics
+### Current Simulation Export (Phase 2D-1)
+- Exports the in-memory result from the most recent simulation run
+- JSON: full result object with winner, lift_percentage, ad_a, ad_b, analysis, all metrics
+- CSV: one row per ad (Ad A and Ad B) with likes, conversions, CTR, CVR
+- Filenames: `simulation_result.json` / `simulation_result.csv`
 - Works in both local mode and Supabase mode
 - Does not require authentication or persistence
-- File name: `simulation_result.json`
 
-### CSV Export
-- Exports one row per ad (Ad A and Ad B)
-- Columns: Ad, Likes, Conversions, CTR, CVR
-- Missing fields default to 0
-- Works in both local mode and Supabase mode
-- Does not require authentication or persistence
-- File name: `simulation_result.csv`
+### Saved Campaign Export (Phase 2D-2)
+- Exports a saved campaign loaded from History tab
+- JSON: includes campaign metadata, all variants, and all runs
+- CSV: one row per variant with latest run metrics (likes, conversions, CTR, CVR)
+- Filenames: `campaign_{id_slug}.json` / `campaign_{id_slug}.csv` (uses first 8 chars of campaign ID)
+- Campaigns with no runs export safely (metrics default to 0)
+- Only available in Supabase mode when authenticated
+- Export buttons appear after campaign details load
 
 ## Not Yet Implemented
 
-### Phase 2D-2: Saved Campaign Export (Planned)
-- [ ] Export saved campaigns from History tab
-- [ ] Batch export multiple campaigns
-- [ ] Campaign comparison reports
-
 ### Phase 2D-3: PDF Export (Planned)
-- [ ] PDF generation for simulation results
+- [ ] PDF generation for current simulation results
 - [ ] PDF generation for saved campaigns
 - [ ] Branded report templates
 
@@ -258,7 +268,7 @@ python -m pytest tests/test_api_auth.py
 python -m pytest -v
 ```
 
-**Current Test Status:** 57 passed, 5 skipped
+**Current Test Status:** 64 passed, 5 skipped
 
 ### Run API Server (Optional)
 ```bash
