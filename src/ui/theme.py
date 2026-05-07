@@ -10,13 +10,13 @@ from typing import Optional
 PRIMARY = "#4F46E5"        # Indigo (CTA buttons)
 SECONDARY = "#10B981"      # Green (success states)
 ACCENT = "#F59E0B"         # Amber (highlights)
-BACKGROUND = "#F5F7FB"     # Soft cool gray (page background)
-CARD_BG = "#FFFFFF"        # White (cards)
-TEXT_PRIMARY = "#111827"   # Dark gray (headings)
-TEXT_SECONDARY = "#6B7280" # Medium gray (body text)
-BORDER = "#E5E7EB"         # Light border
-SHADOW = "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)"
-SHADOW_LG = "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+BACKGROUND = "#1A1D29"     # Dark blue-gray (page background)
+CARD_BG = "#252936"        # Dark card background
+TEXT_PRIMARY = "#F9FAFB"   # Light gray (headings)
+TEXT_SECONDARY = "#D1D5DB" # Medium light gray (body text)
+BORDER = "#374151"         # Dark border
+SHADOW = "0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2)"
+SHADOW_LG = "0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3)"
 
 
 def apply_theme():
@@ -25,7 +25,19 @@ def apply_theme():
     <style>
     /* Global Styles */
     .main {{
-        background-color: {BACKGROUND};
+        background: linear-gradient(135deg, #1A1D29 0%, #252936 100%);
+    }}
+
+    .stApp {{
+        background: linear-gradient(135deg, #1A1D29 0%, #252936 100%);
+    }}
+
+    [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(135deg, #1A1D29 0%, #252936 100%);
+    }}
+
+    .block-container {{
+        background-color: transparent;
     }}
 
     /* Typography */
@@ -128,21 +140,41 @@ def apply_theme():
 
     /* Buttons */
     .stButton > button {{
+        background-color: {PRIMARY};
+        color: #FFFFFF !important;
         border-radius: 8px;
         font-weight: 600;
         transition: all 0.2s ease;
-        border: none;
-        box-shadow: {SHADOW};
+        border: 1px solid transparent;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+        padding: 0.5rem 1rem;
     }}
 
     .stButton > button:hover {{
-        box-shadow: {SHADOW_LG};
+        background-color: #4338CA;
+        color: #FFFFFF !important;
+        box-shadow: 0 6px 15px rgba(79, 70, 229, 0.35);
         transform: translateY(-1px);
+    }}
+
+    .stButton > button:active {{
+        background-color: #3730A3;
+        color: #FFFFFF !important;
+        transform: translateY(0);
+    }}
+
+    .stButton > button:disabled {{
+        background-color: #E5E7EB !important;
+        color: #9CA3AF !important;
+        box-shadow: none;
+        cursor: not-allowed;
+        opacity: 0.6;
     }}
 
     /* Primary Button */
     .stButton > button[kind="primary"] {{
-        background: linear-gradient(135deg, {PRIMARY} 0%, #6366F1 100%);
+        background-color: {PRIMARY};
+        color: #FFFFFF !important;
     }}
 
     /* Sidebar */
@@ -188,6 +220,119 @@ def apply_theme():
     .stTextArea textarea:focus {{
         border-color: {PRIMARY};
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }}
+
+    /* Selectbox / Dropdown */
+    .stSelectbox {{
+        color: #111827;
+    }}
+
+    .stSelectbox label {{
+        color: {TEXT_PRIMARY};
+        font-weight: 600;
+    }}
+
+    .stSelectbox > div > div {{
+        background-color: #FFFFFF !important;
+        color: #111827 !important;
+        border: 1px solid #D1D5DB;
+        border-radius: 8px;
+    }}
+
+    div[data-baseweb="select"] {{
+        background-color: #FFFFFF !important;
+        border-radius: 8px;
+        border: 1px solid #D1D5DB !important;
+    }}
+
+    div[data-baseweb="select"] * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        opacity: 1 !important;
+    }}
+
+    div[data-baseweb="select"] > div {{
+        background-color: #FFFFFF !important;
+        color: #111827 !important;
+    }}
+
+    div[data-baseweb="select"] span {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+    }}
+
+    div[data-baseweb="select"] input {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+    }}
+
+    div[data-baseweb="select"] svg {{
+        fill: #111827 !important;
+    }}
+
+    div[data-baseweb="select"]:focus-within {{
+        border-color: {PRIMARY};
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }}
+
+    /* Dropdown Menu */
+    div[data-baseweb="popover"] {{
+        background-color: #FFFFFF !important;
+    }}
+
+    div[data-baseweb="popover"] * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        opacity: 1 !important;
+    }}
+
+    ul[role="listbox"] {{
+        background-color: #FFFFFF !important;
+        border: 1px solid #D1D5DB;
+        border-radius: 8px;
+    }}
+
+    li[role="option"] {{
+        background-color: #FFFFFF !important;
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        font-weight: 500;
+        opacity: 1 !important;
+    }}
+
+    li[role="option"] * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        opacity: 1 !important;
+    }}
+
+    li[role="option"]:hover {{
+        background-color: #F3F4F6 !important;
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+    }}
+
+    li[role="option"]:hover * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+    }}
+
+    li[role="option"][aria-selected="true"] {{
+        background-color: #EEF2FF !important;
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        font-weight: 600;
+    }}
+
+    li[role="option"][aria-selected="true"] * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+    }}
+
+    [data-baseweb="menu"] * {{
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        opacity: 1 !important;
     }}
 
     /* Expanders */
