@@ -4,6 +4,7 @@ Streamlit UI component for displaying campaign history.
 import streamlit as st
 from typing import List, Dict, Any
 from src.services.persistence_service import PersistenceService
+from src.ui.export_ui import render_campaign_export_buttons
 
 
 def render_history_tab():
@@ -90,6 +91,9 @@ def _show_campaign_details(campaign_id: str, user_id: str):
     else:
         for i, variant in enumerate(variants):
             _render_variant_run_summary(f"Variant {i+1}", variant)
+
+    # Export buttons after variant display
+    render_campaign_export_buttons(res)
 
 
 def _render_variant_run_summary(label: str, variant: Dict[str, Any]):
