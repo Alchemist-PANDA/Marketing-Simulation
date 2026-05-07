@@ -10,7 +10,7 @@ from typing import Optional
 PRIMARY = "#4F46E5"        # Indigo (CTA buttons)
 SECONDARY = "#10B981"      # Green (success states)
 ACCENT = "#F59E0B"         # Amber (highlights)
-BACKGROUND = "#F9FAFB"     # Light gray (page background)
+BACKGROUND = "#F5F7FB"     # Soft cool gray (page background)
 CARD_BG = "#FFFFFF"        # White (cards)
 TEXT_PRIMARY = "#111827"   # Dark gray (headings)
 TEXT_SECONDARY = "#6B7280" # Medium gray (body text)
@@ -164,12 +164,18 @@ def apply_theme():
         font-weight: 600;
         border: 1px solid {BORDER};
         box-shadow: {SHADOW};
+        color: {TEXT_PRIMARY};
     }}
 
     .stTabs [aria-selected="true"] {{
-        background: linear-gradient(135deg, {PRIMARY} 0%, #6366F1 100%);
+        background-color: {PRIMARY};
         color: white;
         border-color: {PRIMARY};
+        box-shadow: {SHADOW_LG};
+    }}
+
+    .stTabs [aria-selected="true"] p {{
+        color: white !important;
     }}
 
     /* Text Areas */
