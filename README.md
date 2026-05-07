@@ -90,6 +90,8 @@ Winner + Diagnosis
 
 ## ⚡ Getting Started
 
+### Local Development
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/Alchemist-PANDA/Marketing-Simulation.git
@@ -106,7 +108,18 @@ Winner + Diagnosis
    streamlit run app.py
    ```
 
-*(Optional: Copy `.env.example` to `.env` if configuring custom endpoints or API keys).*
+The app will run in **Local Mode** (no authentication, save/history disabled). To enable full features with Supabase, see the deployment guide below.
+
+### Deployment
+
+Deploy to Streamlit Community Cloud with Supabase backend for authentication, persistence, and multi-user support.
+
+**Quick Start:**
+1. Set up a Supabase project and run the migration
+2. Deploy to Streamlit Cloud
+3. Configure secrets (SUPABASE_URL, SUPABASE_ANON_KEY)
+
+**Full Guide:** See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 
 ---
 

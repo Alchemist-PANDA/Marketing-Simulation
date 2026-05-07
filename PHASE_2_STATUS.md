@@ -104,6 +104,20 @@
 
 **Status:** Users can export saved campaigns from History tab as JSON or CSV.
 
+### Phase 2E: Deployment Readiness ✅
+**Commit:** [pending]
+
+- Added `docs/DEPLOYMENT.md` with Streamlit Cloud + Supabase setup guide
+- Added `docs/DEPLOYMENT_CHECKLIST.md` with pre-deploy and post-deploy verification steps
+- Added `.streamlit/config.toml` with production configuration
+- Updated `README.md` with deployment section
+- Verified `requirements.txt` is deployment-ready
+- No app logic changes
+- No auth logic changes
+- No persistence logic changes
+
+**Status:** App is ready to deploy on Streamlit Community Cloud with Supabase backend.
+
 ## Current Auth Behavior
 
 ### Local Mode (No Supabase Credentials)
@@ -209,17 +223,13 @@
 
 ## Not Yet Implemented
 
-### Phase 2D-3: PDF Export (Planned)
-- [ ] PDF generation for current simulation results
-- [ ] PDF generation for saved campaigns
-- [ ] Branded report templates
-
-### Phase 2E: Deployment (Planned)
-- [ ] Streamlit Community Cloud deployment guide
-- [ ] Environment variable configuration
-- [ ] Production readiness checklist
-
 ### Phase 2F: Advanced Management (Planned)
+- [ ] Campaign editing/deletion
+- [ ] Advanced history filtering (by channel, date range)
+- [ ] Billing/payment integration
+- [ ] Multi-tenant organization support
+
+### Phase 3: Advanced Features (Future)
 - [ ] Campaign editing/deletion
 - [ ] Advanced history filtering (by channel, date range)
 - [ ] Billing/payment integration
