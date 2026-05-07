@@ -6,14 +6,12 @@ from src.ui.auth_ui import render_auth_sidebar
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.history_ui import render_history_tab
 from src.ui.export_ui import render_export_buttons
+from src.ui.theme import apply_theme, render_app_header, render_metric_card, render_section_header
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
-st.title("🚀 Marketing Simulation: Digital Wind Tunnel")
-st.markdown("""
-Predict how your audience will react to your ads before you spend a single rupee.
-This simulation uses **Big Five Personality Traits** and **Prospect Theory** to model behavior.
-""")
+apply_theme()
+render_app_header()
 
 tab1, tab2 = st.tabs(["🚀 New Simulation", "📂 History"])
 
@@ -44,9 +42,12 @@ with tab1:
 
         # Metrics
         m1, m2, m3 = st.columns(3)
-        m1.metric("Lift", f"{result['lift_percentage']:.2f}%")
-        m2.metric("Ad A Conversions", result['ad_a']['conversions'])
-        m3.metric("Ad B Conversions", result['ad_b']['conversions'])
+        with m1:
+            render_metric_card("Lift", f"{result['lift_percentage']:.2f}%", "📈")
+        with m2:
+            render_metric_card("Ad A Conversions", str(result['ad_a']['conversions']), "🎯")
+        with m3:
+            render_metric_card("Ad B Conversions", str(result['ad_b']['conversions']), "🎯")
 
         # Visualization
         df = pd.DataFrame({
@@ -60,7 +61,7 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
 
         # Forensic Analysis
-        st.header("🕵️ Forensic Feedback")
+        render_section_header("Forensic Feedback", "🕵️")
         fa1, fa2 = st.columns(2)
         with fa1:
             st.subheader("Ad A Analysis")
