@@ -2,10 +2,12 @@
 
 from .fitness_gym import FitnessGymTemplate
 from .ecommerce import EcommerceTemplate
+from .dental_clinic import DentalClinicTemplate
 
 TEMPLATES = {
     'fitness_gym': FitnessGymTemplate,
     'ecommerce': EcommerceTemplate,
+    'dental_clinic': DentalClinicTemplate,
 }
 
 def get_template(category: str):
@@ -26,6 +28,15 @@ def get_template(category: str):
     if any(keyword in category_lower for keyword in fitness_keywords):
         return TEMPLATES['fitness_gym']()
 
+    # Check for dental keywords
+    dental_keywords = [
+        'dental clinic', 'dentist', 'dental care', 'orthodontist', 'braces',
+        'dental implants', 'cosmetic dentistry', 'emergency dentist',
+        'teeth whitening', 'root canal', 'pediatric dentist'
+    ]
+    if any(keyword in category_lower for keyword in dental_keywords):
+        return TEMPLATES['dental_clinic']()
+
     return None
 
-__all__ = ['get_template', 'FitnessGymTemplate', 'EcommerceTemplate', 'TEMPLATES']
+__all__ = ['get_template', 'FitnessGymTemplate', 'EcommerceTemplate', 'DentalClinicTemplate', 'TEMPLATES']
