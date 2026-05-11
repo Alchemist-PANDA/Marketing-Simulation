@@ -46,6 +46,12 @@ with st.sidebar:
     has_schedule = st.checkbox("Has Schedule", value=False)
     has_local_content = st.checkbox("Has Local Content", value=False)
 
+    st.divider()
+    business_context = st.text_area(
+        "Business Context / Evidence",
+        placeholder="Enter additional brand context, website info, or evidence here..."
+    )
+
     run_audit = st.button("🚀 Run Audit", type="primary")
 
 # Main content
@@ -64,6 +70,7 @@ if run_audit:
         'has_pricing': has_pricing,
         'has_schedule': has_schedule,
         'has_local_content': has_local_content,
+        'business_context': business_context,
     }
 
     with st.spinner("Running GEO audit..."):
