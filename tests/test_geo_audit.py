@@ -442,3 +442,82 @@ class TestMEMEScenario:
         assert 'sportsactivitylocation' not in titles_actions
         assert 'trainer' not in titles_actions
         assert 'class schedule' not in titles_actions
+
+    def test_meme_ecommerce_regression(self):
+        """Regression test for MEME ecommerce audit to ensure correct template usage and output."""
+        business_data = {
+            'platform': 'Shopify',
+            'has_product_catalog': True,
+            'has_return_policy': True,
+            'return_policy_description': '14-day exchange window',
+            'has_payment_options': True,
+            'instagram_followers': 12000,
+            'has_social_presence': True,
+            'market': 'Pakistan',
+            'category': 'online fashion store',
+            'business_context': (
+                "MEME Official Store is an online fashion retail brand in Pakistan. Website: shopatmeme.com. "
+                "Products include men’s clothing, women’s clothing, kids’ clothing, jeans, t-shirts, trousers, "
+                "shirts, tops, leggings, activewear, and accessories. The site is powered by Shopify. "
+                "It has a return and exchange policy allowing product exchange within 14 days of delivery if unused "
+                "and in saleable condition with invoice. It offers refunds or vouchers for defective or wrong products. "
+                "The brand has Instagram presence at @memeretail_. Payment methods shown include American Express, "
+                "Mastercard, and Visa. Market: Pakistan."
+            ),
+            'has_schema': False,
+            'has_product_reviews': False,
+            'has_shipping_info': False,
+            'has_size_guide': False,
+            'has_faq': False,
+            'has_trust_badges': False,
+            'has_comparison_content': False,
+            'has_category_pages': False,
+        }
+
+        results = run_audit('MEME Official Store', 'online fashion store', 'Pakistan', business_data)
+
+        # Assert correct template
+        assert results['template_used'] == 'EcommerceTemplate'
+        assert len(results['strengths']) > 0
+        assert len(results['gaps']) > 0
+
+        # Generate remediation to check output
+        remediation = generate_remediation(results['gaps'], 'online fashion store', 'Pakistan', 'MEME Official Store')
+        assert len(remediation) > 0
+
+        # Check for specific ecommerce signals in gaps/strengths/remediation
+        all_descriptions = ' '.join([str(g.get('description', '')).lower() for g in results['gaps']])
+        all_remediation_actions = ' '.join([str(r.get('action', '')).lower() for r in remediation])
+
+        # output includes Product/Offer/Review schema or product-specific reviews
+        assert 'product' in all_descriptions or 'offer' in all_descriptions or 'review' in all_descriptions
+        assert 'product' in all_remediation_actions or 'offer' in all_remediation_actions or 'review' in all_remediation_actions
+
+        # output does NOT include "No recent reviews found"
+        # In EcommerceTemplate, the gap title is "Missing product-specific reviews"
+        # The generic gap "No recent reviews found" should NOT be present if template is used
+        gap_titles = [g['title'] for g in results['gaps']]
+        assert "No recent reviews found" not in gap_titles
+
+        # output does NOT include "Third-party Reviews" as the only generic gap
+        assert not any('third-party reviews' in title.lower() for title in gap_titles)
+
+        # output does NOT include fitness fields
+        fitness_terms = ['healthclub', 'sportsactivitylocation', 'trainer credentials', 'class schedule']
+        for term in fitness_terms:
+            assert term not in all_descriptions
+            assert term not in all_remediation_actions
+
+        # output does NOT include dental-only recommendations
+        dental_terms = ['dentist', 'medicalclinic']
+        for term in dental_terms:
+            assert term not in all_descriptions
+            assert term not in all_remediation_actions
+
+def test_template_triggers():
+    """Test all template triggers to ensure correct routing and no regressions."""
+    assert get_template("online fashion store").__class__.__name__ == "EcommerceTemplate"
+    assert get_template("shopify").__class__.__name__ == "EcommerceTemplate"
+    assert get_template("clothing store").__class__.__name__ == "EcommerceTemplate"
+    assert get_template("fitness gym").__class__.__name__ == "FitnessGymTemplate"
+    assert get_template("dental clinic").__class__.__name__ == "DentalClinicTemplate"
