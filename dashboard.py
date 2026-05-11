@@ -3,7 +3,7 @@
 import streamlit as st
 from run_lift_simulation import run_lift_simulation
 
-APP_VERSION = "f98e82d"
+APP_VERSION = "cebc37b"
 
 st.set_page_config(page_title="GEO Audit Dashboard", page_icon="🌍", layout="wide")
 
@@ -91,6 +91,7 @@ if run_audit:
 
     # Template debug display
     template_used = results.get('template_used', 'Generic')
+    st.caption(f"Template used: {template_used}")
     if template_used and template_used != 'Generic':
         st.info(f"Using {template_used} for industry-specific recommendations")
     else:

@@ -74,6 +74,13 @@ def gap_analyst_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Log the template selection for Streamlit verification
     print(f"GEO_TEMPLATE_SELECTED: {template_used} for category={category}")
 
+    # Emergency hard log for dental
+    if ("dental" in category.lower() or "dentist" in category.lower()) and template_used != "DentalClinicTemplate":
+        from .industry_templates import TEMPLATES
+        print("ERROR_DENTAL_TEMPLATE_NOT_SELECTED")
+        print(f"available templates: {list(TEMPLATES.keys())}")
+        print(f"category received: {category}")
+
     return {
         "gaps": audit_result.get("gaps", []),
         "strengths": audit_result.get("strengths", []),
