@@ -6,30 +6,10 @@ from geo_audit_agent.graph_workflow import run_brand_audit_graph, _run_audit_dir
 def run_lift_simulation(brand_name: str, category: str, city: str, business_data: dict = None):
     """
     Run lift simulation for a business using the industry-aware graph workflow.
-
-    Args:
-        brand_name: Business name
-        category: Business category (e.g., 'fitness gym')
-        city: City location
-        business_data: Business data including:
-            - review_count: Number of reviews
-            - rating: Average rating
-            - services: List of services offered
-            - instagram_followers: Instagram follower count
-            - facebook_followers: Facebook follower count
-            - location_description: Location description
-            - is_central_location: Boolean for central location
-            - raw_response: Raw text for sentiment/competitor analysis
-            - has_schema: Boolean for schema presence
-            - has_trainer_info: Boolean for trainer info
-            - has_pricing: Boolean for pricing info
-            - has_schedule: Boolean for schedule info
-            - has_local_content: Boolean for local content
-            - business_context: Freeform text for brand context
-
-    Returns:
-        Complete audit results with industry-specific template, normalized for dashboard.
     """
+    print("RUN_LIFT_SIMULATION_ACTIVE_DIRECT_BYPASS")
+    print(f"RUN_LIFT_INPUT_CATEGORY: {repr(category)}")
+
     if business_data is None:
         business_data = {}
 
@@ -53,6 +33,7 @@ def run_lift_simulation(brand_name: str, category: str, city: str, business_data
         "remediation": results.get("planned_actions", results.get("remediation", [])),
         "mode": "simulated",
         "lift_metrics": results.get("lift_metrics", {}),
+        "call_path": "run_lift_simulation_direct_bypass"
     }
 
     return normalized

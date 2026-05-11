@@ -2,6 +2,25 @@ import pytest
 from geo_audit_agent.audit import run_audit
 from geo_audit_agent.remediation import generate_remediation
 from geo_audit_agent.industry_templates import get_template
+from run_lift_simulation import run_lift_simulation
+
+def test_production_direct_dashboard_bypass():
+    """Test the exact path dashboard uses to guarantee it works."""
+    r = run_lift_simulation(
+        "Dental Solutions Islamabad",
+        "dental clinic",
+        "Islamabad",
+        {
+            "business_context": "Dental Solutions Islamabad is a dental clinic in Islamabad. Services include braces, dental implants, teeth whitening, root canal, emergency dental care, pediatric dentistry, and cosmetic dentistry. The clinic emphasizes hygiene, painless treatment, professional dentists, appointment booking, and patient care.",
+            "force_mock": True,
+            "use_real": False,
+        }
+    )
+
+    assert r["call_path"] == "run_lift_simulation_direct_bypass"
+    assert r["template_used"] == "DentalClinicTemplate"
+    assert len(r["gaps"]) > 0
+    assert len(r["remediation"]) > 0
 
 def test_dental_clinic_production_regression():
     """Bug 1: Verify Dental Clinic uses DentalClinicTemplate and populates correctly."""

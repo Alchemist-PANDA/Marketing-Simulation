@@ -87,6 +87,7 @@ if run_audit:
     }
 
     with st.spinner("Running GEO audit..."):
+        st.info("BRAND_AUDIT_CALL_PATH: dashboard.py -> run_lift_simulation direct bypass expected")
         results = run_lift_simulation(brand_name, category, city, business_data)
 
     # Header
@@ -100,6 +101,7 @@ if run_audit:
 
     # Template debug display
     template_used = results.get('template_used', 'Generic')
+    st.caption(f"Call path: {results.get('call_path', 'MISSING')}")
     st.caption(f"Template used: {template_used}")
     if template_used and template_used != 'Generic':
         st.info(f"Using {template_used} for industry-specific recommendations")
