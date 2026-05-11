@@ -66,10 +66,15 @@ def gap_analyst_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Run the audit - this uses get_template internally
     audit_result = run_audit(brand_name, category, city, business_data)
 
+    template_used = audit_result.get("template_used")
+
+    # Log the template selection for Streamlit verification
+    print(f"GEO_TEMPLATE_SELECTED: {template_used} for category={category}")
+
     return {
         "gaps": audit_result.get("gaps", []),
         "strengths": audit_result.get("strengths", []),
-        "template_used": audit_result.get("template_used"),
+        "template_used": template_used,
         "sentiment": audit_result.get("sentiment"),
         "competitors": audit_result.get("competitors", []),
     }

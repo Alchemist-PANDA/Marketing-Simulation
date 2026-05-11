@@ -28,7 +28,7 @@ def run_lift_simulation(brand_name: str, category: str, city: str, business_data
             - business_context: Freeform text for brand context
 
     Returns:
-        Complete audit results with industry-specific template
+        Complete audit results with industry-specific template, normalized for dashboard.
     """
     if business_data is None:
         business_data = {}
@@ -36,23 +36,26 @@ def run_lift_simulation(brand_name: str, category: str, city: str, business_data
     # Run the brand audit using the industry-aware graph workflow
     results = run_brand_audit_graph(brand_name, category, city, business_data)
 
-    # Normalize the result to match dashboard.py expectations
-    # The graph returns 'planned_actions' as remediation, but dashboard.py expects 'remediation'
-    if 'planned_actions' in results and 'remediation' not in results:
-        results['remediation'] = results['planned_actions']
+    # Normalize the result to match dashboard.py and unified output expectations
+    normalized = {
+        "brand": brand_name,
+        "brand_name": brand_name,
+        "category": category,
+        "city": city,
+        "template_used": results.get("template_used", "Generic"),
+        "citation_found": results.get("citation_score", 1.0) > 0.5,
+        "confidence_score": results.get("citation_score", 1.0),
+        "sentiment": results.get("sentiment", "none"),
+        "raw_response": business_data.get("raw_response", ""),
+        "competitors": results.get("competitors", []),
+        "strengths": results.get("strengths", []),
+        "gaps": results.get("gaps", []),
+        "remediation": results.get("planned_actions", results.get("remediation", [])),
+        "mode": "simulated",
+        "lift_metrics": results.get("lift_metrics", {}),
+    }
 
-    # Ensure all expected keys exist
-    expected_keys = [
-        'brand_name', 'category', 'city', 'template_used',
-        'citation_score', 'sentiment', 'competitors',
-        'strengths', 'gaps', 'remediation', 'lift_metrics'
-    ]
-
-    for key in expected_keys:
-        if key not in results:
-            results[key] = [] if key in ['strengths', 'gaps', 'remediation', 'competitors'] else None
-
-    return results
+    return normalized
 
 
 if __name__ == '__main__':

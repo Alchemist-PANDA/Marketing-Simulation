@@ -89,6 +89,13 @@ if run_audit:
     with col3:
         st.metric("City", results['city'])
 
+    # Template debug display
+    template_used = results.get('template_used', 'Generic')
+    if template_used and template_used != 'Generic':
+        st.info(f"Using {template_used} for industry-specific recommendations")
+    else:
+        st.warning(f"Using Generic template - no industry match for category: {results.get('category', 'unknown')}")
+
     st.divider()
 
     # Lift Metrics
