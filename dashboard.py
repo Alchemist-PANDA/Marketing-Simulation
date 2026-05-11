@@ -3,7 +3,8 @@
 import streamlit as st
 from run_lift_simulation import run_lift_simulation
 
-APP_VERSION = "cebc37b"
+print("GEO_DEPLOY_VERSION: 068daa5-dental-debug")
+APP_VERSION = "068daa5-dental-debug"
 
 st.set_page_config(page_title="GEO Audit Dashboard", page_icon="🌍", layout="wide")
 
