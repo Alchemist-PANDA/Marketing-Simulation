@@ -255,3 +255,26 @@ def test_run_lift_simulation_fitness_gym():
     assert result['template_used'] == 'FitnessGymTemplate'
     assert len(result['gaps']) > 0
     assert len(result['remediation']) > 0
+
+def test_direct_graph_dental_regression():
+    """Test direct invocation of the graph with Dental clinic."""
+    business_data = {
+        "business_context": "Dental Solutions Islamabad is a dental clinic in Islamabad. Services include braces, dental implants, teeth whitening, root canal, emergency dental care, pediatric dentistry, and cosmetic dentistry. The clinic emphasizes hygiene, painless treatment, professional dentists, appointment booking, and patient care.",
+        "force_mock": True,
+        "use_real": False
+    }
+
+    result = run_brand_audit_graph("Dental Solutions Islamabad", "dental clinic", "Islamabad", business_data)
+
+    assert result["template_used"] == "DentalClinicTemplate"
+    assert len(result["strengths"]) > 0
+    assert len(result["gaps"]) > 0
+    assert len(result.get("remediation", result.get("planned_actions", []))) > 0
+
+    remediation_text = str(result.get("remediation", result.get("planned_actions", []))).lower()
+    assert "dentist" in remediation_text or "medicalclinic" in remediation_text
+    assert "braces" in remediation_text or "credential" in remediation_text
+
+    forbidden_terms = ["product schema", "offer schema", "shipping", "size guide", "healthclub", "sportsactivitylocation", "class schedule"]
+    for term in forbidden_terms:
+        assert term not in remediation_text

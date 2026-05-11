@@ -12,7 +12,10 @@ TEMPLATES = {
 
 def get_template(category: str):
     """Get industry template based on category."""
-    category_lower = category.lower()
+    if not category:
+        return None
+
+    category_lower = category.lower().strip()
 
     # Check for ecommerce keywords
     ecommerce_keywords = [
