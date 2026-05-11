@@ -3,6 +3,8 @@
 import streamlit as st
 from run_lift_simulation import run_lift_simulation
 
+APP_VERSION = "f98e82d"
+
 st.set_page_config(page_title="GEO Audit Dashboard", page_icon="🌍", layout="wide")
 
 st.title("🌍 GEO Audit Intelligence Dashboard")
@@ -53,6 +55,8 @@ with st.sidebar:
     )
 
     run_audit = st.button("🚀 Run Audit", type="primary")
+
+    st.sidebar.caption(f"App version: {APP_VERSION}")
 
 # Main content
 if run_audit:
