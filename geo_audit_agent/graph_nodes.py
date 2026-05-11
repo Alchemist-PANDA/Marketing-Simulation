@@ -62,7 +62,10 @@ def gap_analyst_node(state: Dict[str, Any]) -> Dict[str, Any]:
     category = state.get("category", "")
     city = state.get("city", "")
     business_data = state.get("business_data", {})
-    
+
+    print(f"DEBUG_CATEGORY_RAW: {repr(category)}")
+    print(f"DEBUG_CATEGORY_LOWER: {repr(str(category).lower().strip())}")
+
     if "dental" in category.lower() or "dentist" in category.lower():
         business_data = patch_business_data_for_dental(business_data)
 
@@ -76,10 +79,10 @@ def gap_analyst_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Emergency hard log for dental
     if ("dental" in category.lower() or "dentist" in category.lower()) and template_used != "DentalClinicTemplate":
-        from .industry_templates import TEMPLATES
+        from .industry_templates.dental_clinic import DentalClinicTemplate as DCT
         print("ERROR_DENTAL_TEMPLATE_NOT_SELECTED")
-        print(f"available templates: {list(TEMPLATES.keys())}")
-        print(f"category received: {category}")
+        print(f"category received: {repr(category)}")
+        print(f"available dental triggers: {DCT().category_triggers}")
 
     return {
         "gaps": audit_result.get("gaps", []),

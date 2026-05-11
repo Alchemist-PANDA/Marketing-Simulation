@@ -10,35 +10,24 @@ TEMPLATES = {
     'dental_clinic': DentalClinicTemplate,
 }
 
-def get_template(category: str):
+def get_template(category):
     """Get industry template based on category."""
     if not category:
         return None
 
-    category_lower = category.lower().strip()
+    category_norm = str(category).lower().strip()
 
-    # Check for ecommerce keywords
-    ecommerce_keywords = [
-        'ecommerce', 'e-commerce', 'online store', 'online shop', 'fashion store',
-        'clothing store', 'shopify', 'retail', 'marketplace', 'skincare store',
-        'electronics store', 'furniture store'
+    templates = [
+        FitnessGymTemplate(),
+        EcommerceTemplate(),
+        DentalClinicTemplate(),
     ]
-    if any(keyword in category_lower for keyword in ecommerce_keywords):
-        return TEMPLATES['ecommerce']()
 
-    # Check for fitness/gym keywords
-    fitness_keywords = ['fitness', 'gym', 'health club', 'training', 'personal training']
-    if any(keyword in category_lower for keyword in fitness_keywords):
-        return TEMPLATES['fitness_gym']()
-
-    # Check for dental keywords
-    dental_keywords = [
-        'dental clinic', 'dentist', 'dental care', 'orthodontist', 'braces',
-        'dental implants', 'cosmetic dentistry', 'emergency dentist',
-        'teeth whitening', 'root canal', 'pediatric dentist', 'dental'
-    ]
-    if any(keyword in category_lower for keyword in dental_keywords):
-        return TEMPLATES['dental_clinic']()
+    for template in templates:
+        for trigger in template.category_triggers:
+            trigger_norm = str(trigger).lower().strip()
+            if trigger_norm in category_norm or category_norm in trigger_norm:
+                return template
 
     return None
 
