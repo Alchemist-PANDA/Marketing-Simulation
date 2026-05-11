@@ -24,6 +24,9 @@ def generate_remediation(gaps: List[Dict], category: str, city: str, brand_name:
     template = get_template(category)
     is_ecommerce = template and template.__class__.__name__ == 'EcommerceTemplate'
 
+    # Check if template has a remediation playbook
+    playbook = getattr(template, 'remediation_playbook', None)
+
     for gap in gaps:
         gap_type = gap.get('type', 'generic')
         severity = gap.get('severity', 'medium')
@@ -32,7 +35,44 @@ def generate_remediation(gaps: List[Dict], category: str, city: str, brand_name:
         # Determine priority
         priority = 'high' if severity == 'high' else 'medium' if severity == 'medium' else 'low'
 
-        # Generate remediation based on gap type
+        # If playbook exists, try to get specific actions
+        if playbook and gap_type in playbook:
+            actions = playbook[gap_type]['actions']
+            for action in actions:
+                # Deduplication logic: don't add same action twice
+                if any(r['action'] == action for r in remediation):
+                    continue
+
+                # Create descriptive remediation card
+                why_works_map = {
+                    'schema': 'Structured data helps search engines understand your business details, improving visibility in specialized search results.',
+                    'content': 'Dedicated content targets specific high-intent search queries and improves your authority in the category.',
+                    'reviews': 'Targeted reviews mentioning specific services or qualities improve relevance and trust for potential customers.',
+                    'local_seo': 'Local optimization helps you rank higher for location-specific searches in your target market.',
+                    'trust': 'Trust signals reassure potential customers and increase conversion rates.',
+                }
+
+                # Customize why_works for ecommerce
+                if is_ecommerce and gap_type == 'schema':
+                    why_works = 'Structured data helps search engines understand your products, pricing, and reviews, improving visibility in shopping results.'
+                else:
+                    why_works = why_works_map.get(gap_type, 'This action addresses a critical visibility gap identified in the audit.')
+
+                remediation.append({
+                    'priority': playbook[gap_type].get('priority', priority),
+                    'type': gap_type,
+                    'title': action.split(' ')[0] + ' ' + ' '.join(action.split(' ')[1:3]) if len(action.split(' ')) > 2 else action,
+                    'reason': title,
+                    'why_this_works': why_works,
+                    'action': action.replace('[city]', city).replace('[market]', 'Pakistan'),
+                    'effort': 'medium',
+                    'impact': 'high',
+                    'quick_win': playbook[gap_type].get('priority') == 'high'
+                })
+            continue
+
+        # Fallback to legacy generic logic if no playbook or gap_type not in playbook
+        # Generate remediation based on gap type (Legacy Fallback)
         if gap_type == 'schema':
             if is_ecommerce:
                 remediation.append({

@@ -289,7 +289,7 @@ class TestRemediation:
 
         # Check that titles are business-friendly
         titles = [rem['title'] for rem in remediation]
-        assert any('structured data' in title.lower() for title in titles)
+        assert any('sportsactivitylocation' in title.lower() or 'healthclub' in title.lower() or 'structured data' in title.lower() for title in titles)
         assert any('service' in title.lower() for title in titles)
         assert any('local' in title.lower() or 'islamabad' in title.lower() for title in titles)
 

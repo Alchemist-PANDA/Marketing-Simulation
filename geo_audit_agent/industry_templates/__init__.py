@@ -32,7 +32,7 @@ def get_template(category: str):
     dental_keywords = [
         'dental clinic', 'dentist', 'dental care', 'orthodontist', 'braces',
         'dental implants', 'cosmetic dentistry', 'emergency dentist',
-        'teeth whitening', 'root canal', 'pediatric dentist'
+        'teeth whitening', 'root canal', 'pediatric dentist', 'dental'
     ]
     if any(keyword in category_lower for keyword in dental_keywords):
         return TEMPLATES['dental_clinic']()
