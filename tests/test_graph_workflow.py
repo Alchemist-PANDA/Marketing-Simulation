@@ -1,5 +1,6 @@
 import pytest
 from geo_audit_agent.graph_workflow import run_brand_audit_graph
+from run_lift_simulation import run_lift_simulation
 
 
 def test_dental_clinic_graph_workflow():
@@ -174,3 +175,163 @@ def test_ecommerce_graph_workflow():
         assert 'healthclub' not in action_text
         assert 'trainer credential' not in action_text
         assert 'class schedule' not in action_text
+
+
+def test_run_lift_simulation_dental_clinic():
+    """Test run_lift_simulation with Dental Solutions Islamabad uses DentalClinicTemplate."""
+    brand_name = "Dental Solutions Islamabad"
+    category = "dental clinic"
+    city = "Islamabad, Pakistan"
+    business_data = {
+        "business_context": (
+            "Dental Solutions Islamabad is a dental clinic located at Clinic #201, 2nd Floor, Islamabad Diagnostic Center, F-8 Markaz, Islamabad. "
+            "Website: dentalsolutionsisb.com. Phone numbers listed: +92 345 568 6306 and 051 2817045. "
+            "The clinic claims 30+ years of dental experience, 7,950+ happy patients, 10,000+ successful treatments, and a 4.9/5 Google rating based on 63+ verified reviews. "
+            "Services include general dentistry, cosmetic dentistry, dental implants, orthodontics, root canal treatment, teeth whitening, checkups, cleanings, preventive care, veneers, bonding, complete smile makeovers, braces, clear aligners, crowns, and bridges. "
+            "The website mentions expert dentists, modern technology, affordable/transparent pricing, safe and hygienic care, 100% sterilization, patient safety, ISO certification, highest hygiene standards, and emergency call support. "
+            "It has appointment booking, opening hours from Monday to Saturday 11:00 AM to 9:30 PM, Sunday closed, and testimonials mentioning quality dental care, clean and well-maintained clinic, sterilization, and professional dentists."
+        ),
+        "has_schema": False,
+        "services": ["checkups", "cleanings"],
+        "has_credentials": True,
+        "has_emergency_info": True,
+        "has_insurance_info": False,
+        "has_hygiene_info": True,
+        "has_faq": False,
+        "has_local_comparison": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'DentalClinicTemplate'
+    assert len(result['strengths']) > 0
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0
+    assert result.get('template_used') != 'Generic'
+
+
+def test_run_lift_simulation_ecommerce():
+    """Test run_lift_simulation with MEME Official Store uses EcommerceTemplate."""
+    brand_name = "MEME Official Store"
+    category = "online fashion store"
+    city = "Pakistan"
+    business_data = {
+        "platform": "Shopify",
+        "has_product_catalog": True,
+        "has_return_policy": True,
+        "has_payment_options": True,
+        "market": "Pakistan",
+        "has_schema": False,
+        "has_product_reviews": False,
+        "has_shipping_info": False,
+        "has_size_guide": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'EcommerceTemplate'
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0
+
+
+def test_run_lift_simulation_fitness_gym():
+    """Test run_lift_simulation with Capital Arena Fitness Club uses FitnessGymTemplate."""
+    brand_name = "Capital Arena Fitness Club"
+    category = "fitness gym"
+    city = "Islamabad"
+    business_data = {
+        "review_count": 231,
+        "rating": 4.5,
+        "services": ["swimming pool", "sauna", "gym"],
+        "instagram_followers": 18300,
+        "has_schema": False,
+        "has_trainer_info": False,
+        "has_pricing": False,
+        "has_schedule": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'FitnessGymTemplate'
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0
+
+
+def test_run_lift_simulation_dental_clinic():
+    """Test run_lift_simulation with Dental Solutions Islamabad uses DentalClinicTemplate."""
+    brand_name = "Dental Solutions Islamabad"
+    category = "dental clinic"
+    city = "Islamabad, Pakistan"
+    business_data = {
+        "business_context": (
+            "Dental Solutions Islamabad is a dental clinic located at Clinic #201, 2nd Floor, Islamabad Diagnostic Center, F-8 Markaz, Islamabad. "
+            "Website: dentalsolutionsisb.com. Phone numbers listed: +92 345 568 6306 and 051 2817045. "
+            "The clinic claims 30+ years of dental experience, 7,950+ happy patients, 10,000+ successful treatments, and a 4.9/5 Google rating based on 63+ verified reviews. "
+            "Services include general dentistry, cosmetic dentistry, dental implants, orthodontics, root canal treatment, teeth whitening, checkups, cleanings, preventive care, veneers, bonding, complete smile makeovers, braces, clear aligners, crowns, and bridges. "
+            "The website mentions expert dentists, modern technology, affordable/transparent pricing, safe and hygienic care, 100% sterilization, patient safety, ISO certification, highest hygiene standards, and emergency call support. "
+            "It has appointment booking, opening hours from Monday to Saturday 11:00 AM to 9:30 PM, Sunday closed, and testimonials mentioning quality dental care, clean and well-maintained clinic, sterilization, and professional dentists."
+        ),
+        "has_schema": False,
+        "services": ["checkups", "cleanings"],
+        "has_credentials": True,
+        "has_emergency_info": True,
+        "has_insurance_info": False,
+        "has_hygiene_info": True,
+        "has_faq": False,
+        "has_local_comparison": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'DentalClinicTemplate'
+    assert len(result['strengths']) > 0
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0
+    assert result.get('template_used') != 'Generic'
+
+
+def test_run_lift_simulation_ecommerce():
+    """Test run_lift_simulation with MEME Official Store uses EcommerceTemplate."""
+    brand_name = "MEME Official Store"
+    category = "online fashion store"
+    city = "Pakistan"
+    business_data = {
+        "platform": "Shopify",
+        "has_product_catalog": True,
+        "has_return_policy": True,
+        "has_payment_options": True,
+        "market": "Pakistan",
+        "has_schema": False,
+        "has_product_reviews": False,
+        "has_shipping_info": False,
+        "has_size_guide": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'EcommerceTemplate'
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0
+
+
+def test_run_lift_simulation_fitness_gym():
+    """Test run_lift_simulation with Capital Arena Fitness Club uses FitnessGymTemplate."""
+    brand_name = "Capital Arena Fitness Club"
+    category = "fitness gym"
+    city = "Islamabad"
+    business_data = {
+        "review_count": 231,
+        "rating": 4.5,
+        "services": ["swimming pool", "sauna", "gym"],
+        "instagram_followers": 18300,
+        "has_schema": False,
+        "has_trainer_info": False,
+        "has_pricing": False,
+        "has_schedule": False,
+    }
+
+    result = run_lift_simulation(brand_name, category, city, business_data)
+
+    assert result['template_used'] == 'FitnessGymTemplate'
+    assert len(result['gaps']) > 0
+    assert len(result['remediation']) > 0

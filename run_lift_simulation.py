@@ -1,11 +1,11 @@
 """Run lift simulation for GEO audit."""
 
-from geo_audit_agent import GeoAuditAgent
+from geo_audit_agent.graph_workflow import run_brand_audit_graph
 
 
 def run_lift_simulation(brand_name: str, category: str, city: str, business_data: dict = None):
     """
-    Run lift simulation for a business.
+    Run lift simulation for a business using the industry-aware graph workflow.
 
     Args:
         brand_name: Business name
@@ -25,12 +25,33 @@ def run_lift_simulation(brand_name: str, category: str, city: str, business_data
             - has_pricing: Boolean for pricing info
             - has_schedule: Boolean for schedule info
             - has_local_content: Boolean for local content
+            - business_context: Freeform text for brand context
 
     Returns:
-        Complete audit results
+        Complete audit results with industry-specific template
     """
-    agent = GeoAuditAgent()
-    results = agent.run_full_audit(brand_name, category, city, business_data)
+    if business_data is None:
+        business_data = {}
+
+    # Run the brand audit using the industry-aware graph workflow
+    results = run_brand_audit_graph(brand_name, category, city, business_data)
+
+    # Normalize the result to match dashboard.py expectations
+    # The graph returns 'planned_actions' as remediation, but dashboard.py expects 'remediation'
+    if 'planned_actions' in results and 'remediation' not in results:
+        results['remediation'] = results['planned_actions']
+
+    # Ensure all expected keys exist
+    expected_keys = [
+        'brand_name', 'category', 'city', 'template_used',
+        'citation_score', 'sentiment', 'competitors',
+        'strengths', 'gaps', 'remediation', 'lift_metrics'
+    ]
+
+    for key in expected_keys:
+        if key not in results:
+            results[key] = [] if key in ['strengths', 'gaps', 'remediation', 'competitors'] else None
+
     return results
 
 
