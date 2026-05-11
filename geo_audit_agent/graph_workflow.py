@@ -47,6 +47,14 @@ def create_brand_audit_graph():
     # Create the graph
     workflow = StateGraph(AuditState)
 
+    import inspect
+    print("BOUND_GAP_ANALYST_FUNCTION:", gap_analyst_node)
+    print("BOUND_GAP_ANALYST_MODULE:", gap_analyst_node.__module__)
+    try:
+        print("BOUND_GAP_ANALYST_FILE:", inspect.getsourcefile(gap_analyst_node))
+    except TypeError:
+        print("BOUND_GAP_ANALYST_FILE: Could not determine source file")
+
     # Add nodes
     workflow.add_node("query_llm", query_llm_node)
     workflow.add_node("check_citation", check_citation_node)

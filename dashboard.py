@@ -59,6 +59,14 @@ with st.sidebar:
 
     st.sidebar.caption(f"App version: {APP_VERSION}")
 
+    # Diagnostics
+    st.sidebar.divider()
+    import geo_audit_agent
+    from geo_audit_agent import industry_templates
+    st.sidebar.caption("Diagnostics:")
+    st.sidebar.code(f"Agent path:\n{geo_audit_agent.__file__}")
+    st.sidebar.code(f"Templates path:\n{industry_templates.__file__}")
+
 # Main content
 if run_audit:
     business_data = {

@@ -1,6 +1,6 @@
 """Run lift simulation for GEO audit."""
 
-from geo_audit_agent.graph_workflow import run_brand_audit_graph
+from geo_audit_agent.graph_workflow import run_brand_audit_graph, _run_audit_direct
 
 
 def run_lift_simulation(brand_name: str, category: str, city: str, business_data: dict = None):
@@ -33,8 +33,8 @@ def run_lift_simulation(brand_name: str, category: str, city: str, business_data
     if business_data is None:
         business_data = {}
 
-    # Run the brand audit using the industry-aware graph workflow
-    results = run_brand_audit_graph(brand_name, category, city, business_data)
+    # Bypass LangGraph and run direct path
+    results = _run_audit_direct(brand_name, category, city, business_data)
 
     # Normalize the result to match dashboard.py and unified output expectations
     normalized = {

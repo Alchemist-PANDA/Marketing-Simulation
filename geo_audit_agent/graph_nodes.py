@@ -63,6 +63,7 @@ def gap_analyst_node(state: Dict[str, Any]) -> Dict[str, Any]:
     city = state.get("city", "")
     business_data = state.get("business_data", {})
 
+    print("REAL_GAP_ANALYST_FILE_ACTIVE: This file is indeed running")
     print("GEO_GAP_ANALYST_DEBUG_ACTIVE")
     print(f"DEBUG_CATEGORY_RAW: {repr(category)}")
     print(f"DEBUG_CATEGORY_LOWER: {repr(str(category).lower().strip())}")
