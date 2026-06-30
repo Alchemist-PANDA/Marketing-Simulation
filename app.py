@@ -27,17 +27,29 @@ with st.sidebar:
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
     run_sim = st.button("Run Simulation")
 
+ad_type = st.radio("Ad Type", ["Text", "Image Upload"], horizontal=True)
+
 col1, col2 = st.columns(2)
 
+ad1_text = ""
+ad2_text = ""
+ad1_image = None
+ad2_image = None
+
 with col1:
-    ad_type = st.radio("Ad Type", ["Text", "Image Upload"])
     if ad_type == "Image Upload":
-        st.file_uploader("Upload Ad Image (JPG/PNG)")
+        ad1_image = st.file_uploader("Upload Ad A Image", type=["jpg", "png", "jpeg", "webp"])
+        if ad1_image:
+            st.image(ad1_image, caption="Ad A Preview")
     else:
         ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!")
 
 with col2:
-    if ad_type != "Image Upload":
+    if ad_type == "Image Upload":
+        ad2_image = st.file_uploader("Upload Ad B Image", type=["jpg", "png", "jpeg", "webp"])
+        if ad2_image:
+            st.image(ad2_image, caption="Ad B Preview")
+    else:
         ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.")
 
 with st.sidebar:
@@ -47,6 +59,19 @@ with st.sidebar:
             st.info("Stress test running...")
 
 if run_sim:
+    if ad_type == "Image Upload":
+        if not ad1_image or not ad2_image:
+            st.error("Please upload images for both Ad A and Ad B to run the simulation.")
+            st.stop()
+        with st.spinner("Extracting text from images via OCR..."):
+            from src.utils.ocr_engine import extract_text_from_image
+            ad1_text = extract_text_from_image(ad1_image.getvalue())
+            ad2_text = extract_text_from_image(ad2_image.getvalue())
+            
+    if not ad1_text.strip() or not ad2_text.strip():
+        st.error("Ad text cannot be empty.")
+        st.stop()
+
     runner = ABTestRunner(num_agents=num_agents)
 
     with st.spinner("Simulating audience reaction..."):
