@@ -128,37 +128,118 @@ with st.sidebar:
             
     st.divider()
     st.header("✅ Validate Against Your Data")
-    st.caption("Upload a CSV with `test_id`, `ad_id`, `ad_text`, `conversions`, `impressions`")
-    val_file = st.file_uploader("Upload Historical Data (CSV)", type=["csv"])
-    run_validation = False
-    if val_file:
-         run_validation = st.button("Run Validation Report")
+    st.caption("Upload a historical performance CSV (Meta/Google/TikTok exports accepted).")
+    val_file = st.file_uploader("Upload Historical Data (CSV)", type=["csv"], key="val_uploader")
 
-if run_validation and val_file:
-    import tempfile
-    import os
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-        tmp.write(val_file.getvalue())
-        tmp_path = tmp.name
+if val_file:
+    st.header("✅ Smart Validation Mapping")
     
-    from scripts.validate_with_real_data import validate_data
-    with st.spinner("Validating simulation against real data..."):
-        report = validate_data(tmp_path, output_dir="outputs")
-    
-    st.header("✅ Real-World Validation Report")
-    if report:
-        st.metric("Directional Accuracy", f"{report.get('directional_accuracy', 0):.2f}%")
-        st.write(f"**Total A/B Tests Analyzed:** {report['total_tests']}")
+    if 'val_df_raw' not in st.session_state or st.session_state.get('val_file_name') != val_file.name:
+        st.session_state['val_df_raw'] = pd.read_csv(val_file)
+        st.session_state['val_file_name'] = val_file.name
         
-        st.subheader("Test Breakdown")
-        for test in report['tests']:
-            with st.expander(f"Test {test['test_id']} - Match: {'✅ YES' if test['match'] else '❌ NO'}"):
-                st.write(f"**Actual Winner:** Ad {test['actual_winner']} | **Predicted Winner:** Ad {test['predicted_winner']}")
-                st.text(f"Ad A: {test['ad_a_text']}")
-                st.text(f"Ad B: {test['ad_b_text']}")
-    else:
-        st.error("Validation failed. Please ensure your CSV has the required columns.")
+    df_raw = st.session_state['val_df_raw']
+    
+    aliases = {
+        "ad_name": ["ad_name", "campaign", "ad", "name", "title", "creative name", "ad set"],
+        "ad_text": ["ad_text", "copy", "creative", "headline", "body", "ad copy", "description", "message"],
+        "platform": ["platform", "channel", "source", "medium", "placement"],
+        "conversions": ["conversions", "purchases", "sales", "orders", "results", "goal completions", "conversion count"],
+        "impressions": ["impressions", "views", "reach", "exposure", "imp", "show"]
+    }
+    
+    if 'mapping' not in st.session_state or st.session_state.get('val_file_name_mapped') != val_file.name:
+        mapping = {}
+        cols = list(df_raw.columns)
+        for std, variants in aliases.items():
+            for col in cols:
+                if any(v in col.lower() for v in variants):
+                    mapping[std] = col
+                    break
+            if std not in mapping:
+                mapping[std] = "Not Found (Use Fallback)"
+        st.session_state['mapping'] = mapping
+        st.session_state['val_file_name_mapped'] = val_file.name
+        
+    st.write("We auto-detected your columns based on common names. Please confirm or correct them below:")
+    
+    cols_opts = ["Not Found (Use Fallback)"] + list(df_raw.columns)
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.session_state['mapping']["ad_name"] = st.selectbox("Ad Name", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_name"]) if st.session_state['mapping']["ad_name"] in cols_opts else 0)
+        st.session_state['mapping']["ad_text"] = st.selectbox("Ad Text / Copy (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_text"]) if st.session_state['mapping']["ad_text"] in cols_opts else 0)
+        st.session_state['mapping']["platform"] = st.selectbox("Platform / Channel", cols_opts, index=cols_opts.index(st.session_state['mapping']["platform"]) if st.session_state['mapping']["platform"] in cols_opts else 0)
+    with c2:
+        st.session_state['mapping']["conversions"] = st.selectbox("Conversions / Sales (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["conversions"]) if st.session_state['mapping']["conversions"] in cols_opts else 0)
+        st.session_state['mapping']["impressions"] = st.selectbox("Impressions / Views", cols_opts, index=cols_opts.index(st.session_state['mapping']["impressions"]) if st.session_state['mapping']["impressions"] in cols_opts else 0)
+
+    st.write("---")
+    if st.button("Confirm & Run Validation"):
+        mapping = st.session_state['mapping']
+        
+        if mapping["ad_text"] == "Not Found (Use Fallback)" or mapping["conversions"] == "Not Found (Use Fallback)":
+            st.error("❌ 'Ad Text' and 'Conversions' are strictly required.")
+        else:
+            df_mapped = df_raw.copy()
+            notes = []
+            
+            if mapping["ad_name"] != "Not Found (Use Fallback)":
+                df_mapped.rename(columns={mapping["ad_name"]: "ad_name"}, inplace=True)
+            else:
+                df_mapped["ad_name"] = [f"Ad {i+1}" for i in range(len(df_mapped))]
+                notes.append("Assigned generic names for 'ad_name'.")
+                
+            df_mapped.rename(columns={mapping["ad_text"]: "ad_text"}, inplace=True)
+            df_mapped.rename(columns={mapping["conversions"]: "conversions"}, inplace=True)
+            
+            if mapping["impressions"] != "Not Found (Use Fallback)":
+                df_mapped.rename(columns={mapping["impressions"]: "impressions"}, inplace=True)
+            else:
+                df_mapped["impressions"] = 1000
+                notes.append("Assigned default 1000 for missing 'impressions'.")
+                
+            if mapping["platform"] != "Not Found (Use Fallback)":
+                df_mapped.rename(columns={mapping["platform"]: "platform"}, inplace=True)
+            else:
+                df_mapped["platform"] = "facebook"
+                
+            # Check for test_id to support legacy paired test mode if present, else fallback
+            if "test_id" not in df_mapped.columns:
+                df_mapped["test_id"] = 1
+            if "ad_id" not in df_mapped.columns:
+                df_mapped["ad_id"] = [f"A{i}" for i in range(len(df_mapped))]
+
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                df_mapped.to_csv(tmp.name, index=False)
+                tmp_path = tmp.name
+                
+            from scripts.validate_with_real_data import validate_data
+            with st.spinner("Running deep validation (this may take a minute)..."):
+                report = validate_data(tmp_path, output_dir="outputs")
+                
+            if report:
+                st.success("Validation Complete!")
+                st.metric("Directional Accuracy", f"{report.get('directional_accuracy', 0):.2f}%")
+                if notes:
+                    with st.expander("⚠️ Mapping Assumptions Applied"):
+                        for n in notes:
+                            st.write(f"- {n}")
+                
+                if report.get('tests'):
+                    st.subheader("Detailed Breakdown")
+                    for test in report['tests']:
+                        with st.expander(f"Test {test['test_id']} - Match: {'✅' if test['match'] else '❌'}"):
+                            st.write(f"**Actual Winner:** {test['actual_winner']} | **Predicted Winner:** {test['predicted_winner']}")
+                            if 'ad_a_text' in test:
+                                st.text(f"Ad A: {test['ad_a_text']}")
+                                st.text(f"Ad B: {test['ad_b_text']}")
+            else:
+                st.error("Validation failed. See console.")
     st.stop()
+
+
 
 if run_sim:
     if ad_type == "Image Upload":

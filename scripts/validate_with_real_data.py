@@ -7,12 +7,12 @@ import os
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.simulation.ab_test_runner import ABTestRunner
+from src.simulation.multi_ad_runner import MultiAdRunner
 
 def generate_markdown_report(results, output_path):
     md_content = f"# Validation Report\n\n"
-    md_content += f"**Total A/B Tests Analyzed:** {results['total_tests']}\n"
-    md_content += f"**Directional Accuracy:** {results['directional_accuracy']:.2f}%\n\n"
+    md_content += f"**Total Tests Analyzed:** {results['total_tests']}\n"
+    md_content += f"**Directional Accuracy (Top 1 Match):** {results['directional_accuracy']:.2f}%\n\n"
     
     md_content += "## Test Breakdown\n\n"
     for test in results['tests']:
@@ -20,8 +20,8 @@ def generate_markdown_report(results, output_path):
         md_content += f"- **Actual Winner:** Ad {test['actual_winner']}\n"
         md_content += f"- **Predicted Winner:** Ad {test['predicted_winner']}\n"
         md_content += f"- **Match:** {'✅ YES' if test['match'] else '❌ NO'}\n"
-        md_content += f"\n**Ad A Text:** {test['ad_a_text']}\n"
-        md_content += f"**Ad B Text:** {test['ad_b_text']}\n\n"
+        md_content += f"\n**Actual #1 Text:** {test.get('ad_a_text', '')}\n"
+        md_content += f"**Actual #2 Text:** {test.get('ad_b_text', '')}\n\n"
         
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
@@ -34,18 +34,30 @@ def validate_data(csv_path: str, output_dir: str = "outputs"):
         print(f"Error reading CSV: {e}")
         return None
         
-    required_cols = ['test_id', 'ad_id', 'ad_text', 'conversions', 'impressions']
+    required_cols = ['ad_text', 'conversions']
     for col in required_cols:
         if col not in df.columns:
             print(f"Missing required column: {col}")
             return None
             
+    if 'impressions' not in df.columns:
+        df['impressions'] = 1000
+        
+    if 'ad_id' not in df.columns:
+        if 'ad_name' in df.columns:
+            df['ad_id'] = df['ad_name']
+        else:
+            df['ad_id'] = [f"Ad_{i}" for i in range(len(df))]
+            
+    if 'test_id' not in df.columns:
+        df['test_id'] = 1
+        
     df['cvr'] = df['conversions'] / df['impressions'].replace(0, 1)
     
-    # Group by test_id to compare ads
-    grouped = df.groupby('test_id')
+    # Use MultiAdRunner to handle 2 or more ads
+    runner = MultiAdRunner(num_agents=1000)
     
-    runner = ABTestRunner(num_agents=1000)
+    grouped = df.groupby('test_id')
     
     report = {
         "total_tests": 0,
@@ -54,31 +66,35 @@ def validate_data(csv_path: str, output_dir: str = "outputs"):
     }
     
     for test_id, group in grouped:
-        if len(group) != 2:
-            print(f"Skipping test {test_id}: Currently only supports strict A/B tests (2 ads). Found {len(group)}.")
+        if len(group) < 2:
+            print(f"Skipping test {test_id}: Requires at least 2 ads to compare.")
             continue
             
-        group = group.sort_values(by='ad_id').reset_index(drop=True)
-        ad_a = group.iloc[0]
-        ad_b = group.iloc[1]
+        group = group.sort_values(by='cvr', ascending=False).reset_index(drop=True)
+        actual_winner = group.iloc[0]['ad_id']
         
-        actual_winner = "A" if ad_a['cvr'] > ad_b['cvr'] else "B"
-        
-        print(f"Simulating Test {test_id}...")
-        try:
-            # Run simulation
-            sim_result = runner.run_test(ad_a['ad_text'], ad_b['ad_text'], channel='facebook')
-            predicted_winner = sim_result['winner']
+        ads_payload = []
+        for _, row in group.iterrows():
+            ads_payload.append({
+                'name': str(row['ad_id']),
+                'text': row['ad_text']
+            })
             
-            match = (actual_winner == predicted_winner)
+        print(f"Simulating Test {test_id} with {len(group)} ads...")
+        try:
+            # Run multi-ad simulation
+            sim_result = runner.run_multi_test(ads_payload, channel='facebook')
+            predicted_winner = sim_result['winner']['ad_name']
+            
+            match = (str(actual_winner) == str(predicted_winner))
             
             report['tests'].append({
                 "test_id": str(test_id),
-                "ad_a_text": ad_a['ad_text'],
-                "ad_b_text": ad_b['ad_text'],
                 "actual_winner": actual_winner,
                 "predicted_winner": predicted_winner,
-                "match": match
+                "match": match,
+                "ad_a_text": group.iloc[0]['ad_text'],
+                "ad_b_text": group.iloc[1]['ad_text'] if len(group) > 1 else ""
             })
             
             report['total_tests'] += 1

@@ -11,6 +11,23 @@ For example, if you run 10 historical A/B tests through the engine:
 - In 3 tests, the engine predicted Ad B, but Ad A won in reality.
 - **Directional Accuracy = 70%**
 
+## Smart CSV Parsing & Column Mapping
+
+To calculate Directional Accuracy, you must upload a historical CSV containing past ad tests and their real-world conversion metrics.
+
+**Smart CSV Parsing:** The UI includes a smart CSV parser that accepts raw data exports from Meta, TikTok, or Google Ads. It auto-detects column names using common aliases (e.g., `Sales`, `Purchases`, `Goal Completions` map to `conversions`, and `Copy`, `Creative`, `Message` map to `ad_text`). If you upload a messy CSV, the UI will present a dropdown mapping interface allowing you to manually map your columns before running the validation.
+
+**Missing Data Fallbacks:** 
+- If your export is missing `impressions` (e.g. just raw sales data), the system will automatically assume a baseline of 1000 impressions to prevent errors. 
+- If you don't have a `test_id` column to group A/B tests, the system treats your entire CSV as a single large test and ranks all creatives simultaneously to see if the simulation successfully predicted your overall top-performing ad.
+
+### Required Logical Columns (can be mapped from anything):
+- **Ad Name** (Optional, auto-generated if missing)
+- **Ad Text / Copy** (Strictly Required)
+- **Conversions / Sales** (Strictly Required)
+- **Impressions / Views** (Optional, defaults to 1000)
+- **Platform / Channel** (Optional, defaults to facebook)
+
 ## Why Directional Accuracy?
 
 Simulating human behavior is immensely complex. While our engine utilizes OCEAN traits and Prospect Theory to model psychological responses, it cannot account for real-time market conditions, competitor ad spend, or algorithmic platform changes. 
@@ -26,6 +43,7 @@ When you run a validation report (via the script or UI), you will see:
 
 ## How to Validate Your Own Data
 
-1. Export your historical ad data from Facebook Ads Manager, Google Ads, or TikTok.
-2. Format a CSV with at least: `ad_text`, `impressions`, `clicks`, `conversions`. (Optional: `spend`, `image_url`).
-3. Use the "Validate Against Your Data" tool in the application dashboard to upload your CSV and generate your custom Validation Report.
+1. Export your historical ad data from Facebook Ads Manager, Google Ads, or TikTok. (Don't worry about column names!).
+2. Use the "Validate Against Your Data" tool in the application dashboard to upload your CSV.
+3. Confirm the Smart Column Mapping.
+4. Run the validation and review your custom Validation Report.
