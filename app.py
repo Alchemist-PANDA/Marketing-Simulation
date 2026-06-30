@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from src.simulation.ab_test_runner import ABTestRunner
-from src.ad_processing.neural_scorer import NeuralScorer
+from src.ad_processing.neural_scorer import predict_scores
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
@@ -77,9 +77,8 @@ if run_sim:
 
     with st.spinner("Simulating audience reaction..."):
         try:
-            scorer = NeuralScorer()
-            ad_a_scores = scorer.predict_scores(ad1_text)
-            ad_b_scores = scorer.predict_scores(ad2_text)
+            ad_a_scores = predict_scores(ad1_text)
+            ad_b_scores = predict_scores(ad2_text)
             
             if not ad_a_scores or not ad_b_scores:
                 st.error("Failed to generate valid scores for the ads.")
