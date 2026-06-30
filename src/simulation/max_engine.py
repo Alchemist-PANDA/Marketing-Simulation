@@ -1,7 +1,11 @@
 """
 Primary Simulation Engine (MaxCap)
 Integrates psychology, market dynamics, and ad engagement modeling.
-Zero API cost design. NumPy-vectorized for 10k+ agent throughput.
+Zero API cost design. Pure NumPy structured-array core for 100k-1M agent scale.
+
+No per-agent Python objects, no per-agent Python loops. Population state lives
+entirely in float32 NumPy arrays; purchase/like/share outcomes are computed and
+applied via vectorized boolean masking.
 """
 
 import json
@@ -9,24 +13,55 @@ import os
 from typing import Dict, List, Any, Optional
 import numpy as np
 
-from src.agents.base_agent import Agent, Personality, AgentState, create_persona_set
+from src.agents.agent_generator import generate_population_arrays, ARCHETYPES
 from src.psychology.prospect_theory import ProspectTheoryEngine
 from src.ad_processing.ad import Ad
 
+try:
+    from numba import njit
+    _NUMBA_AVAILABLE = True
+except ImportError:
+    _NUMBA_AVAILABLE = False
+
+
+def _compute_probs_numpy(emotional_mod, archetype_score, price_disutility,
+                          urgency_score, like_base_terms, share_base_terms):
+    """Pure NumPy core: utility -> purchase probability. No Python loops."""
+    fomo_impact = urgency_score * 0.5
+    perceived_value = 10.0 * (1.0 + emotional_mod + archetype_score + fomo_impact)
+    utility = perceived_value + price_disutility
+    prob_buy = 1.0 / (1.0 + np.exp(np.clip(-utility / 10.0, -50, 50)))
+    return prob_buy.astype(np.float32)
+
+
+if _NUMBA_AVAILABLE:
+    @njit(fastmath=True, cache=True)
+    def _compute_probs_numba(emotional_mod, archetype_score, price_disutility, urgency_score):
+        # Vectorized array expression compiled to machine code by Numba —
+        # no explicit per-agent loop, just JIT-compiled SIMD-friendly ops.
+        fomo_impact = urgency_score * 0.5
+        perceived_value = 10.0 * (1.0 + emotional_mod + archetype_score + fomo_impact)
+        utility = perceived_value + price_disutility
+        z = np.clip(-utility / 10.0, -50.0, 50.0)
+        return 1.0 / (1.0 + np.exp(z))
+
 
 class MaxSimulation:
-    def __init__(self, num_agents: int = 100, seed: int = None, agents: List[Agent] = None):
+    def __init__(self, num_agents: int = 100, seed: int = None,
+                 population: Optional[Dict[str, np.ndarray]] = None,
+                 use_numba: bool = True):
         self.seed = seed
         self.np_rng = np.random.RandomState(seed)
         self.prospect = ProspectTheoryEngine()
         self.tick = 0
+        self.use_numba = use_numba and _NUMBA_AVAILABLE
 
-        if agents is not None:
-            self.agents = agents
-            self.num_agents = len(agents)
+        if population is not None:
+            self.population = population
         else:
-            self.agents = create_persona_set(num_agents, seed=seed)
-            self.num_agents = num_agents
+            self.population = generate_population_arrays(num_agents, seed=seed)
+
+        self.num_agents = len(self.population['money'])
 
         self.archetype_calibration = {}
         config_path = 'config/archetype_calibration.json'
@@ -37,97 +72,77 @@ class MaxSimulation:
             except Exception:
                 pass
 
-        self._precompute_arrays()
-
-    def _precompute_arrays(self):
-        """Extract agent traits into NumPy arrays for vectorized operations."""
-        agents = self.agents
-        self._extraversion = np.array([a.personality.extraversion for a in agents])
-        self._conscientiousness = np.array([a.personality.conscientiousness for a in agents])
-        self._openness = np.array([a.personality.openness for a in agents])
-        self._agreeableness = np.array([a.personality.agreeableness for a in agents])
-        self._neuroticism = np.array([a.personality.neuroticism for a in agents])
-        self._price_sensitivity = np.array([a.price_sensitivity for a in agents])
-        self._trust_sensitivity = np.array([a.trust_sensitivity for a in agents])
-        self._urgency_sensitivity = np.array([a.urgency_sensitivity for a in agents])
-        self._skepticism = np.array([a.skepticism for a in agents])
-        self._money = np.array([a.state.money for a in agents])
-        self._cal_factors = np.array([
-            self.archetype_calibration.get(a.archetype, 1.0) for a in agents
-        ])
+        self._cal_factors = np.array(
+            [self.archetype_calibration.get(a, 1.0) for a in ARCHETYPES],
+            dtype=np.float32
+        )[self.population['archetype_idx']]
 
     def simulate_exposure(self, ad: Ad, progress_callback=None) -> Dict[str, Any]:
-        """Simulates one round of ad exposure to all agents using vectorized NumPy ops."""
+        """Simulates one round of ad exposure to the entire population. Zero Python agent loops."""
+        pop = self.population
         n = self.num_agents
 
-        # 1. Emotional response (vectorized channel/creative modifiers)
-        emotional_mod = np.zeros(n)
+        emotional_mod = np.zeros(n, dtype=np.float32)
         if ad.channel in ('facebook', 'tiktok', 'instagram'):
-            emotional_mod += self._extraversion * 0.3
+            emotional_mod += pop['extraversion'] * 0.3
         if ad.channel in ('google', 'search', 'email'):
-            emotional_mod += self._conscientiousness * 0.4
+            emotional_mod += pop['conscientiousness'] * 0.4
         if ad.creative_type in ('video', 'flashy'):
-            emotional_mod -= self._neuroticism * 0.5
+            emotional_mod -= pop['neuroticism'] * 0.5
         if ad.creative_type in ('video', 'interactive'):
-            emotional_mod += self._openness * 0.4
+            emotional_mod += pop['openness'] * 0.4
         np.clip(emotional_mod, -1.0, 1.0, out=emotional_mod)
 
         if progress_callback:
             progress_callback(0.2, "Emotional analysis complete")
 
-        # 2. Archetype evaluation (vectorized dot product)
         archetype_score = (
-            ad.price_score * self._price_sensitivity
-            + ad.trust_score * self._trust_sensitivity
-            + ad.urgency_score * self._urgency_sensitivity
-            - self._skepticism
-        )
+            ad.price_score * pop['price_sensitivity']
+            + ad.trust_score * pop['trust_sensitivity']
+            + ad.urgency_score * pop['urgency_sensitivity']
+            - pop['skepticism']
+        ).astype(np.float32)
 
-        # 3. Prospect theory price disutility (scalar, applied to all)
-        price_disutility = self.prospect.apply(-ad.price, reference=0)
-
-        # 4. Utility calculation
-        fomo_impact = ad.urgency_score * 0.5
-        perceived_value = 10.0 * (1.0 + emotional_mod + archetype_score + fomo_impact)
-        utility = perceived_value + price_disutility
+        price_disutility = float(self.prospect.apply(-ad.price, reference=0))
 
         if progress_callback:
             progress_callback(0.4, "Utility calculation complete")
 
-        # 5. Purchase probability (vectorized sigmoid)
-        prob_buy = 1.0 / (1.0 + np.exp(np.clip(-utility / 10.0, -500, 500)))
+        urgency_arr = np.full(n, ad.urgency_score, dtype=np.float32)
+        if self.use_numba:
+            prob_buy = _compute_probs_numba(emotional_mod, archetype_score, price_disutility, urgency_arr)
+        else:
+            prob_buy = _compute_probs_numpy(emotional_mod, archetype_score, price_disutility,
+                                             urgency_arr, None, None)
 
-        # 6. Affordability gate
-        can_afford = self._money >= ad.price
-        prob_buy *= can_afford
+        can_afford = pop['money'] >= ad.price
+        prob_buy = prob_buy * can_afford
 
-        # 7. Engagement probabilities (vectorized)
         like_prob = (
             0.1
-            + self._extraversion * 0.2
-            + self._openness * 0.1
-            - self._neuroticism * 0.05
+            + pop['extraversion'] * 0.2
+            + pop['openness'] * 0.1
+            - pop['neuroticism'] * 0.05
             + ad.price_score * 0.1
             + ad.trust_score * 0.25
             + ad.urgency_score * 0.4
-        )
+        ).astype(np.float32)
         if ad.channel in ('tiktok', 'instagram'):
             like_prob *= 1.5
         like_prob *= self._cal_factors
         np.clip(like_prob, 0, 1, out=like_prob)
 
         share_prob = np.clip(
-            0.05 + 0.5 * self._extraversion + 0.1 * self._agreeableness,
+            0.05 + 0.5 * pop['extraversion'] + 0.1 * pop['agreeableness'],
             0, 1
-        )
+        ).astype(np.float32)
 
         if progress_callback:
             progress_callback(0.6, "Probability models complete")
 
-        # 8. Vectorized binomial sampling
-        rand_buy = self.np_rng.random(n)
-        rand_like = self.np_rng.random(n)
-        rand_share = self.np_rng.random(n)
+        rand_buy = self.np_rng.random(n).astype(np.float32)
+        rand_like = self.np_rng.random(n).astype(np.float32)
+        rand_share = self.np_rng.random(n).astype(np.float32)
 
         bought = rand_buy < prob_buy
         liked = rand_like < like_prob
@@ -136,14 +151,10 @@ class MaxSimulation:
         if progress_callback:
             progress_callback(0.8, "Agent decisions sampled")
 
-        # 9. Update agent state for purchases (minimal loop, only purchasers)
-        purchase_indices = np.where(bought)[0]
-        for idx in purchase_indices:
-            self.agents[idx].state.money -= ad.price
-            self.agents[idx].state.purchase_history.append({
-                'ad': ad.text, 'price': ad.price
-            })
-        self._money[purchase_indices] -= ad.price
+        # Zero-loop state update via boolean masking
+        pop['purchased'] = pop['purchased'] | bought
+        pop['money_spent'] = np.where(bought, pop['money_spent'] + ad.price, pop['money_spent'])
+        pop['money'] = np.where(bought, pop['money'] - ad.price, pop['money'])
 
         if progress_callback:
             progress_callback(1.0, "Simulation complete")

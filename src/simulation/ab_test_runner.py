@@ -1,22 +1,24 @@
 """
 A/B Test Runner with independent cohorts.
-Eliminates order bias by using deep-copied, isolated agent populations.
+Eliminates order bias by splitting one generated population into two
+disjoint cohorts via fancy indexing, with purchase state reset per cohort.
+No agent-object deep copies — cohorts are NumPy array slices.
 """
 
-import copy
-import random as stdlib_random
 from typing import Dict, Any
+import numpy as np
 
-from src.agents.base_agent import create_persona_set
+from src.agents.agent_generator import generate_population_arrays
 from src.ad_processing.ad import Ad
 from src.simulation.max_engine import MaxSimulation
 from src.simulation.failure_analysis import analyze_failure
 
 
 class ABTestRunner:
-    def __init__(self, num_agents: int = 500, seed: int = None):
+    def __init__(self, num_agents: int = 500, seed: int = None, master_population: Dict[str, np.ndarray] = None):
         self.num_agents = num_agents
         self.seed = seed
+        self.master_population = master_population
 
     def run_test(self, ad_a_text: str, ad_b_text: str,
                  channel: str = 'facebook', price: float = 20.0,
@@ -25,25 +27,32 @@ class ABTestRunner:
         """
         Run an A/B test with strictly independent cohorts.
 
-        Creates a master agent pool, splits it into two cohorts via random
-        sampling, deep-copies each cohort, and runs each ad against its own
-        pristine population. This eliminates order bias entirely.
+        Generates a single master population, splits it into two disjoint
+        cohorts via a random permutation + fancy indexing (a copy, not a
+        view, so mutating one cohort's money/purchase state can never leak
+        into the other), and runs each ad against its own pristine cohort.
         """
-        master_agents = create_persona_set(self.num_agents, seed=self.seed)
+        if self.master_population is not None:
+            master = self.master_population
+            self.num_agents = len(master['money'])
+        else:
+            master = generate_population_arrays(self.num_agents, seed=self.seed)
 
-        rng = stdlib_random.Random(self.seed)
-        indices = list(range(len(master_agents)))
-        rng.shuffle(indices)
-        mid = len(indices) // 2
+        rng = np.random.RandomState(self.seed)
+        indices = rng.permutation(self.num_agents)
+        mid = self.num_agents // 2
 
-        cohort_a = copy.deepcopy([master_agents[i] for i in indices[:mid]])
-        cohort_b = copy.deepcopy([master_agents[i] for i in indices[mid:]])
+        idx_a = indices[:mid]
+        idx_b = indices[mid:]
+
+        cohort_a = {k: v[idx_a].copy() for k, v in master.items()}
+        cohort_b = {k: v[idx_b].copy() for k, v in master.items()}
 
         seed_a = self.seed if self.seed is not None else None
         seed_b = (self.seed + 1) if self.seed is not None else None
 
-        sim_a = MaxSimulation(num_agents=len(cohort_a), seed=seed_a, agents=cohort_a)
-        sim_b = MaxSimulation(num_agents=len(cohort_b), seed=seed_b, agents=cohort_b)
+        sim_a = MaxSimulation(seed=seed_a, population=cohort_a)
+        sim_b = MaxSimulation(seed=seed_b, population=cohort_b)
 
         ad_a = Ad(text=ad_a_text, channel=channel, creative_type='text', price=price)
         ad_b = Ad(text=ad_b_text, channel=channel, creative_type='text', price=price)
@@ -61,8 +70,8 @@ class ABTestRunner:
             progress_callback(0.5, "Ad A complete, starting Ad B...")
         res_b = sim_b.simulate_exposure(ad_b, progress_callback=cb_b)
 
-        cohort_a_size = len(cohort_a)
-        cohort_b_size = len(cohort_b)
+        cohort_a_size = sim_a.num_agents
+        cohort_b_size = sim_b.num_agents
 
         ctr_a = res_a['likes'] / cohort_a_size
         cvr_a = res_a['conversions'] / max(1, res_a['likes'])

@@ -1,13 +1,33 @@
+import os
+
+# Must be set before numpy/MKL-linked libraries are imported anywhere in the
+# process, including transitively via src.* modules below.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
+import gc
+import time
+import json
 import streamlit as st
 import pandas as pd
-import json
 import plotly.express as px
+
 from src.simulation.ab_test_runner import ABTestRunner
+from src.simulation.max_engine import MaxSimulation
+from src.ad_processing.ad import Ad
+from src.agents.agent_generator import generate_population_arrays, population_memory_bytes
 from src.ui.auth_ui import render_auth_sidebar
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.history_ui import render_history_tab
 from src.ui.export_ui import render_export_buttons
 from src.ui.theme import apply_theme, render_app_header, render_metric_card, render_section_header
+
+try:
+    import psutil
+    _PSUTIL_AVAILABLE = True
+except ImportError:
+    _PSUTIL_AVAILABLE = False
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀", layout="wide")
 
@@ -20,6 +40,26 @@ if "sim_ad1" not in st.session_state:
     st.session_state["sim_ad1"] = ""
 if "sim_ad2" not in st.session_state:
     st.session_state["sim_ad2"] = ""
+if "last_runtime_ms" not in st.session_state:
+    st.session_state["last_runtime_ms"] = None
+if "last_pop_memory_mb" not in st.session_state:
+    st.session_state["last_pop_memory_mb"] = None
+
+
+@st.cache_data(ttl=3600, max_entries=5, show_spinner=False)
+def cached_population(num_agents: int, seed):
+    """Cache generated agent population arrays by (num_agents, seed)."""
+    return generate_population_arrays(num_agents, seed=seed)
+
+
+def get_available_ram_mb():
+    if not _PSUTIL_AVAILABLE:
+        return None
+    try:
+        return psutil.virtual_memory().available / 1e6
+    except Exception:
+        return None
+
 
 tab1, tab2 = st.tabs(["🚀 New Simulation", "📂 History"])
 
@@ -28,18 +68,50 @@ with tab1:
         render_auth_sidebar()
         st.divider()
         st.header("Simulation Settings")
-        num_agents = st.slider("Number of Agents", 100, 10000, 500, step=100)
+
+        scale_tier = st.radio(
+            "Scale",
+            ["Standard (100 - 2,000)", "Large (2,000 - 100,000)", "Massive (100,000 - 1,000,000)"],
+            index=0
+        )
+        if scale_tier.startswith("Standard"):
+            num_agents = st.slider("Number of Agents", 100, 2000, 500, step=100)
+        elif scale_tier.startswith("Large"):
+            num_agents = st.slider("Number of Agents", 2000, 100_000, 10_000, step=1000)
+        else:
+            num_agents = st.slider("Number of Agents", 100_000, 1_000_000, 100_000, step=10_000)
+
+        proceed_large = True
+        if num_agents > 500_000:
+            st.warning(f"This will use ~{4.6 * (num_agents / 100_000):.1f} MB of RAM. Proceed?")
+            proceed_large = st.checkbox("Yes, I understand — run anyway", key="proceed_large")
+
         channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
         price = st.slider("Product Price ($)", 1.0, 500.0, 20.0, step=1.0)
         objective = st.radio("Optimization Objective", ["conversions", "engagement", "conversion_rate"])
         st.divider()
-        run_sim = st.button("Run Simulation", type="primary", use_container_width=True)
+        run_sim = st.button("Run Simulation", type="primary", use_container_width=True, disabled=not proceed_large)
         if st.session_state["sim_results"] is not None:
             if st.button("Clear Results", use_container_width=True):
                 st.session_state["sim_results"] = None
                 st.session_state["sim_ad1"] = ""
                 st.session_state["sim_ad2"] = ""
                 st.rerun()
+
+        st.divider()
+        st.caption("⚡ Engine Stats")
+        mc1, mc2 = st.columns(2)
+        with mc1:
+            mem_val = st.session_state["last_pop_memory_mb"]
+            st.metric("Population RAM", f"{mem_val:.2f} MB" if mem_val else "—")
+        with mc2:
+            rt_val = st.session_state["last_runtime_ms"]
+            st.metric("Last Runtime", f"{rt_val:.1f} ms" if rt_val else "—")
+        avail_ram = get_available_ram_mb()
+        if avail_ram is not None:
+            st.caption(f"System RAM available: {avail_ram:,.0f} MB")
+        else:
+            st.caption("Install `psutil` for system RAM monitoring")
 
     input_method = st.radio("Input Method", ["Text", "Image Upload"], horizontal=True)
 
@@ -79,6 +151,7 @@ with tab1:
                 st.error("Please upload images for both Ad A and Ad B.")
                 st.stop()
 
+            # Lazy import: OCR model only loads when image mode is actually used.
             from src.utils.ocr_engine import extract_text_from_image
 
             with st.spinner("Extracting text from Ad A image..."):
@@ -103,7 +176,9 @@ with tab1:
             st.error("Ad Creative B text cannot be empty. Please enter ad copy or upload an image.")
             st.stop()
 
-        runner = ABTestRunner(num_agents=num_agents)
+        master_population = cached_population(num_agents, None)
+        mem_bytes = population_memory_bytes(master_population)
+        runner = ABTestRunner(num_agents=num_agents, master_population=master_population)
 
         with st.status("Running Simulation...", expanded=True) as status:
             progress_bar = st.progress(0)
@@ -114,17 +189,24 @@ with tab1:
                 agent_count = int(pct * num_agents)
                 status_text.markdown(f"**{msg}** — Processing agent {agent_count:,} / {num_agents:,}")
 
+            t0 = time.perf_counter()
             result = runner.run_test(
                 ad1_text, ad2_text,
                 channel=channel, price=price, objective=objective,
                 progress_callback=on_progress
             )
+            runtime_ms = (time.perf_counter() - t0) * 1000
             progress_bar.progress(1.0)
-            status.update(label="Simulation Complete!", state="complete", expanded=False)
+            status.update(label=f"Simulation Complete! ({runtime_ms:.1f} ms)", state="complete", expanded=False)
 
         st.session_state["sim_results"] = result
         st.session_state["sim_ad1"] = ad1_text
         st.session_state["sim_ad2"] = ad2_text
+        st.session_state["last_runtime_ms"] = runtime_ms
+        st.session_state["last_pop_memory_mb"] = mem_bytes / 1e6
+
+        del master_population, runner
+        gc.collect()
 
     result = st.session_state.get("sim_results")
     if result:
@@ -194,12 +276,13 @@ with tab1:
         }
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
-            st.download_button(
+            if st.download_button(
                 "Download Summary (JSON)",
                 data=json.dumps(summary, indent=2),
                 file_name="simulation_summary.json",
                 mime="application/json"
-            )
+            ):
+                gc.collect()
         with col_dl2:
             csv_rows = []
             for label, data in [("Ad A", summary["ad_a"]), ("Ad B", summary["ad_b"])]:
@@ -223,6 +306,53 @@ with tab1:
             st.json(result)
     elif not run_sim:
         st.info("Enter your ad copy and click 'Run Simulation' in the sidebar to begin.")
+
+    with st.expander("⚡ Stress Test / Benchmark"):
+        st.caption("Run the raw simulation engine repeatedly at full scale to see real throughput on this machine.")
+        bench_n = st.number_input("Benchmark Agent Count", min_value=1000, max_value=1_000_000, value=1_000_000, step=10_000)
+        if st.button("Run Benchmark (5x)"):
+            ad = Ad(text="Limited time offer — act now!", channel="facebook", creative_type="text", price=20.0)
+            bench_pop = cached_population(int(bench_n), 999)
+            mem_mb = population_memory_bytes(bench_pop) / 1e6
+
+            rss_before = None
+            if _PSUTIL_AVAILABLE:
+                try:
+                    rss_before = psutil.Process().memory_info().rss / 1e6
+                except Exception:
+                    rss_before = None
+
+            times_ms = []
+            peak_rss = rss_before or 0
+            for i in range(5):
+                sim = MaxSimulation(seed=999, population={k: v.copy() for k, v in bench_pop.items()})
+                t0 = time.perf_counter()
+                sim.simulate_exposure(ad)
+                times_ms.append((time.perf_counter() - t0) * 1000)
+                if _PSUTIL_AVAILABLE:
+                    try:
+                        peak_rss = max(peak_rss, psutil.Process().memory_info().rss / 1e6)
+                    except Exception:
+                        pass
+                del sim
+
+            del bench_pop
+            gc.collect()
+
+            bc1, bc2, bc3 = st.columns(3)
+            with bc1:
+                st.metric("Min Runtime", f"{min(times_ms):.2f} ms")
+            with bc2:
+                st.metric("Avg Runtime", f"{sum(times_ms)/len(times_ms):.2f} ms")
+            with bc3:
+                st.metric("Max Runtime", f"{max(times_ms):.2f} ms")
+
+            st.metric("Population Array Memory", f"{mem_mb:.2f} MB")
+            if _PSUTIL_AVAILABLE and rss_before is not None:
+                st.metric("Peak Process Memory (RSS)", f"{peak_rss:.1f} MB")
+
+            bench_df = pd.DataFrame({"Run": [f"Run {i+1}" for i in range(5)], "Runtime (ms)": times_ms})
+            st.bar_chart(bench_df.set_index("Run"))
 
 with tab2:
     render_history_tab()
