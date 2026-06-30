@@ -1,44 +1,41 @@
-import os
-import easyocr
-import numpy as np
-from PIL import Image
-import io
+"""
+OCR engine using EasyOCR for image-to-text extraction.
+Pure Python — no Tesseract system binaries required.
+"""
 
-# Global variable to hold the reader (lazy-loaded)
+import logging
+
+logger = logging.getLogger(__name__)
+
 _READER = None
 
+
 def get_reader():
-    """Lazy-load the EasyOCR reader (only when first needed)."""
+    """Lazy-initialize EasyOCR reader (heavy model load, cached globally)."""
     global _READER
     if _READER is None:
-        # Use GPU if available, otherwise CPU
-        gpu = os.environ.get("EASYOCR_GPU", "false").lower() == "true"
-        _READER = easyocr.Reader(['en'], gpu=gpu, verbose=False)
+        try:
+            import easyocr
+            _READER = easyocr.Reader(['en'], gpu=False)
+        except ImportError:
+            logger.error("easyocr not installed. Run: pip install easyocr")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to initialize EasyOCR: {e}")
+            raise
     return _READER
+
 
 def extract_text_from_image(image_bytes: bytes) -> str:
     """
     Extract text from image bytes using EasyOCR.
-    Returns concatenated text or empty string if no text found.
+
+    Args:
+        image_bytes: Raw image bytes (JPG, PNG, WEBP).
+
+    Returns:
+        Extracted text as a single string, or empty string if nothing found.
     """
-    if not image_bytes:
-        return ""
-    
-    # Convert bytes to PIL Image, then to numpy array
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        # Convert to RGB if needed
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        img_np = np.array(img)
-    except Exception:
-        return ""
-    
     reader = get_reader()
-    try:
-        results = reader.readtext(img_np)
-        # Combine all detected text
-        text_parts = [item[1] for item in results]
-        return " ".join(text_parts).strip()
-    except Exception:
-        return ""
+    results = reader.readtext(image_bytes, detail=0)
+    return " ".join(results).strip()
