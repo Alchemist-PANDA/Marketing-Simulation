@@ -18,3 +18,7 @@ supabase==2.3.0
 easyocr==1.7.1
 Pillow>=10.0.0
 sentence-transformers==2.2.2
+huggingface-hub>=0.20.0
+torch>=2.0.0
+transformers>=4.30.0
+tokenizers>=0.13.0
