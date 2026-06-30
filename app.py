@@ -13,7 +13,17 @@ This simulation uses **Big Five Personality Traits** and **Prospect Theory** to 
 
 with st.sidebar:
     st.header("Simulation Settings")
-    num_agents = st.slider("Number of Agents", 100, 2000, 500)
+    
+    try:
+        import psutil
+        available_mb = psutil.virtual_memory().available / (1024 * 1024)
+        max_agents = 500_000 if available_mb < 512 else 1_000_000
+        if available_mb < 512:
+            st.toast(f"⚠️ Low memory ({available_mb:.0f} MB). Agent cap limited to 500,000.", icon="⚠️")
+    except ImportError:
+        max_agents = 1_000_000  # fallback
+
+    num_agents = st.slider("Number of Agents", 100, max_agents, 100_000)
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
     run_sim = st.button("Run Simulation")
 

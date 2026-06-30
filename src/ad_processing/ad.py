@@ -41,3 +41,9 @@ class Ad:
                 self.price_score = scores['price_score']
                 self.trust_score = scores['trust_score']
                 self.urgency_score = scores['urgency_score']
+
+        # Ensure embedding is filled if not present
+        if self.embedding is None:
+             from src.ad_processing.neural_scorer import get_embedder
+             embedder = get_embedder()
+             self.embedding = embedder.encode([self.text])[0].tolist()
