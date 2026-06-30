@@ -46,6 +46,21 @@ if _NUMBA_AVAILABLE:
         return 1.0 / (1.0 + np.exp(z))
 
 
+def generate_recommendations(ad_scores, emotional_valence, economic_utility):
+    recs = []
+    if ad_scores.get("trust", 0.5) < 0.4:
+        recs.append({"priority": "high", "category": "trust", "message": "Low trust score – add social proof (e.g., 'Trusted by 10,000+ customers')"})
+    if ad_scores.get("urgency", 0.5) < 0.3:
+        recs.append({"priority": "high", "category": "urgency", "message": "Low urgency – add scarcity messaging (e.g., 'Only 3 left in stock!')"})
+    if ad_scores.get("persuasion", 0.5) < 0.4:
+        recs.append({"priority": "medium", "category": "persuasion", "message": "Weak persuasion – use stronger CTAs (e.g., 'Buy now and save!')"})
+    if ad_scores.get("emotional_appeal", 0.5) < 0.3:
+        recs.append({"priority": "medium", "category": "emotion", "message": "Low emotional appeal – use storytelling or vivid imagery"})
+    if np.mean(economic_utility) < 0.3:
+        recs.append({"priority": "high", "category": "price", "message": "High price sensitivity – consider lowering price or emphasizing value"})
+    return recs
+
+
 class MaxSimulation:
     def __init__(self, num_agents: int = 100, seed: int = None,
                  population: Optional[Dict[str, np.ndarray]] = None,
@@ -161,9 +176,84 @@ class MaxSimulation:
 
         self.tick += 1
 
+        # Extract features for dashboard
+        income = pop['money']
+        new_purchases = bought
+        engagements = liked | shared
+        
+        perceived_value = float(np.mean(10.0 * (1.0 + emotional_mod + archetype_score + ad.urgency_score * 0.5)))
+        loss_aversion_impact = float(np.mean(np.clip(ad.price / (income + 1e-6), 0.0, 1.0)))
+        
+        ad_scores = {
+            "trust": ad.trust_score,
+            "urgency": ad.urgency_score,
+            "persuasion": ad.trust_score * 0.5 + ad.urgency_score * 0.5,
+            "emotional_appeal": np.mean(emotional_mod) + 0.5
+        }
+        economic_utility = archetype_score + price_disutility
+        recs = generate_recommendations(ad_scores, emotional_mod, economic_utility)
+        
+        high_income = income > 1200
+        med_income = (income >= 600) & (income <= 1200)
+        low_income = income < 600
+
+        segment_analysis = {
+            "high_income": {
+                "conversion_rate": float(np.mean(new_purchases[high_income]) * 100) if np.any(high_income) else 0.0,
+                "engagement_rate": float(np.mean(engagements[high_income]) * 100) if np.any(high_income) else 0.0,
+                "count": int(np.sum(high_income))
+            },
+            "medium_income": {
+                "conversion_rate": float(np.mean(new_purchases[med_income]) * 100) if np.any(med_income) else 0.0,
+                "engagement_rate": float(np.mean(engagements[med_income]) * 100) if np.any(med_income) else 0.0,
+                "count": int(np.sum(med_income))
+            },
+            "low_income": {
+                "conversion_rate": float(np.mean(new_purchases[low_income]) * 100) if np.any(low_income) else 0.0,
+                "engagement_rate": float(np.mean(engagements[low_income]) * 100) if np.any(low_income) else 0.0,
+                "count": int(np.sum(low_income))
+            }
+        }
+        
+        personality_performance = {
+            "openness": float(np.mean(emotional_mod[pop['openness'] > 0.6])) if np.any(pop['openness'] > 0.6) else 0.0,
+            "conscientiousness": float(np.mean(emotional_mod[pop['conscientiousness'] > 0.6])) if np.any(pop['conscientiousness'] > 0.6) else 0.0,
+            "extraversion": float(np.mean(emotional_mod[pop['extraversion'] > 0.6])) if np.any(pop['extraversion'] > 0.6) else 0.0,
+            "agreeableness": float(np.mean(emotional_mod[pop['agreeableness'] > 0.6])) if np.any(pop['agreeableness'] > 0.6) else 0.0,
+            "neuroticism": float(np.mean(emotional_mod[pop['neuroticism'] > 0.6])) if np.any(pop['neuroticism'] > 0.6) else 0.0
+        }
+        
+        prospect_insights = {
+            "loss_aversion_impact": loss_aversion_impact,
+            "perceived_value": perceived_value,
+            "price_sensitivity": {
+                "high": float(np.mean(new_purchases[low_income]) * 100) if np.any(low_income) else 0.0,
+                "medium": float(np.mean(new_purchases[med_income]) * 100) if np.any(med_income) else 0.0,
+                "low": float(np.mean(new_purchases[high_income]) * 100) if np.any(high_income) else 0.0
+            },
+            "price_elasticity": float(((np.mean(new_purchases[low_income]) if np.any(low_income) else 0) - (np.mean(new_purchases[high_income]) if np.any(high_income) else 0)) * 100)
+        }
+
+        conversion_rate = (bought.sum() / n) * 100 if n > 0 else 0
+        engagement_rate = ((liked | shared).sum() / n) * 100 if n > 0 else 0
+
         return {
             'likes': int(liked.sum()),
             'shares': int(shared.sum()),
             'conversions': int(bought.sum()),
-            'details': []
+            'details': [],
+            
+            "conversion_rate": float(conversion_rate),
+            "engagement_rate": float(engagement_rate),
+            "purchase_count": int(bought.sum()),
+            "engaged_count": int((liked | shared).sum()),
+            "avg_emotional_valence": float(np.mean(emotional_mod)),
+            "avg_economic_utility": float(np.mean(economic_utility)),
+            "high_emotion_percent": float(np.mean(emotional_mod > 0.7) * 100),
+            "total_agents": n,
+            
+            "segment_analysis": segment_analysis,
+            "personality_performance": personality_performance,
+            "prospect_insights": prospect_insights,
+            "recommendations": recs
         }
