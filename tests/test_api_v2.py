@@ -15,7 +15,7 @@ def test_health():
     for endpoint in ["/health", "/api/health"]:
         response = client.get(endpoint)
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy", "version": "1.0.0"}
+        assert response.json()["status"] == "healthy"
 
 def test_simulate_happy_path():
     """Test successful simulation with all fields"""

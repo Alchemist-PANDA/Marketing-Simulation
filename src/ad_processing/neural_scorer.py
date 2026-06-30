@@ -1,15 +1,20 @@
+"""
+Neural scoring module with embedding caching.
+Uses sentence-transformers for ad text scoring with LRU cache
+to avoid redundant re-encoding on UI interactions.
+"""
+
 import pickle
 import os
-import sys
 import logging
+from functools import lru_cache
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Singleton to avoid reloading model
 _EMBEDDER = None
 _MODELS = {}
+
 
 def get_embedder():
     global _EMBEDDER
@@ -18,12 +23,15 @@ def get_embedder():
             from sentence_transformers import SentenceTransformer
             _EMBEDDER = SentenceTransformer('all-MiniLM-L6-v2')
         except (ImportError, Exception) as e:
-            logger.warning(f"Could not load SentenceTransformer: {e}. Neural scoring will be disabled.")
+            logger.warning(f"Could not load SentenceTransformer: {e}. Neural scoring disabled.")
             _EMBEDDER = False
     return _EMBEDDER
 
-def load_models(model_dir='models'):
+
+def _load_models(model_dir='models'):
     global _MODELS
+    if _MODELS:
+        return
     targets = ['price', 'trust', 'urgency']
     for t in targets:
         path = os.path.join(model_dir, f"{t}_scorer.pkl")
@@ -37,48 +45,40 @@ def load_models(model_dir='models'):
         else:
             _MODELS[t] = None
 
-def predict_scores(ad_text, model_dir='models'):
-    global _MODELS
+
+@lru_cache(maxsize=256)
+def _cached_encode(text: str):
+    """Cache embeddings by text content to avoid re-encoding on slider changes."""
     embedder = get_embedder()
-
-    # Fallback if embedder is not available
     if not embedder:
-        return {
-            "price_score": 0.5,
-            "trust_score": 0.5,
-            "urgency_score": 0.5
-        }
-
+        return None
     try:
-        emb = embedder.encode([ad_text])
+        return tuple(embedder.encode([text])[0])
     except Exception as e:
         logger.error(f"Error encoding text: {e}")
-        return {
-            "price_score": 0.5,
-            "trust_score": 0.5,
-            "urgency_score": 0.5
-        }
+        return None
+
+
+def predict_scores(ad_text: str, model_dir: str = 'models') -> dict:
+    global _MODELS
+
+    embedding_tuple = _cached_encode(ad_text)
+
+    if embedding_tuple is None:
+        return {"price_score": 0.5, "trust_score": 0.5, "urgency_score": 0.5}
+
+    import numpy as np
+    emb = np.array([list(embedding_tuple)])
+
+    _load_models(model_dir)
 
     results = {}
     targets = ['price', 'trust', 'urgency']
     for t in targets:
-        # Load model if not already in memory
-        if t not in _MODELS or _MODELS[t] is None:
-            path = os.path.join(model_dir, f"{t}_scorer.pkl")
-            if os.path.exists(path):
-                try:
-                    with open(path, 'rb') as f:
-                        _MODELS[t] = pickle.load(f)
-                except Exception as e:
-                    logger.error(f"Error loading model {path} during prediction: {e}")
-                    _MODELS[t] = None
-            else:
-                _MODELS[t] = None
-
-        # Predict if model exists, else fallback
-        if _MODELS[t] is not None:
+        model = _MODELS.get(t)
+        if model is not None:
             try:
-                score = _MODELS[t].predict(emb)[0]
+                score = model.predict(emb)[0]
                 results[f"{t}_score"] = max(0.0, min(1.0, float(score)))
             except Exception as e:
                 logger.error(f"Error predicting with model {t}: {e}")

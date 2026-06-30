@@ -1,59 +1,113 @@
-from typing import Dict, Any, List
+"""
+A/B Test Runner with independent cohorts.
+Eliminates order bias by using deep-copied, isolated agent populations.
+"""
+
+import copy
+import random as stdlib_random
+from typing import Dict, Any
+
+from src.agents.base_agent import create_persona_set
 from src.ad_processing.ad import Ad
 from src.simulation.max_engine import MaxSimulation
 from src.simulation.failure_analysis import analyze_failure
+
 
 class ABTestRunner:
     def __init__(self, num_agents: int = 500, seed: int = None):
         self.num_agents = num_agents
         self.seed = seed
-        self.sim = MaxSimulation(num_agents=num_agents, seed=seed)
 
-    def run_test(self, ad_a_text: str, ad_b_text: str, channel: str = 'facebook', objective: str = 'conversions') -> Dict[str, Any]:
-        ad_a = Ad(text=ad_a_text, channel=channel, creative_type='text', price=20.0)
-        ad_b = Ad(text=ad_b_text, channel=channel, creative_type='text', price=20.0)
+    def run_test(self, ad_a_text: str, ad_b_text: str,
+                 channel: str = 'facebook', price: float = 20.0,
+                 objective: str = 'conversions',
+                 progress_callback=None) -> Dict[str, Any]:
+        """
+        Run an A/B test with strictly independent cohorts.
 
-        res_a = self.sim.simulate_exposure(ad_a)
+        Creates a master agent pool, splits it into two cohorts via random
+        sampling, deep-copies each cohort, and runs each ad against its own
+        pristine population. This eliminates order bias entirely.
+        """
+        master_agents = create_persona_set(self.num_agents, seed=self.seed)
 
-        # If we want independent runs for A and B with same agent population,
-        # we might need to reset agents or use a new sim with same seed.
-        # For now, we continue sequential exposure to the same population.
-        res_b = self.sim.simulate_exposure(ad_b)
+        rng = stdlib_random.Random(self.seed)
+        indices = list(range(len(master_agents)))
+        rng.shuffle(indices)
+        mid = len(indices) // 2
 
-        # 1. Forensic Failure Analysis for both ads
+        cohort_a = copy.deepcopy([master_agents[i] for i in indices[:mid]])
+        cohort_b = copy.deepcopy([master_agents[i] for i in indices[mid:]])
+
+        seed_a = self.seed if self.seed is not None else None
+        seed_b = (self.seed + 1) if self.seed is not None else None
+
+        sim_a = MaxSimulation(num_agents=len(cohort_a), seed=seed_a, agents=cohort_a)
+        sim_b = MaxSimulation(num_agents=len(cohort_b), seed=seed_b, agents=cohort_b)
+
+        ad_a = Ad(text=ad_a_text, channel=channel, creative_type='text', price=price)
+        ad_b = Ad(text=ad_b_text, channel=channel, creative_type='text', price=price)
+
+        cb_a = None
+        cb_b = None
+        if progress_callback:
+            def cb_a(pct, msg):
+                progress_callback(pct * 0.45, f"Ad A: {msg}")
+            def cb_b(pct, msg):
+                progress_callback(0.5 + pct * 0.45, f"Ad B: {msg}")
+
+        res_a = sim_a.simulate_exposure(ad_a, progress_callback=cb_a)
+        if progress_callback:
+            progress_callback(0.5, "Ad A complete, starting Ad B...")
+        res_b = sim_b.simulate_exposure(ad_b, progress_callback=cb_b)
+
+        cohort_a_size = len(cohort_a)
+        cohort_b_size = len(cohort_b)
+
+        ctr_a = res_a['likes'] / cohort_a_size
+        cvr_a = res_a['conversions'] / max(1, res_a['likes'])
+        ctr_b = res_b['likes'] / cohort_b_size
+        cvr_b = res_b['conversions'] / max(1, res_b['likes'])
+
         res_a['analysis'] = analyze_failure(
             ad_a.price_score, ad_a.trust_score, ad_a.urgency_score,
-            ctr=res_a['likes'] / self.num_agents,
-            cvr=res_a['conversions'] / max(1, res_a['likes'])
+            ctr=ctr_a, cvr=cvr_a
         )
+        res_a['analysis']['predicted_ctr'] = round(ctr_a, 6)
+        res_a['analysis']['predicted_cvr'] = round(cvr_a, 6)
+        res_a['analysis']['confidence_score'] = 0.7
+        res_a['cohort_size'] = cohort_a_size
 
         res_b['analysis'] = analyze_failure(
             ad_b.price_score, ad_b.trust_score, ad_b.urgency_score,
-            ctr=res_b['likes'] / self.num_agents,
-            cvr=res_b['conversions'] / max(1, res_b['likes'])
+            ctr=ctr_b, cvr=cvr_b
         )
+        res_b['analysis']['predicted_ctr'] = round(ctr_b, 6)
+        res_b['analysis']['predicted_cvr'] = round(cvr_b, 6)
+        res_b['analysis']['confidence_score'] = 0.7
+        res_b['cohort_size'] = cohort_b_size
 
-        # 2. Comparison and Winner Selection based on objective
         val_a = res_a.get(objective, 0)
         val_b = res_b.get(objective, 0)
 
-        # Calculate rates if requested
         if objective == 'conversion_rate':
-            val_a = res_a['conversions'] / self.num_agents
-            val_b = res_b['conversions'] / self.num_agents
+            val_a = res_a['conversions'] / cohort_a_size
+            val_b = res_b['conversions'] / cohort_b_size
         elif objective == 'engagement':
-            val_a = (res_a['likes'] + res_a['shares']) / self.num_agents
-            val_b = (res_b['likes'] + res_b['shares']) / self.num_agents
+            val_a = (res_a['likes'] + res_a['shares']) / cohort_a_size
+            val_b = (res_b['likes'] + res_b['shares']) / cohort_b_size
 
         winner = 'A' if val_a >= val_b else 'B'
 
-        # Calculate lift percentage safely
         lift = 0.0
         loser_val = min(val_a, val_b)
         if loser_val > 0:
             lift = (abs(val_a - val_b) / loser_val) * 100
         elif max(val_a, val_b) > 0:
-            lift = 100.0 # From 0 to something is 100% lift or infinity, we use 100 as cap
+            lift = 100.0
+
+        if progress_callback:
+            progress_callback(1.0, "Analysis complete")
 
         return {
             'ad_a': res_a,
