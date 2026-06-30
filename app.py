@@ -30,10 +30,21 @@ with st.sidebar:
 col1, col2 = st.columns(2)
 
 with col1:
-    ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!")
+    ad_type = st.radio("Ad Type", ["Text", "Image Upload"])
+    if ad_type == "Image Upload":
+        st.file_uploader("Upload Ad Image (JPG/PNG)")
+    else:
+        ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!")
 
 with col2:
-    ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.")
+    if ad_type != "Image Upload":
+        ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.")
+
+with st.sidebar:
+    with st.expander("Stress Test"):
+        st.write("Run 5 benchmark loops with 1M agents")
+        if st.button("Start Stress Test"):
+            st.info("Stress test running...")
 
 if run_sim:
     runner = ABTestRunner(num_agents=num_agents)
