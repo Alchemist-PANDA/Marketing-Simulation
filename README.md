@@ -1,17 +1,27 @@
-# Marketing Simulation Engine (8/10 Edition)
+# Marketing Simulation Engine (DTC E-Commerce Edition)
 
-A high-fidelity digital wind tunnel for marketing ads. This simulation uses behavioral economics and psychographic modeling to predict how real-world audiences will react to your ad creative.
+A digital wind tunnel for Direct-to-Consumer (DTC) E-Commerce ads. This engine **simulates behavioral responses based on OCEAN personality and Prospect Theory** to help you validate creatives before spending real ad budget.
 
 ## 🚀 Target Outcomes
-- **Save Budget**: Validate ad variants for $0 before spending thousands on real platforms.
-- **Predict Engagement**: Estimate Likes, Shares, and Conversions based on Big Five personality traits.
-- **Identify Winners**: Use the built-in A/B test runner to statistically determine which ad performs best.
+- **Save Budget**: Validate ad variants for $0 before spending on real platforms.
+- **Estimate Engagement**: Simulate engagement signals (Likes, Shares, and Conversions) based on Big Five personality traits.
+- **Identify Winners**: Use the built-in A/B test runner to statistically determine which ad creative performs best in the simulation.
 
 ## 🧠 Core Architecture
-- **Layer 1: Psychographic Agents**: 500+ agents with Big Five (OCEAN) traits.
-- **Layer 2: Decision Brain**: Driven by **Prospect Theory** (Loss Aversion) and **Emotional Response** models.
-- **Layer 3: Engagement Engine**: Predicts social signals (Likes/Shares) and Word-of-Mouth potential.
+- **Layer 1: Psychographic Agents**: 500+ agents generated with Big Five (OCEAN) traits.
+- **Layer 2: Decision Brain**: Uses **Prospect Theory** (Kahneman & Tversky, 2002) as a behavioral foundation for loss aversion and emotional response modeling.
+- **Layer 3: Engagement Engine**: Predicts social signals and word-of-mouth potential.
 - **Layer 4: Analysis**: Zero-API-cost Python math engine for instant, deterministic results.
+
+## 🔬 Validation Status
+- **Current**: *Directionally accurate in internal simulations – real-world validation in progress.*
+- **Next**: Extensive real-world validation pipeline against historical DTC e-commerce ad performance data.
+- **Timeline**: Q3 2026.
+
+## ⚠️ Known Limitations
+- **Not validated against real ad performance data** yet.
+- Uses **synthetic agents**, not actual consumer models trained on private consumer data.
+- Results are **directional indicators**, not absolute predictions of exact CTR/CVR.
 
 ## 🛠️ Quick Start
 
@@ -36,8 +46,35 @@ python -m pytest tests/
 - [x] **Hardened Base**: Cleaned repo, unified agent models.
 - [x] **Psychology Engine**: Prospect Theory and Big Five integration.
 - [x] **A/B Test CLI**: Ready-to-use tool for creative comparison.
+- [x] **API Integration**: REST API with webhooks and API Key auth.
 - [ ] **Real-world Calibration**: Fine-tuning weights against Meta/TikTok ad spend data.
-- [ ] **Ad Embeddings**: Vectorizing ad copy for semantic relevance matching.
+
+## 🔌 API Documentation
+
+The Marketing Simulation Engine provides a robust REST API for integrating into your existing workflow (Figma, Zapier, Chrome Extensions).
+
+### Start the API Server
+```bash
+python api.py
+```
+
+### 1. Predict Ad Performance (`/predict`)
+```bash
+curl -X POST "http://localhost:8000/predict" \
+     -H "X-API-Key: sk-demo-key-12345" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "Get 50% off your first order today!", "price": 49.99, "channel": "facebook"}'
+```
+
+### 2. Validate Against Real Data (`/validate`)
+```bash
+curl -X POST "http://localhost:8000/validate" \
+     -H "X-API-Key: sk-demo-key-12345" \
+     -H "Content-Type: application/json" \
+     -d '{"csv_path": "/absolute/path/to/historical_ads.csv"}'
+```
+
+*Note: Add `"webhook_url": "https://your-server.com/webhook"` to any payload to run the simulation asynchronously.*
 
 ---
-*Built with science. Calibrated for performance. $0 API cost.*
+*Built with science. Designed for directional insights. $0 API cost.*

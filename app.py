@@ -24,6 +24,7 @@ This simulation uses **Big Five Personality Traits** and **Prospect Theory** to 
 
 with st.sidebar:
     st.header("Simulation Settings")
+    multi_ad_mode = st.toggle("🧪 Multi-Ad Experimentation Mode", value=False)
     
     try:
         import psutil
@@ -36,8 +37,63 @@ with st.sidebar:
 
     num_agents = st.slider("Number of Agents", 100, max_agents, 100_000)
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
+    
+    st.subheader("DTC Offer Settings")
+    price = st.slider("Product Price ($)", 5.0, 500.0, 49.99)
+    offer_type = st.selectbox("Offer Type", ["None", "Discount (%)", "Free Shipping", "BOGO", "Bundle"])
+    customer_segment = st.selectbox("Target Segment", ["General Broad", "Budget-Conscious", "Premium/Luxury", "Early Adopters"])
+    
+    st.subheader("Engine Options")
     use_ai = st.checkbox("✨ Enable AI Insights (beta)", value=False)
-    run_sim = st.button("Run Simulation")
+    if not multi_ad_mode:
+        run_sim = st.button("Run Simulation")
+
+if multi_ad_mode:
+    st.header("🧪 Multi-Ad Experimentation")
+    st.write("Upload a CSV or paste multiple ads to simulate them concurrently.")
+    
+    multi_ad_input = st.radio("Input Method", ["Paste Text", "Upload CSV"], horizontal=True)
+    ads_data = []
+    
+    if multi_ad_input == "Paste Text":
+        pasted = st.text_area("Paste ads (one per line)")
+        if pasted:
+            for i, line in enumerate(pasted.split('\n')):
+                if line.strip():
+                    ads_data.append({"name": f"Ad {i+1}", "text": line.strip()})
+    else:
+        st.caption("CSV should contain columns: `ad_text`, and optionally `ad_name`")
+        multi_file = st.file_uploader("Upload Ads CSV", type=["csv"], key="multi_ad")
+        if multi_file:
+            df_multi = pd.read_csv(multi_file)
+            if 'ad_text' in df_multi.columns:
+                for i, row in df_multi.iterrows():
+                    name = row['ad_name'] if 'ad_name' in df_multi.columns else f"Ad {i+1}"
+                    ads_data.append({"name": name, "text": row['ad_text']})
+            else:
+                st.error("CSV must contain 'ad_text' column.")
+                
+    if st.button("Run Multi-Ad Simulation") and ads_data:
+        from src.simulation.multi_ad_runner import MultiAdRunner
+        runner = MultiAdRunner(num_agents=num_agents)
+        with st.spinner("Simulating multiple ads..."):
+            multi_result = runner.run_multi_test(ads_data, channel=channel, benchmarks=benchmarks)
+            
+        st.success(f"Simulation Complete! Winner: **{multi_result['winner']['ad_name']}**")
+        
+        # Leaderboard
+        st.subheader("🏆 Leaderboard")
+        df_lead = pd.DataFrame(multi_result['ranked_results'])
+        display_df = df_lead[['ad_name', 'conversion_rate', 'engagement_rate', 'ad_text']].copy()
+        display_df['conversion_rate'] = display_df['conversion_rate'].round(2).astype(str) + "%"
+        display_df['engagement_rate'] = display_df['engagement_rate'].round(2).astype(str) + "%"
+        st.dataframe(display_df, use_container_width=True)
+        
+        # Bar Chart
+        fig = px.bar(df_lead, x='ad_name', y='conversion_rate', title="Conversion Rates by Ad", color='ad_name')
+        st.plotly_chart(fig, use_container_width=True)
+        
+    st.stop()
 
 ad_type = st.radio("Ad Type", ["Text", "Image Upload"], horizontal=True)
 
@@ -69,6 +125,40 @@ with st.sidebar:
         st.write("Run 5 benchmark loops with 1M agents")
         if st.button("Start Stress Test"):
             st.info("Stress test running...")
+            
+    st.divider()
+    st.header("✅ Validate Against Your Data")
+    st.caption("Upload a CSV with `test_id`, `ad_id`, `ad_text`, `conversions`, `impressions`")
+    val_file = st.file_uploader("Upload Historical Data (CSV)", type=["csv"])
+    run_validation = False
+    if val_file:
+         run_validation = st.button("Run Validation Report")
+
+if run_validation and val_file:
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+        tmp.write(val_file.getvalue())
+        tmp_path = tmp.name
+    
+    from scripts.validate_with_real_data import validate_data
+    with st.spinner("Validating simulation against real data..."):
+        report = validate_data(tmp_path, output_dir="outputs")
+    
+    st.header("✅ Real-World Validation Report")
+    if report:
+        st.metric("Directional Accuracy", f"{report.get('directional_accuracy', 0):.2f}%")
+        st.write(f"**Total A/B Tests Analyzed:** {report['total_tests']}")
+        
+        st.subheader("Test Breakdown")
+        for test in report['tests']:
+            with st.expander(f"Test {test['test_id']} - Match: {'✅ YES' if test['match'] else '❌ NO'}"):
+                st.write(f"**Actual Winner:** Ad {test['actual_winner']} | **Predicted Winner:** Ad {test['predicted_winner']}")
+                st.text(f"Ad A: {test['ad_a_text']}")
+                st.text(f"Ad B: {test['ad_b_text']}")
+    else:
+        st.error("Validation failed. Please ensure your CSV has the required columns.")
+    st.stop()
 
 if run_sim:
     if ad_type == "Image Upload":
@@ -88,7 +178,7 @@ if run_sim:
 
     with st.spinner("Simulating audience reaction..."):
         try:
-            result = runner.run_test(ad1_text, ad2_text, channel=channel, benchmarks=benchmarks)
+            result = runner.run_test(ad1_text, ad2_text, channel=channel, price=price, benchmarks=benchmarks)
         except Exception as e:
             st.error(f"Simulation failed: {e}")
             st.stop()
@@ -189,7 +279,31 @@ if run_sim:
     if use_ai and ai_insights:
         with st.expander("✨ AI-Powered Insights (beta)", expanded=True):
             st.markdown(ai_insights)
+            
+    st.divider()
+    st.subheader("⚡ Generate Improved Ad Variants")
+    st.write("Turn diagnosis into treatment. Use AI to automatically rewrite your ads fixing identified weaknesses.")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("Generate 3 variants for Ad A"):
+            from src.recommendation.engine import generate_ad_variants
+            ad_a_br = reasoning.get('ad_a_breakdown', {})
+            with st.spinner("Generating variants..."):
+                variants = generate_ad_variants(ad1_text, ad_a_br.get('strengths', []), ad_a_br.get('weaknesses', []))
+            for i, v in enumerate(variants):
+                st.success(f"**Variant {i+1}** (Expected {v.get('predicted_lift', 'N/A')})\n\n**{v.get('new_text', '')}**\n\n*Why: {v.get('explanation', '')}*")
+                
+    with col_b:
+        if st.button("Generate 3 variants for Ad B"):
+            from src.recommendation.engine import generate_ad_variants
+            ad_b_br = reasoning.get('ad_b_breakdown', {})
+            with st.spinner("Generating variants..."):
+                variants = generate_ad_variants(ad2_text, ad_b_br.get('strengths', []), ad_b_br.get('weaknesses', []))
+            for i, v in enumerate(variants):
+                st.success(f"**Variant {i+1}** (Expected {v.get('predicted_lift', 'N/A')})\n\n**{v.get('new_text', '')}**\n\n*Why: {v.get('explanation', '')}*")
 
+    st.divider()
     # Existing bar chart
     df = pd.DataFrame({
         "Ad": ["Ad A", "Ad B", "Ad A", "Ad B"],

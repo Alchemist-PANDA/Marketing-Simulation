@@ -1,124 +1,124 @@
 import sys
 import os
-from typing import List, Dict, Any
-from fastapi import FastAPI, HTTPException
+import httpx
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, HTTPException, Security, BackgroundTasks, Depends
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 from src.ad_processing.ad import Ad
-from src.simulation.max_engine import MaxSimulation
+from src.simulation.max_engine import MaxSimulation, generate_reasoning
 from src.simulation.calibrator import Calibrator
 from src.simulation.failure_analysis import analyze_failure
+from scripts.validate_with_real_data import validate_data
 
 app = FastAPI(
-    title="Marketing Simulation API",
-    description="Digital Wind Tunnel API: Predict ad performance using psychographic agent simulation."
+    title="Marketing Simulation Engine API",
+    description="Digital Wind Tunnel API for DTC E-Commerce: Validate ads before you spend.",
+    version="2.0.0"
 )
 
-# --- Persistence (In-Memory for this version) ---
+API_KEY = os.environ.get("MARKETING_SIM_API_KEY", "sk-demo-key-12345")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    raise HTTPException(status_code=403, detail="Could not validate API key")
+
+# --- Persistence ---
 DEFAULT_HISTORICAL = [
     {"predicted_ctr": 0.05, "actual_ctr": 0.04, "predicted_cvr": 0.10, "actual_cvr": 0.08},
     {"predicted_ctr": 0.08, "actual_ctr": 0.07, "predicted_cvr": 0.12, "actual_cvr": 0.10},
-    {"predicted_ctr": 0.03, "actual_ctr": 0.03, "predicted_cvr": 0.09, "actual_cvr": 0.09},
-    {"predicted_ctr": 0.10, "actual_ctr": 0.09, "predicted_cvr": 0.15, "actual_cvr": 0.13},
 ]
-
 _calibrator = Calibrator(reference_n=10)
 _calibrator.fit(DEFAULT_HISTORICAL)
 
 # --- Models ---
-
 class AdRequest(BaseModel):
     text: str = Field(..., description="Ad creative text")
-    price: float = Field(default=20.0, ge=0, description="Product price")
-    category: str = Field(default="general", description="Product category")
-    social_proof: float = Field(default=2.5, ge=0, le=5, description="Social proof rating (0-5)")
-    urgency: float = Field(default=2.5, ge=0, le=5, description="Urgency/Scarcity level (0-5)")
+    price: float = Field(default=49.99, description="Product price")
+    category: str = Field(default="ecommerce", description="Product category")
     channel: str = Field(default="facebook", description="Marketing channel")
-    agents: int = Field(default=1000, ge=100, le=10000, description="Number of agents to simulate")
+    agents: int = Field(default=1000, description="Number of psychographic agents")
+    webhook_url: Optional[str] = Field(None, description="URL to ping upon completion")
 
-class SimulateResponse(BaseModel):
-    predicted_ctr: float
-    predicted_cvr: float
-    confidence_score: float
-    raw_metrics: Dict[str, int]
-    failure_reasons: List[str]
+class ValidationRequest(BaseModel):
+    csv_path: str = Field(..., description="Absolute path to CSV file on server or accessible URL.")
+    webhook_url: Optional[str] = None
 
-class CalibrationRecord(BaseModel):
-    predicted_ctr: float
-    actual_ctr: float
-    predicted_cvr: float
-    actual_cvr: float
+# --- Webhooks ---
+async def send_webhook(url: str, payload: dict):
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(url, json=payload, timeout=10.0)
+    except Exception as e:
+        print(f"Webhook failed: {e}")
 
 # --- Endpoints ---
 
-@app.post("/simulate", response_model=SimulateResponse)
-async def simulate(request: AdRequest):
+@app.post("/predict", tags=["Simulation"])
+async def predict(request: AdRequest, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    """Predicts ad performance and generates deterministic reasoning."""
     try:
-        # 1. Initialize Ad and Simulation
-        ad = Ad(
-            text=request.text,
-            channel=request.channel,
-            creative_type='text',
-            price=request.price,
-            category=request.category,
-            social_proof=request.social_proof,
-            urgency=request.urgency
-        )
-
+        ad = Ad(text=request.text, channel=request.channel, creative_type='text', price=request.price)
         sim = MaxSimulation(num_agents=request.agents)
-
-        # 2. Run Simulation
         results = sim.simulate_exposure(ad)
 
-        # 3. Calculate Raw Metrics
-        # CTR = Likes / Total Agents (as proxy for clicks in this simulation context)
         raw_ctr = results['likes'] / request.agents
-        # CVR = Conversions / Likes (Conversion conditional on interest)
         raw_cvr = results['conversions'] / max(1, results['likes'])
-
-        # 4. Apply Calibration
         adj_ctr, adj_cvr, confidence = _calibrator.calibrate(raw_ctr, raw_cvr)
+        
+        # We need two ads for generate_reasoning gap analysis. Let's create a baseline ad.
+        baseline_ad = Ad(text="Buy our product.", channel=request.channel, creative_type='text', price=request.price)
+        baseline_res = sim.simulate_exposure(baseline_ad)
+        
+        reasoning = generate_reasoning(results, baseline_res)
 
-        # 5. Forensic Failure Analysis
-        analysis = analyze_failure(
-            ad.price_score, ad.trust_score, ad.urgency_score,
-            ctr=raw_ctr, cvr=raw_cvr
-        )
-
-        return SimulateResponse(
-            predicted_ctr=round(adj_ctr, 6),
-            predicted_cvr=round(adj_cvr, 6),
-            confidence_score=round(confidence, 4),
-            raw_metrics={
+        response_payload = {
+            "predicted_ctr": round(adj_ctr, 6),
+            "predicted_cvr": round(adj_cvr, 6),
+            "confidence_score": round(confidence, 4),
+            "raw_metrics": {
                 "likes": results['likes'],
                 "conversions": results['conversions'],
                 "shares": results['shares']
             },
-            failure_reasons=analysis['failure_reasons']
-        )
+            "reasoning": reasoning
+        }
+        
+        if request.webhook_url:
+            background_tasks.add_task(send_webhook, request.webhook_url, response_payload)
+            return {"status": "processing", "message": f"Results will be sent to {request.webhook_url}"}
+
+        return response_payload
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/calibrate")
-async def add_calibration_data(record: CalibrationRecord):
-    """Add a new historical record and update the calibrator."""
-    global DEFAULT_HISTORICAL, _calibrator
-    DEFAULT_HISTORICAL.append(record.dict())
-    _calibrator.fit(DEFAULT_HISTORICAL)
-    return {
-        "status": "calibrator updated",
-        "num_samples": _calibrator.num_samples,
-        "ctr_factor": round(_calibrator.ctr_factor, 4),
-        "cvr_factor": round(_calibrator.cvr_factor, 4)
-    }
+@app.post("/validate", tags=["Validation"])
+async def run_validation(request: ValidationRequest, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    """Runs the real-world validation pipeline against a provided dataset."""
+    try:
+        if not os.path.exists(request.csv_path):
+            raise HTTPException(status_code=400, detail="CSV file not found.")
+            
+        report = validate_data(request.csv_path, output_dir="outputs")
+        
+        if request.webhook_url:
+            background_tasks.add_task(send_webhook, request.webhook_url, report)
+            return {"status": "processing", "message": f"Validation report will be sent to {request.webhook_url}"}
+            
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/health")
+@app.get("/health", tags=["System"])
 async def health():
-    return {"status": "healthy", "version": "1.0.0"}
+    return {"status": "healthy", "version": "2.0.0"}
 
 if __name__ == "__main__":
     import uvicorn
