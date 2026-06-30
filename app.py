@@ -3,6 +3,16 @@ import pandas as pd
 import plotly.express as px
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ad_processing.neural_scorer import predict_scores
+from src.utils.ai_reasoning import get_ai_insights
+
+@st.cache_data
+def get_benchmarks():
+    return {
+        "industry_avg_conversion": 2.5,
+        "industry_avg_engagement": 18.0,
+        "seasonality_factor": "June is peak for e-commerce"
+    }
+benchmarks = get_benchmarks()
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
@@ -26,6 +36,7 @@ with st.sidebar:
 
     num_agents = st.slider("Number of Agents", 100, max_agents, 100_000)
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
+    use_ai = st.checkbox("✨ Enable AI Insights (beta)", value=False)
     run_sim = st.button("Run Simulation")
 
 ad_type = st.radio("Ad Type", ["Text", "Image Upload"], horizontal=True)
@@ -77,17 +88,15 @@ if run_sim:
 
     with st.spinner("Simulating audience reaction..."):
         try:
-            ad_a_scores = predict_scores(ad1_text)
-            ad_b_scores = predict_scores(ad2_text)
-            
-            if not ad_a_scores or not ad_b_scores:
-                st.error("Failed to generate valid scores for the ads.")
-                st.stop()
-                
-            result = runner.run_test(ad_a_scores, ad_b_scores)
+            result = runner.run_test(ad1_text, ad2_text, channel=channel, benchmarks=benchmarks)
         except Exception as e:
             st.error(f"Simulation failed: {e}")
             st.stop()
+            
+    ai_insights = None
+    if use_ai:
+        with st.spinner("✨ AI is generating insights..."):
+            ai_insights = get_ai_insights(result, ad1_text, ad2_text, benchmarks=benchmarks)
 
     st.success(f"Simulation Complete! Winner: **Ad {result['winner']}**")
 
@@ -145,14 +154,41 @@ if run_sim:
         st.dataframe(price_df, use_container_width=True)
 
     # Section 5: Actionable Recommendations
-    st.subheader("💡 Actionable Recommendations")
-    for rec in result['ad_a'].get('recommendations', []):
-        if rec['priority'] == 'high':
-            st.error(f"🔴 **{rec['category'].title()}:** {rec['message']}")
-        elif rec['priority'] == 'medium':
-            st.warning(f"🟡 **{rec['category'].title()}:** {rec['message']}")
-        else:
-            st.info(f"🔵 **{rec['category'].title()}:** {rec['message']}")
+    st.subheader("🧠 Marketing Intelligence Report")
+    
+    reasoning = result.get('reasoning', {})
+    if reasoning:
+        st.info(reasoning.get('overall_summary', 'No summary available.'))
+        
+        st.markdown("### 🔑 Key Drivers")
+        for driver in reasoning.get('key_drivers', []):
+            st.markdown(f"- {driver}")
+            
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("#### Ad A Breakdown")
+            ad_a_br = reasoning.get('ad_a_breakdown', {})
+            st.markdown("**Strengths:** " + ", ".join(ad_a_br.get('strengths', [])))
+            st.markdown("**Weaknesses:** " + ", ".join(ad_a_br.get('weaknesses', [])))
+            st.caption(ad_a_br.get('personality_insight', ''))
+        with c2:
+            st.markdown("#### Ad B Breakdown")
+            ad_b_br = reasoning.get('ad_b_breakdown', {})
+            st.markdown("**Strengths:** " + ", ".join(ad_b_br.get('strengths', [])))
+            st.markdown("**Weaknesses:** " + ", ".join(ad_b_br.get('weaknesses', [])))
+            st.caption(ad_b_br.get('personality_insight', ''))
+            
+        st.markdown("### 📋 Actionable Recommendations")
+        for rec in reasoning.get('actionable_recommendations', []):
+            icon = "🔴" if rec['priority'] == 'high' else ("🟡" if rec['priority'] == 'medium' else "🔵")
+            st.markdown(f"{icon} **Ad {rec['ad']} ({rec['category'].title()}):** {rec['message']}")
+            
+        st.markdown("### 📊 Market Context")
+        st.write(reasoning.get('benchmark_comparison', ''))
+        
+    if use_ai and ai_insights:
+        with st.expander("✨ AI-Powered Insights (beta)", expanded=True):
+            st.markdown(ai_insights)
 
     # Existing bar chart
     df = pd.DataFrame({
