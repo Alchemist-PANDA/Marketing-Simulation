@@ -63,6 +63,20 @@ class SupabaseManager:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+    def update(self, table: str, filters: dict, data: dict) -> dict:
+        """Update data in a Supabase table."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": f"Persistence disabled."}
+        try:
+            q = client.table(table).update(data)
+            for k, v in filters.items():
+                q = q.eq(k, v)
+            response = q.execute()
+            return {"status": "success", "data": response.data}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
     def select(self, table: str, query: str = "*", filters: Dict[str, Any] = None) -> Dict[str, Any]:
         """Select data from a Supabase table, or return disabled status."""
         client = self._get_client()

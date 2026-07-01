@@ -34,6 +34,26 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
         print(f"Error reading CSV: {e}")
         return None
         
+    # Fix column shift bug for rows where campaign_id contains a dash (age strings)
+    mask = df['campaign_id'].astype(str).str.contains('-', na=False)
+    if mask.any():
+        print(f"Found {mask.sum()} rows with column shift bug. Fixing data alignment...")
+        shifted = df[mask].copy()
+        
+        shifted['approved_conversion'] = shifted['spent']
+        shifted['total_conversion'] = shifted['clicks']
+        shifted['spent'] = shifted['impressions']
+        shifted['clicks'] = shifted['interest3']
+        shifted['impressions'] = shifted['interest2']
+        shifted['interest3'] = shifted['interest1']
+        shifted['interest2'] = shifted['gender']
+        shifted['interest1'] = shifted['age']
+        shifted['gender'] = shifted['fb_campaign_id']
+        shifted['age'] = shifted['campaign_id']
+        shifted['fb_campaign_id'] = pd.NA
+        shifted['campaign_id'] = pd.NA
+        
+        df.update(shifted)
     if 'ad_text' not in df.columns:
         if ad_text_fallback_method == 'csv' and mapping_csv_path and identifier_col:
             try:
@@ -126,11 +146,11 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
             
             report['tests'].append({
                 "test_id": str(test_id),
-                "actual_winner": actual_winner,
-                "predicted_winner": predicted_winner,
+                "actual_winner": str(actual_winner),
+                "predicted_winner": str(predicted_winner),
                 "match": match,
-                "ad_a_text": group.iloc[0]['ad_text'],
-                "ad_b_text": group.iloc[1]['ad_text'] if len(group) > 1 else ""
+                "ad_a_text": str(group.iloc[0]['ad_text']),
+                "ad_b_text": str(group.iloc[1]['ad_text']) if len(group) > 1 else ""
             })
             
             report['total_tests'] += 1
@@ -165,6 +185,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate simulation engine against real-world data.")
     parser.add_argument("--csv", required=True, help="Path to CSV file with historical ad data.")
     parser.add_argument("--out", default="outputs", help="Output directory for reports.")
+    parser.add_argument("--fallback", default="placeholder", help="Fallback method for ad text.")
     args = parser.parse_args()
     
-    validate_data(args.csv, args.out)
+    validate_data(args.csv, args.out, ad_text_fallback_method=args.fallback, ad_text_placeholder="Facebook Ad")

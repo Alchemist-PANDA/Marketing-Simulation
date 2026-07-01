@@ -6,7 +6,7 @@ import os
 
 st.set_page_config(page_title="Validation Results", page_icon="📊", layout="wide")
 
-st.title("📊 Validation Results: The 92.4% Benchmark")
+st.title("📊 Validation Results: The 52.50% Baseline")
 
 st.markdown("""
 We put our **Marketing Simulation Engine** to the ultimate test against historical, real-world Facebook Ads data.
@@ -16,7 +16,7 @@ The goal? Predict which ad variation drove the highest actual Conversion Rate be
 st.divider()
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Directional Accuracy", "92.4%", "+24.4% vs Baseline")
+col1.metric("Directional Accuracy", "52.50%", "+2.50% vs Baseline")
 col2.metric("Total Campaigns", "7", "Across diverse niches")
 col3.metric("Ad Variations Tested", "1,143", "")
 col4.metric("Real Ad Spend Validated", "$20,114", "78.5M Impressions")
@@ -28,7 +28,7 @@ st.header("Confidence vs. Random Chance")
 # Gauge chart for accuracy
 fig = go.Figure(go.Indicator(
     mode = "gauge+number+delta",
-    value = 92.4,
+    value = 52.50,
     domain = {'x': [0, 1], 'y': [0, 1]},
     title = {'text': "Prediction Accuracy (%)", 'font': {'size': 24}},
     delta = {'reference': 50, 'increasing': {'color': "green"}},
@@ -45,13 +45,13 @@ fig = go.Figure(go.Indicator(
         'threshold': {
             'line': {'color': "red", 'width': 4},
             'thickness': 0.75,
-            'value': 92.4}
+            'value': 52.50}
     }
 ))
 fig.update_layout(height=400)
 st.plotly_chart(fig, use_container_width=True)
 
-st.write("**Red line:** Our 92.4% Accuracy. **Delta (+42.4):** Performance vs 50% random chance A/B test.")
+st.write("**Red line:** Our 52.50% Accuracy. **Delta (+2.50):** Performance vs 50% random chance A/B test.")
 
 st.divider()
 
@@ -82,4 +82,4 @@ with col_dl1:
 
 with col_dl2:
     # Just a placeholder for the technical report
-    st.download_button("📥 Download Technical Validation Report", "# Technical Report\nAccuracy: 92.4%", file_name="Technical_Report.md", mime="text/markdown")
+    st.download_button("📥 Download Technical Validation Report", "# Technical Report\nAccuracy: 52.50%", file_name="Technical_Report.md", mime="text/markdown")

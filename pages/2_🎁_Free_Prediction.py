@@ -6,7 +6,7 @@ st.set_page_config(page_title="Free Ad Prediction", page_icon="🎁", layout="ce
 
 st.title("🎁 Will Your Ad Win? Get a Free Prediction.")
 st.markdown("""
-Don't waste money testing losing creatives. Our AI has a **92.4% accuracy rate** predicting Facebook Ad winners.
+Don't waste money testing losing creatives. Our AI has a **52.50% accuracy rate** predicting Facebook Ad winners.
 Upload your ad below and see how it scores!
 """)
 

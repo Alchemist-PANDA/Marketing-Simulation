@@ -1,4 +1,4 @@
-# How We Achieved 92.4% Accuracy in Predicting Facebook Ad Winners – Before Spending a Dollar
+# How We Achieved 52.50% Accuracy in Predicting Facebook Ad Winners
 
 ## The Problem: Wasted Spend on Creative Testing
 If you're a marketer, agency owner, or DTC brand founder, you know the pain of creative testing. You launch 5 variations of an ad. Three days later, you've burned thousands of dollars just to find out that 4 of them were losers. 
@@ -19,15 +19,15 @@ We didn't just build this in a lab—we put it to the ultimate test. We took a m
 
 We fed these ads into our simulator, completely blind to the actual results. The engine had to predict which ad variation drove the highest conversion rate in the real world for each audience segment.
 
-## The Result: 92.4% Directional Accuracy
-Against this rigorous real-world benchmark, our simulator correctly predicted the winning ad in **92 out of 100 A/B tests**. 
+## The Result: 52.50% Directional Accuracy
+Against this rigorous real-world benchmark, our simulator correctly predicted the winning ad in **42 out of 80 A/B tests**. 
 
-That is **92.4% accuracy**.
+That is **52.50% accuracy**.
 
 By combining psychographic text analysis with state-of-the-art visual image scoring (AI that "sees" how premium, trustworthy, or exciting an image is), the platform proved that consumer behavior can be accurately predicted before a campaign goes live.
 
 ## What This Means for You
-Achieving 90%+ accuracy in a zero-spend environment completely changes the economics of digital marketing. By running your ads through our simulator first, you can:
+Achieving 52.50% accuracy means we are currently marginally better than a coin toss. By running your ads through our simulator first, you can:
 1. **Prune the Losers:** Filter out the bottom 50% of creatives before they ever touch your ad account.
 2. **Focus Spend:** Allocate your testing budget *only* to variations the engine flags as high-potential winners.
 3. **Launch Faster:** Stop waiting days for statistical significance in Facebook Ads Manager. Get instant feedback on what works and why.

@@ -17,11 +17,11 @@ A digital wind tunnel for Direct-to-Consumer (DTC) E-Commerce ads. This engine *
 
 We validated our simulation against **$20,000+ of real Facebook ad spend**:
 
-- **Directional Accuracy:** 92.4%
-- **Total Campaigns:** 7
+- **Directional Accuracy:** 52.50% (Baseline before recalibration)
+- **Total Valid Tests:** 80
 - **Total Ads Tested:** 1,143
 - **Total Impressions:** 78.5M
-- **Methodology:** A/B tests grouped by identical audience targeting (age, gender, interests), simulated winners compared to real winners.
+- **Methodology:** A/B tests strictly grouped by identical audience targeting (age, gender, interests) after parsing fixes. Simulated winners compared to real winners.
 
 **[Read the Full Case Study →](./docs/case_study_marketing.md)**
 
