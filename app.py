@@ -18,8 +18,24 @@ st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
 # Check if user is logged in
 if "user" not in st.session_state or st.session_state.user is None:
-    st.switch_page("pages/0_🔐_Login.py")
+    st.switch_page("pages/_Login.py")
     st.stop()
+
+# --- Custom Sidebar Navigation (only when logged in) ---
+with st.sidebar:
+    st.title("🌀 Digital Wind Tunnel")
+    st.page_link("app.py", label="Dashboard", icon="📊")
+    st.page_link("pages/1_📊_Validation_Results.py", label="Validation Results", icon="📊")
+    st.page_link("pages/2_🎁_Free_Prediction.py", label="Free Prediction", icon="🎁")
+    st.page_link("pages/API_Keys.py", label="API Keys", icon="🔑")
+    
+    st.divider()
+    if st.button("Logout"):
+        # Clear session and redirect to login
+        st.session_state.user = None
+        st.switch_page("pages/_Login.py")
+        st.rerun()
+
 
 st.title("🚀 Marketing Simulation: Digital Wind Tunnel")
 st.markdown("""

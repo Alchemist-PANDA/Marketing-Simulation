@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 st.set_page_config(
-    page_title="Digital Wind Tunnel",
+    page_title="Digital Wind Tunnel – Login",
     page_icon="🌀",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -20,8 +20,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3D Background (Three.js)
-three_js_code = """
+# 3D Background (Three.js) using st.html (replaces deprecated st.components.v1.html)
+three_js_html = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
     #login-canvas {
@@ -190,7 +190,6 @@ three_js_code = """
     }
     animate();
 
-    // --- Resize ---
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -199,7 +198,8 @@ three_js_code = """
 </script>
 """
 
-st.html(three_js_code, unsafe_allow_javascript=True)
+# Use st.html instead of deprecated st.components.v1.html and st.iframe (which causes TypeError)
+st.html(three_js_html, unsafe_allow_javascript=True)
 
 # --- Login Form (Glassmorphism Card) ---
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -207,8 +207,13 @@ st.markdown('<div class="glass-card">', unsafe_allow_html=True)
 st.markdown('<h1>🌀 Digital Wind Tunnel</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">Predict ad performance before spending a dollar.</p>', unsafe_allow_html=True)
 
-from src.core.supabase_client import sign_in
-from src.core.auth_utils import set_user_session
+# Import Supabase auth functions (adjust according to your actual import)
+try:
+    from src.core.supabase_client import sign_in
+    from src.core.auth_utils import set_user_session
+except ImportError:
+    st.error("Authentication modules not found. Please check your imports.")
+    st.stop()
 
 with st.form("login_form", clear_on_submit=False):
     email = st.text_input("Email", placeholder="you@company.com")
@@ -224,14 +229,14 @@ if submitted:
             if result.get("status") == "success":
                 set_user_session(result["user"])
                 st.success("✅ Login successful! Redirecting...")
-                st.switch_page("app.py")
+                st.switch_page("app.py")  # Redirect to dashboard
             else:
                 st.error(f"❌ {result.get('message', 'Login failed.')}")
 
 st.markdown("""
 <div class="links">
-    <a href="/Register">Create Account</a>
-    <a href="/ResetPassword">Forgot Password?</a>
+    <a href="/_Register">Create Account</a>
+    <a href="/_ResetPassword">Forgot Password?</a>
 </div>
 """, unsafe_allow_html=True)
 
