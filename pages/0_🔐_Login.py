@@ -199,7 +199,7 @@ three_js_code = """
 </script>
 """
 
-st.iframe(srcDoc=three_js_code, height=0)
+st.html(three_js_code, unsafe_allow_javascript=True)
 
 # --- Login Form (Glassmorphism Card) ---
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
