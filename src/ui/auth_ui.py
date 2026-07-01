@@ -25,7 +25,7 @@ def require_auth():
     initialize_auth_session()
     if not st.session_state.get("user") or not st.session_state["user"].get("is_authenticated"):
         st.warning("Please log in to access this page.")
-        st.switch_page("pages/0_🔐_Login.py")
+        st.switch_page("pages/_Login.py")
 
 
 def require_role(allowed_roles: List[str]):
@@ -65,7 +65,7 @@ def render_auth_sidebar():
     else:
         st.sidebar.warning("🔴 Not Authenticated")
         if st.sidebar.button("Go to Login"):
-            st.switch_page("pages/0_🔐_Login.py")
+            st.switch_page("pages/_Login.py")
 
 
 def handle_logout():
@@ -78,5 +78,5 @@ def handle_logout():
 
     st.session_state["user"] = None
     st.session_state["access_token"] = None
-    st.switch_page("pages/0_🔐_Login.py")
+    st.switch_page("pages/_Login.py")
 

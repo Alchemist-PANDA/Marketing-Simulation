@@ -66,5 +66,5 @@ if submit:
 
 st.markdown('<div class="secondary-btn">', unsafe_allow_html=True)
 if st.button("Back to Login"):
-    st.switch_page("pages/0_🔐_Login.py")
+    st.switch_page("pages/_Login.py")
 st.markdown('</div>', unsafe_allow_html=True)
