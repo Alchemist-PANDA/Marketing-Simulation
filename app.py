@@ -16,8 +16,6 @@ benchmarks = get_benchmarks()
 
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
-from src.core.supabase_client import get_current_user
-
 # Check if user is logged in
 if "user" not in st.session_state or st.session_state.user is None:
     st.switch_page("pages/0_🔐_Login.py")
