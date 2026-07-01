@@ -23,10 +23,16 @@ To calculate Directional Accuracy, you must upload a historical CSV containing p
 
 ### Required Logical Columns (can be mapped from anything):
 - **Ad Name** (Optional, auto-generated if missing)
-- **Ad Text / Copy** (Strictly Required)
+- **Ad Text / Copy** (Strictly Required, but see Fallbacks below)
 - **Conversions / Sales** (Strictly Required)
 - **Impressions / Views** (Optional, defaults to 1000)
 - **Platform / Channel** (Optional, defaults to facebook)
+
+### Missing Ad Text Fallbacks
+If your CSV export lacks an `ad_text` column (common with some Facebook Ads Manager exports), the system provides three options when you map columns:
+1. **Upload Mapping CSV (Recommended):** Upload a secondary CSV containing an identifier (like `ad_id`) and the actual ad copy. The system will automatically merge this data before running the simulation.
+2. **Use Generic Placeholder:** Apply a default text string (e.g., "Facebook Ad") to all rows. Simulation will run, but results will be less accurate.
+3. **Skip Simulation:** Skip the AI simulation entirely. The system will still parse your CSV and display the real-world descriptive statistics and conversion rates for your ads.
 
 ## Why Directional Accuracy?
 

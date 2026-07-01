@@ -92,6 +92,21 @@ class MaxSimulation:
             dtype=np.float32
         )[self.population['archetype_idx']]
 
+        self.learned_weights = {
+            "trust_weight": 1.0,
+            "urgency_weight": 1.0,
+            "price_weight": 1.0,
+            "visual_weight": 0.4,
+            "text_weight": 0.6
+        }
+        weights_path = 'config/learned_weights.json'
+        if os.path.exists(weights_path):
+            try:
+                with open(weights_path, 'r') as f:
+                    self.learned_weights.update(json.load(f))
+            except Exception:
+                pass
+
     def simulate_exposure(self, ad: Ad, progress_callback=None) -> Dict[str, Any]:
         """Simulates one round of ad exposure to the entire population. Zero Python agent loops."""
         pop = self.population
@@ -106,15 +121,30 @@ class MaxSimulation:
             emotional_mod -= pop['neuroticism'] * 0.5
         if ad.creative_type in ('video', 'interactive'):
             emotional_mod += pop['openness'] * 0.4
+        # Get learned weights
+        tw = self.learned_weights['text_weight']
+        vw = self.learned_weights['visual_weight']
+        trust_w = self.learned_weights['trust_weight']
+        urgency_w = self.learned_weights['urgency_weight']
+        price_w = self.learned_weights['price_weight']
+
+        # Combine text and visual scores
+        combined_trust = tw * ad.trust_score + vw * ad.visual_scores.get('visual_trust', 0.5)
+        combined_urgency = tw * ad.urgency_score + vw * ad.visual_scores.get('visual_urgency', 0.5)
+        visual_premium = ad.visual_scores.get('visual_premium', 0.5)
+        visual_excitement = ad.visual_scores.get('visual_excitement', 0.5)
+
+        # Add visual excitement boost to emotional mod
+        emotional_mod += (visual_excitement - 0.5) * vw * 2.0
         np.clip(emotional_mod, -1.0, 1.0, out=emotional_mod)
 
         if progress_callback:
             progress_callback(0.2, "Emotional analysis complete")
 
         archetype_score = (
-            ad.price_score * pop['price_sensitivity']
-            + ad.trust_score * pop['trust_sensitivity']
-            + ad.urgency_score * pop['urgency_sensitivity']
+            (ad.price_score * price_w + visual_premium * vw) * pop['price_sensitivity']
+            + (combined_trust * trust_w) * pop['trust_sensitivity']
+            + (combined_urgency * urgency_w) * pop['urgency_sensitivity']
             - pop['skepticism']
         ).astype(np.float32)
 
@@ -123,7 +153,7 @@ class MaxSimulation:
         if progress_callback:
             progress_callback(0.4, "Utility calculation complete")
 
-        urgency_arr = np.full(n, ad.urgency_score, dtype=np.float32)
+        urgency_arr = np.full(n, combined_urgency, dtype=np.float32)
         if self.use_numba:
             prob_buy = _compute_probs_numba(emotional_mod, archetype_score, price_disutility, urgency_arr)
         else:

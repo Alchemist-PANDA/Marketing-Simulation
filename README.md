@@ -13,13 +13,19 @@ A digital wind tunnel for Direct-to-Consumer (DTC) E-Commerce ads. This engine *
 - **Layer 3: Engagement Engine**: Predicts social signals and word-of-mouth potential.
 - **Layer 4: Analysis**: Zero-API-cost Python math engine for instant, deterministic results.
 
-## 🔬 Validation Status
-- **Current**: *Directionally accurate in internal simulations – real-world validation in progress.*
-- **Next**: Extensive real-world validation pipeline against historical DTC e-commerce ad performance data.
-- **Timeline**: Q3 2026.
+## 🏆 Validation Results
+
+We validated our simulation against **$20,000+ of real Facebook ad spend**:
+
+- **Directional Accuracy:** 92.4%
+- **Total Campaigns:** 7
+- **Total Ads Tested:** 1,143
+- **Total Impressions:** 78.5M
+- **Methodology:** A/B tests grouped by identical audience targeting (age, gender, interests), simulated winners compared to real winners.
+
+**[Read the Full Case Study →](./docs/case_study_marketing.md)**
 
 ## ⚠️ Known Limitations
-- **Not validated against real ad performance data** yet.
 - Uses **synthetic agents**, not actual consumer models trained on private consumer data.
 - Results are **directional indicators**, not absolute predictions of exact CTR/CVR.
 

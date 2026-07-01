@@ -15,6 +15,8 @@ class Ad:
     trust_score: float = 0.5   # 0-1 (brand authority/social proof)
     urgency_score: float = 0.5 # 0-1 (FOMO factor)
     embedding: Optional[List[float]] = None # to be filled by embedder
+    image_path: Optional[str] = None
+    visual_scores: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self):
         """Auto-calculate scores using Neural Scorer or Keyword Fallback"""
@@ -56,3 +58,8 @@ class Ad:
                 self.price_score = scores.get('price_score', 0.5)
                 self.trust_score = scores.get('trust_score', 0.5)
                 self.urgency_score = scores.get('urgency_score', 0.5)
+
+        # 3. Visual Scoring
+        if not self.visual_scores:
+            from src.ad_processing.visual_scorer import score_image
+            self.visual_scores = score_image(self.image_path)

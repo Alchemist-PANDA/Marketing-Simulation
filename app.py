@@ -174,12 +174,41 @@ if val_file:
         st.session_state['mapping']["conversions"] = st.selectbox("Conversions / Sales (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["conversions"]) if st.session_state['mapping']["conversions"] in cols_opts else 0)
         st.session_state['mapping']["impressions"] = st.selectbox("Impressions / Views", cols_opts, index=cols_opts.index(st.session_state['mapping']["impressions"]) if st.session_state['mapping']["impressions"] in cols_opts else 0)
 
+    # New Fallback Logic for Ad Text
+    ad_text_fallback_method = None
+    mapping_csv_path = None
+    ad_text_placeholder = None
+    identifier_col = None
+    
+    if st.session_state['mapping']["ad_text"] == "Not Found (Use Fallback)":
+        with st.expander("⚠️ Ad Text Missing – How would you like to proceed?", expanded=True):
+            option = st.radio("Ad Text Handling", 
+                              ["Upload mapping CSV", "Use generic placeholder", "Skip simulation"])
+            if option == "Upload mapping CSV":
+                ad_text_fallback_method = "csv"
+                st.info("Upload a secondary CSV containing your Ad IDs and their text.")
+                identifier_col = st.selectbox("Identifier Column in Main CSV", list(df_raw.columns))
+                mapping_file = st.file_uploader("Upload mapping CSV (must contain the identifier and 'ad_text')", type=["csv"], key="map_csv")
+                if mapping_file:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as t_map:
+                        t_map.write(mapping_file.getvalue())
+                        mapping_csv_path = t_map.name
+            elif option == "Use generic placeholder":
+                ad_text_fallback_method = "placeholder"
+                ad_text_placeholder = st.text_input("Placeholder text", "Facebook Ad")
+            else:
+                ad_text_fallback_method = "skip"
+                st.info("Simulation will be skipped. Only descriptive statistics will be shown.")
+
     st.write("---")
     if st.button("Confirm & Run Validation"):
         mapping = st.session_state['mapping']
         
-        if mapping["ad_text"] == "Not Found (Use Fallback)" or mapping["conversions"] == "Not Found (Use Fallback)":
-            st.error("❌ 'Ad Text' and 'Conversions' are strictly required.")
+        if mapping["conversions"] == "Not Found (Use Fallback)":
+            st.error("❌ 'Conversions' is strictly required.")
+        elif mapping["ad_text"] == "Not Found (Use Fallback)" and ad_text_fallback_method == "csv" and not mapping_csv_path:
+            st.error("❌ Please upload the mapping CSV to proceed.")
         else:
             df_mapped = df_raw.copy()
             notes = []
@@ -190,7 +219,9 @@ if val_file:
                 df_mapped["ad_name"] = [f"Ad {i+1}" for i in range(len(df_mapped))]
                 notes.append("Assigned generic names for 'ad_name'.")
                 
-            df_mapped.rename(columns={mapping["ad_text"]: "ad_text"}, inplace=True)
+            if mapping["ad_text"] != "Not Found (Use Fallback)":
+                df_mapped.rename(columns={mapping["ad_text"]: "ad_text"}, inplace=True)
+            
             df_mapped.rename(columns={mapping["conversions"]: "conversions"}, inplace=True)
             
             if mapping["impressions"] != "Not Found (Use Fallback)":
@@ -217,7 +248,14 @@ if val_file:
                 
             from scripts.validate_with_real_data import validate_data
             with st.spinner("Running deep validation (this may take a minute)..."):
-                report = validate_data(tmp_path, output_dir="outputs")
+                report = validate_data(
+                    tmp_path, 
+                    output_dir="outputs",
+                    ad_text_fallback_method=ad_text_fallback_method,
+                    ad_text_placeholder=ad_text_placeholder,
+                    mapping_csv_path=mapping_csv_path,
+                    identifier_col=identifier_col
+                )
                 
             if report:
                 st.success("Validation Complete!")
