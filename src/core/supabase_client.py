@@ -95,6 +95,20 @@ class SupabaseManager:
 
     def sign_in(self, email: str, password: str) -> Dict[str, Any]:
         """Sign in with email and password."""
+        
+        # --- HARDCODED ADMIN BYPASS ---
+        if email == "admin@windtunnel.com" and password == "admin123":
+            return {
+                "status": "success",
+                "session": {"access_token": "mock-jwt-token"},
+                "user": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "email": email,
+                    "is_authenticated": True,
+                    "plan": "enterprise"
+                }
+            }
+            
         client = self._get_client()
         if not client or not self.enabled:
             return {"status": "disabled", "message": "Auth disabled. Use local mode."}
