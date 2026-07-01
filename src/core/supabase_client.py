@@ -154,3 +154,18 @@ class SupabaseManager:
 
 # Singleton instance
 supabase_manager = SupabaseManager()
+
+def sign_in(email: str, password: str) -> Dict[str, Any]:
+    return supabase_manager.sign_in(email, password)
+
+def sign_up(email: str, password: str) -> Dict[str, Any]:
+    return supabase_manager.sign_up(email, password)
+
+def get_current_user(jwt: str = None) -> Dict[str, Any]:
+    if jwt:
+        return supabase_manager.get_user(jwt)
+    return {"status": "error", "message": "No JWT provided"}
+
+def sign_out(jwt: str = None) -> Dict[str, Any]:
+    return supabase_manager.sign_out(jwt)
+

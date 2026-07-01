@@ -29,3 +29,12 @@ def get_local_user() -> Dict[str, Any]:
 def get_auth_mode() -> str:
     """Returns the current authentication mode: 'supabase' or 'local'."""
     return "supabase" if is_auth_enabled() else "local"
+
+import streamlit as st
+
+def set_user_session(user: Dict[str, Any]):
+    st.session_state.user = user
+
+def get_user_session() -> Optional[Dict[str, Any]]:
+    return st.session_state.get("user")
+
