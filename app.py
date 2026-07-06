@@ -18,8 +18,37 @@ st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
 # Check if user is logged in
 if "user" not in st.session_state or st.session_state.user is None:
-    st.switch_page("pages/_Login.py")
-    st.stop()
+    if st.query_params.get("login") == "true":
+        st.switch_page("pages/_Login.py")
+    else:
+        # Render the custom SaaS landing page
+        import streamlit.components.v1 as components
+        import os
+        
+        # Hide Streamlit's default UI elements to make it full screen
+        st.markdown("""
+            <style>
+                .block-container {
+                    padding: 0rem !important;
+                    max-width: 100% !important;
+                }
+                header {
+                    display: none !important;
+                }
+                footer {
+                    display: none !important;
+                }
+                #MainMenu {
+                    display: none !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        with open("landing.html", "r", encoding="utf-8") as f:
+            landing_html = f.read()
+            
+        components.html(landing_html, height=1200, scrolling=True)
+        st.stop()
 
 # --- Custom Sidebar Navigation (only when logged in) ---
 with st.sidebar:
