@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from typing import Dict, Any, Optional
 
 class SupabaseManager:
@@ -8,12 +10,19 @@ class SupabaseManager:
     def __init__(self):
         self.url = os.getenv("SUPABASE_URL")
         self.key = os.getenv("SUPABASE_ANON_KEY")
+        self.service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         self._client = None
         self._initialized = False
 
+        env = os.getenv("ENV", "production").lower()
+
         # Determine mode based on env vars
-        self.mode = "supabase" if (self.url and self.key) else "local"
-        self.enabled = self.mode == "supabase"
+        if env == "development" and not (self.url and self.key):
+            self.mode = "local"
+            self.enabled = False
+        else:
+            self.mode = "supabase"
+            self.enabled = True
 
     def _get_client(self):
         """Lazily initialize the Supabase client only when needed."""
@@ -96,19 +105,6 @@ class SupabaseManager:
     def sign_in(self, email: str, password: str) -> Dict[str, Any]:
         """Sign in with email and password."""
         
-        # --- HARDCODED ADMIN BYPASS ---
-        if email == "admin@windtunnel.com" and password == "admin123":
-            return {
-                "status": "success",
-                "session": {"access_token": "mock-jwt-token"},
-                "user": {
-                    "id": "00000000-0000-0000-0000-000000000000",
-                    "email": email,
-                    "is_authenticated": True,
-                    "plan": "enterprise"
-                }
-            }
-            
         client = self._get_client()
         if not client or not self.enabled:
             return {"status": "disabled", "message": "Auth disabled. Use local mode."}
@@ -163,6 +159,30 @@ class SupabaseManager:
         try:
             client.auth.sign_out()
             return {"status": "success", "message": "Signed out successfully."}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def reset_password(self, email: str) -> Dict[str, Any]:
+        """Send a password reset email."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+
+        try:
+            response = client.auth.reset_password_email(email)
+            return {"status": "success", "message": "Reset email sent successfully."}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def update_password(self, new_password: str) -> Dict[str, Any]:
+        """Update password for logged in user."""
+        client = self._get_client()
+        if not client or not self.enabled:
+            return {"status": "disabled", "message": "Auth disabled. Use local mode."}
+            
+        try:
+            response = client.auth.update_user({"password": new_password})
+            return {"status": "success", "user": response.user}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 

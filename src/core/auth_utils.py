@@ -3,15 +3,24 @@ Authentication utilities for the Marketing Simulation project.
 Provides shared logic for checking auth status and returning fallback users.
 """
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from typing import Dict, Any, Optional
 
 def is_auth_enabled() -> bool:
     """
     Check if Supabase authentication is enabled based on environment variables.
-    Returns True only if both SUPABASE_URL and SUPABASE_ANON_KEY are present.
+    Returns True only if both SUPABASE_URL and SUPABASE_ANON_KEY are present
+    and we are NOT explicitly in a 'development' environment without keys.
     """
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY")
+    env = os.getenv("ENV", "production").lower()
+    
+    # In production, ALWAYS enforce auth. If keys are missing, it will crash / fail gracefully.
+    if env != "development":
+        return True
+        
     return bool(url and key)
 
 def get_local_user() -> Dict[str, Any]:

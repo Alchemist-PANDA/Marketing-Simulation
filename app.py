@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from dotenv import load_dotenv
+load_dotenv()
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ad_processing.neural_scorer import predict_scores
 from src.utils.ai_reasoning import get_ai_insights
@@ -17,6 +19,9 @@ benchmarks = get_benchmarks()
 st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 
 # Check if user is logged in
+from src.ui.auth_ui import initialize_auth_session
+initialize_auth_session()
+
 if "user" not in st.session_state or st.session_state.user is None:
     if st.query_params.get("login") == "true":
         st.switch_page("pages/_Login.py")
