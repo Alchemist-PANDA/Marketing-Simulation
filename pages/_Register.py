@@ -3,53 +3,11 @@ from src.core.supabase_client import SupabaseManager
 
 st.set_page_config(page_title="Register", page_icon="📝", layout="centered", initial_sidebar_state="collapsed")
 
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { display: none !important; }
-    [data-testid="stSidebarNav"] { display: none !important; }
-    section[data-testid="stSidebar"] { display: none !important; }
-    [data-testid="collapsedControl"] { display: none !important; }
-    #MainMenu { display: none !important; }
-    footer { display: none !important; }
-    .stApp {
-        background: radial-gradient(circle at center, #1e1e2f 0%, #0a0a12 100%);
-    }
-    .main .block-container {
-        max-width: 450px !important;
-        padding: 2.5rem !important;
-        margin-top: 15vh !important;
-        background: rgba(20, 20, 30, 0.6) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border-radius: 16px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5) !important;
-        color: white !important;
-    }
-    h1 {
-        text-align: center;
-        background: linear-gradient(90deg, #bb86fc, #03dac6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-    }
-    .stButton>button {
-        background: linear-gradient(90deg, #6200ea 0%, #03dac6 100%);
-        border: none;
-        color: white;
-        width: 100%;
-        font-weight: bold;
-    }
-    .secondary-btn>button {
-        background: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: none !important;
-        width: 100%;
-    }
-    </style>
-""", unsafe_allow_html=True)
+from src.ui.auth_ui import inject_auth_css
 
-st.title("Create Account")
+inject_auth_css()
+
+st.markdown('<h1>Create Account</h1>', unsafe_allow_html=True)
 
 with st.form("register_form"):
     email = st.text_input("Email", placeholder="you@company.com")
