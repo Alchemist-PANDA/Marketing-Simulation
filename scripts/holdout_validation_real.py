@@ -3,6 +3,8 @@ import json
 import argparse
 import sys
 import os
+from sklearn.model_selection import train_test_split
+import numpy as np
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -10,10 +12,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.simulation.multi_ad_runner import MultiAdRunner
 
 def generate_markdown_report(results, output_path):
-    md_content = f"# Validation Report\n\n"
-    md_content += f"**Total Tests Analyzed:** {results['total_tests']}\n"
+    md_content = f"# Strict Holdout Validation Report (Real Data)\n\n"
+    md_content += f"**Total Holdout Tests Analyzed:** {results['total_tests']}\n"
     md_content += f"**Directional Accuracy (Top 1 Match):** {results['directional_accuracy']:.2f}%\n\n"
     
+    if results['directional_accuracy'] >= 80.0:
+        md_content += f"🎉 **SUCCESS: 80% accuracy target achieved!**\n\n"
+    else:
+        md_content += f"⚠️ **Not quite there.** Needs more tuning.\n\n"
+
     md_content += "## Test Breakdown\n\n"
     for test in results['tests']:
         md_content += f"### Test: {test['test_id']}\n"
@@ -26,7 +33,7 @@ def generate_markdown_report(results, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
 
-def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_method: str = None, ad_text_placeholder: str = None, mapping_csv_path: str = None, identifier_col: str = None):
+def validate_data(csv_path: str, mapping_csv_path: str, identifier_col: str, output_dir: str = "outputs"):
     print(f"Loading real-world data from {csv_path}...")
     try:
         df = pd.read_csv(csv_path)
@@ -54,11 +61,11 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
         shifted['campaign_id'] = pd.NA
         
         df.update(shifted)
+        
     if 'ad_text' not in df.columns:
-        if ad_text_fallback_method == 'csv' and mapping_csv_path and identifier_col:
+        if mapping_csv_path and identifier_col:
             try:
                 mapping_df = pd.read_csv(mapping_csv_path)
-                # The user provides a CSV with identifier and text. Find the text column (first non-identifier column)
                 text_col = [c for c in mapping_df.columns if c != identifier_col]
                 if text_col:
                     mapping_df = mapping_df.rename(columns={text_col[0]: 'ad_text'})
@@ -68,49 +75,55 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
                     print("Mapping CSV missing text column.")
             except Exception as e:
                 print(f"Error reading mapping CSV: {e}")
-        elif ad_text_fallback_method == 'placeholder':
-            df['ad_text'] = ad_text_placeholder if ad_text_placeholder else "Facebook Ad"
-        elif ad_text_fallback_method == 'skip':
-            df['ad_text'] = "Skipped Simulation"
 
-    required_cols = ['ad_text']
-    for col in required_cols:
-        if col not in df.columns:
-            print(f"Missing required column: {col}")
-            return None
-            
     if 'conversions' not in df.columns:
         if 'total_conversion' in df.columns:
             # Drop rows with missing conversions
             df = df.dropna(subset=['total_conversion'])
             df['conversions'] = df['total_conversion']
-        else:
-            print("Missing required column: conversions")
-            return None
             
     if 'impressions' not in df.columns:
         df['impressions'] = 1000
         
     if 'ad_id' not in df.columns:
-        if 'ad_name' in df.columns:
-            df['ad_id'] = df['ad_name']
-        else:
-            df['ad_id'] = [f"Ad_{i}" for i in range(len(df))]
+        df['ad_id'] = [f"Ad_{i}" for i in range(len(df))]
             
-    if 'test_id' not in df.columns:
-        df['test_id'] = 1
-        
     df['cvr'] = df['conversions'] / df['impressions'].replace(0, 1)
-    
-    # Use MultiAdRunner to handle 2 or more ads
-    runner = MultiAdRunner(num_agents=1000)
     
     target_cols = ['age', 'gender', 'interest1', 'interest2', 'interest3']
     for col in target_cols:
         if col not in df.columns:
             df[col] = "unknown"
             
-    grouped = df.groupby(target_cols)
+    # Remove groups with less than 2 ads
+    df['group_id'] = df[target_cols].astype(str).agg('-'.join, axis=1)
+    group_sizes = df.groupby('group_id').size()
+    valid_groups = group_sizes[group_sizes >= 2].index.tolist()
+    
+    df = df[df['group_id'].isin(valid_groups)]
+    
+    print(f"Found {len(valid_groups)} valid A/B test groups.")
+    
+    # 70/30 Train/Holdout split of the GROUPS
+    np.random.seed(42)
+    np.random.shuffle(valid_groups)
+    split_idx = int(len(valid_groups) * 0.7)
+    train_groups = valid_groups[:split_idx]
+    holdout_groups = valid_groups[split_idx:]
+    
+    train_df = df[df['group_id'].isin(train_groups)]
+    holdout_df = df[df['group_id'].isin(holdout_groups)]
+    
+    print(f"Split into {len(train_groups)} training groups and {len(holdout_groups)} holdout groups.")
+    
+    os.makedirs(output_dir, exist_ok=True)
+    train_df.to_csv(os.path.join(output_dir, 'train_data.csv'), index=False)
+    holdout_df.to_csv(os.path.join(output_dir, 'holdout_data.csv'), index=False)
+    
+    # Run simulation on Holdout set
+    runner = MultiAdRunner(num_agents=1000)
+    
+    grouped = holdout_df.groupby('group_id')
     
     report = {
         "total_tests": 0,
@@ -118,12 +131,7 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
         "tests": []
     }
     
-    for group_key, group in grouped:
-        test_id = "-".join(str(k) for k in group_key)
-        if len(group) < 2:
-            print(f"Skipping test {test_id}: Requires at least 2 ads to compare.")
-            continue
-            
+    for test_id, group in grouped:
         group = group.sort_values(by='cvr', ascending=False).reset_index(drop=True)
         actual_winner = group.iloc[0]['ad_id']
         
@@ -134,18 +142,29 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
                 'text': row['ad_text']
             })
             
-        print(f"Simulating Test {test_id} with {len(group)} ads...")
+        target_audience = {
+            'age': group.iloc[0]['age'],
+            'gender': group.iloc[0]['gender'],
+            'interest1': group.iloc[0].get('interest1'),
+            'interest2': group.iloc[0].get('interest2'),
+            'interest3': group.iloc[0].get('interest3')
+        }
+        
+        # Shuffle group payload to prevent run_multi_test tie-breaker bias
+        import random
+        random.seed(42)
+        random.shuffle(ads_payload)
+        
+        print(f"Simulating Holdout Test {test_id} with {len(group)} ads...")
         try:
-            if ad_text_fallback_method == 'skip':
-                predicted_winner = "Simulation Skipped"
-                match = False
-                print(f"Skipping simulation for Test {test_id}.")
-            else:
-                # Run multi-ad simulation
-                sim_result = runner.run_multi_test(ads_payload, channel='facebook')
-                predicted_winner = sim_result['winner']['ad_name']
-                match = (str(actual_winner) == str(predicted_winner))
+            # Run multi-ad simulation
+            sim_result = runner.run_multi_test(ads_payload, channel='facebook', target_audience=target_audience)
+            predicted_winner = sim_result['winner']['ad_name']
             
+            print(f"Predicted: {predicted_winner} | Actual: {actual_winner}")
+            print("Sim Results:", [(r['ad_name'], r['conversion_rate']) for r in sim_result['ranked_results']])
+            
+            match = (str(actual_winner) == str(predicted_winner))
             
             report['tests'].append({
                 "test_id": str(test_id),
@@ -169,9 +188,8 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
     else:
         report['directional_accuracy'] = 0.0
         
-    os.makedirs(output_dir, exist_ok=True)
-    json_path = os.path.join(output_dir, 'validation_report.json')
-    md_path = os.path.join(output_dir, 'validation_report.md')
+    json_path = os.path.join(output_dir, 'holdout_validation_report.json')
+    md_path = os.path.join('HOLDOUT_VALIDATION_REPORT.md')
     
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=4)
@@ -181,23 +199,20 @@ def validate_data(csv_path: str, output_dir: str = "outputs", ad_text_fallback_m
     print(f"\nValidation Complete!")
     print(f"Total Tests: {report['total_tests']}")
     print(f"Directional Accuracy: {report.get('directional_accuracy', 0):.2f}%")
-    print(f"Reports saved to {output_dir}/")
+    print(f"Report saved to HOLDOUT_VALIDATION_REPORT.md")
     return report
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Validate simulation engine against real-world data.")
+    parser = argparse.ArgumentParser(description="Strict holdout validation on real data.")
     parser.add_argument("--csv", required=True, help="Path to CSV file with historical ad data.")
+    parser.add_argument("--mapping_csv", required=True, help="Path to mapping CSV to add text")
+    parser.add_argument("--identifier_col", required=True, help="Identifier column to merge on")
     parser.add_argument("--out", default="outputs", help="Output directory for reports.")
-    parser.add_argument("--fallback", default="placeholder", help="Fallback method for ad text.")
-    parser.add_argument("--mapping_csv", default=None, help="Path to mapping CSV to add text")
-    parser.add_argument("--identifier_col", default=None, help="Identifier column to merge on")
     args = parser.parse_args()
     
     validate_data(
         args.csv, 
-        args.out, 
-        ad_text_fallback_method=args.fallback, 
-        ad_text_placeholder="Facebook Ad",
         mapping_csv_path=args.mapping_csv,
-        identifier_col=args.identifier_col
+        identifier_col=args.identifier_col,
+        output_dir=args.out
     )

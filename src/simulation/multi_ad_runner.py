@@ -7,19 +7,20 @@ class MultiAdRunner:
     def __init__(self, num_agents: int = 10000):
         self.num_agents = num_agents
 
-    def run_multi_test(self, ads_data: List[Dict[str, str]], channel: str = 'facebook', benchmarks: Dict[str, Any] = None) -> Dict[str, Any]:
+    def run_multi_test(self, ads_data: List[Dict[str, str]], channel: str = 'facebook', benchmarks: Dict[str, Any] = None, target_audience: dict = None, learned_weights: dict = None) -> Dict[str, Any]:
         """
         Run a simulation across N independent ads.
         ads_data should be a list of dicts: [{'name': 'Ad 1', 'text': '...'}, ...]
         """
-        sim = MaxSimulation(num_agents=self.num_agents)
+        sim = MaxSimulation(num_agents=self.num_agents, target_audience=target_audience, learned_weights=learned_weights)
         
         results = []
         for ad_info in ads_data:
             ad_obj = Ad(
                 text=ad_info['text'],
                 channel=channel,
-                creative_type='text'
+                creative_type='text',
+                target_interest=ad_info.get('target_interest')
             )
             sim_res = sim.simulate_exposure(ad_obj)
             sim_res['ad_name'] = ad_info['name']
