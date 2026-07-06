@@ -10,7 +10,7 @@ import numpy as np
 
 from src.agents.agent_generator import generate_population_arrays
 from src.ad_processing.ad import Ad
-from src.simulation.max_engine import MaxSimulation, generate_reasoning
+from src.simulation.max_engine import MaxSimulation
 from src.simulation.failure_analysis import analyze_failure
 
 
@@ -117,16 +117,11 @@ class ABTestRunner:
 
         if progress_callback:
             progress_callback(1.0, "Analysis complete")
->>>>>>> origin/claude/marketing-sim-enterprise-7peo6y
 
         return {
             'ad_a': res_a,
             'ad_b': res_b,
             'winner': winner,
             'lift_percentage': round(lift, 2),
-<<<<<<< HEAD
-            'objective': objective,
-            'reasoning': reasoning
-=======
             'objective': objective
         }

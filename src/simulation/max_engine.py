@@ -77,7 +77,6 @@ class MaxSimulation:
             dtype=np.float32
         )[self.population['archetype_idx']]
 
->>>>>>> origin/claude/marketing-sim-enterprise-7peo6y
     def simulate_exposure(self, ad: Ad, progress_callback=None) -> Dict[str, Any]:
         """Simulates one round of ad exposure to the entire population. Zero Python agent loops."""
         pop = self.population
@@ -92,97 +91,6 @@ class MaxSimulation:
             emotional_mod -= pop['neuroticism'] * 0.5
         if ad.creative_type in ('video', 'interactive'):
             emotional_mod += pop['openness'] * 0.4
-<<<<<<< HEAD
-        # Get learned weights
-        tw = self.learned_weights['text_weight']
-        vw = self.learned_weights['visual_weight']
-        trust_w = self.learned_weights['trust_weight']
-        urgency_w = self.learned_weights['urgency_weight']
-        price_w = self.learned_weights['price_weight']
-        emotion_w = self.learned_weights.get('emotion_weight', 1.0)
-
-        # Combine text and visual scores
-        combined_trust = tw * ad.trust_score + vw * ad.visual_scores.get('visual_trust', 0.5)
-        combined_urgency = tw * ad.urgency_score + vw * ad.visual_scores.get('visual_urgency', 0.5)
-        visual_premium = ad.visual_scores.get('visual_premium', 0.5)
-        visual_excitement = ad.visual_scores.get('visual_excitement', 0.5)
-        combined_emotion = tw * ad.emotion_score + vw * visual_excitement
-
-        # Removed double-counting of combined_emotion in emotional_mod.
-        # It is handled fully inside archetype_score with emotion_w.
-        
-        # Demographic specific sensitivities
-        base_trust = pop['trust_sensitivity'] + np.where(self.age >= 40, 1.0, 0.0)
-        base_urgency = pop['urgency_sensitivity'] + np.where(self.age < 40, 1.0, 0.0)
-        base_emotion = pop['openness'] * 0.8 + np.where(self.is_female == 1, 1.0, 0.0)
-        
-        np.clip(base_trust, 0, 2.0, out=base_trust)
-        np.clip(base_urgency, 0, 2.0, out=base_urgency)
-        np.clip(base_emotion, 0, 2.0, out=base_emotion)
-        
-        # Interest match boost prioritizing interest1
-        interest_boost = 0.0
-        if ad.target_interest is not None:
-            try:
-                ad_int = int(float(ad.target_interest))
-                i1 = int(float(self.target_audience.get('interest1', -1)))
-                i2 = int(float(self.target_audience.get('interest2', -1)))
-                i3 = int(float(self.target_audience.get('interest3', -1)))
-                
-                if ad_int == i1:
-                    interest_boost = 15.0
-                elif ad_int == i2:
-                    interest_boost = 5.0
-                elif ad_int == i3:
-                    interest_boost = 2.0
-            except (ValueError, TypeError):
-                pass
-
-        if progress_callback:
-            progress_callback(0.2, "Emotional analysis complete")
-
-        archetype_score = (
-            (ad.price_score * price_w + visual_premium * vw) * pop['price_sensitivity']
-            + (combined_trust * trust_w) * base_trust
-            + (combined_urgency * urgency_w) * base_urgency
-            + (combined_emotion * emotion_w) * base_emotion
-            + interest_boost
-            - pop['skepticism']
-        ).astype(np.float32)
-
-        archetype_score = archetype_score / 10.0
-
-        # Nonlinear bounded response using sigmoid on archetype score
-        price_disutility = float(self.prospect.apply(-ad.price, reference=0))
-
-        if progress_callback:
-            progress_callback(0.4, "Utility calculation complete")
-
-        fomo_impact_arr = np.full(n, combined_urgency * 0.1, dtype=np.float32)
-        if self.use_numba:
-            prob_buy = _compute_probs_numba(emotional_mod, archetype_score, price_disutility, fomo_impact_arr)
-        else:
-            prob_buy = _compute_probs_numpy(emotional_mod, archetype_score, price_disutility,
-                                             fomo_impact_arr, None, None)
-
-        can_afford = pop['money'] >= ad.price
-        prob_buy = prob_buy * can_afford
-
-        like_prob = (
-            0.1
-            + pop['extraversion'] * 0.2
-            + pop['openness'] * 0.1
-            - pop['neuroticism'] * 0.05
-            + ad.price_score * 0.1
-            + ad.trust_score * 0.25
-            + ad.urgency_score * 0.4
-        ).astype(np.float32)
-        if ad.channel in ('tiktok', 'instagram'):
-            like_prob *= 1.5
-        like_prob *= self._cal_factors
-        np.clip(like_prob, 0, 1, out=like_prob)
-
-=======
         np.clip(emotional_mod, -1.0, 1.0, out=emotional_mod)
 
         if progress_callback:
@@ -253,126 +161,9 @@ class MaxSimulation:
 
         self.tick += 1
 
->>>>>>> origin/claude/marketing-sim-enterprise-7peo6y
         return {
             'likes': int(liked.sum()),
             'shares': int(shared.sum()),
             'conversions': int(bought.sum()),
-<<<<<<< HEAD
-            'details': [],
-            
-            "conversion_rate": float(conversion_rate),
-            "engagement_rate": float(engagement_rate),
-            "purchase_count": int(bought.sum()),
-            "engaged_count": int((liked | shared).sum()),
-            "avg_emotional_valence": float(np.mean(emotional_mod)),
-            "avg_economic_utility": float(np.mean(economic_utility)),
-            "high_emotion_percent": float(np.mean(emotional_mod > 0.7) * 100),
-            "total_agents": n,
-            
-            "scores": ad_scores,
-            "segment_analysis": segment_analysis,
-            "personality_performance": personality_performance,
-            "prospect_insights": prospect_insights,
-            "recommendations": recs,
-            "debug_metrics": {
-                'archetype_score': archetype_score,
-                'prob_buy': prob_buy
-            }
-        }
-
-
-def generate_reasoning(ad_a_data: Dict[str, Any], ad_b_data: Dict[str, Any], benchmarks: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """
-    Rule-based marketing intelligence engine that produces deterministic insights.
-    """
-    cvr_a = ad_a_data.get("conversion_rate", 0)
-    cvr_b = ad_b_data.get("conversion_rate", 0)
-    winner = "A" if cvr_a >= cvr_b else "B"
-    
-    def analyze_ad(data, name):
-        strengths = []
-        weaknesses = []
-        
-        cvr = data.get("conversion_rate", 0)
-        eng = data.get("engagement_rate", 0)
-        
-        if cvr > 3.0: strengths.append(f"Strong conversion rate ({cvr:.1f}%)")
-        elif cvr < 1.0: weaknesses.append(f"Low conversion rate ({cvr:.1f}%)")
-            
-        if eng > 15.0: strengths.append(f"High engagement ({eng:.1f}%) suggests good creative resonance")
-        elif eng < 5.0: weaknesses.append(f"Low engagement ({eng:.1f}%)")
-            
-        scores = data.get("scores", {})
-        if scores.get("trust", 0.5) < 0.4: weaknesses.append("Low trust score")
-        if scores.get("urgency", 0.5) < 0.3: weaknesses.append("Low urgency")
-        if scores.get("persuasion", 0.5) < 0.4: weaknesses.append("Weak persuasion")
-        if scores.get("emotional_appeal", 0.5) < 0.3: weaknesses.append("Low emotional appeal")
-            
-        pros = data.get("prospect_insights", {})
-        if pros.get("loss_aversion_impact", 0.0) > 0.4: weaknesses.append("High price sensitivity")
-        if pros.get("perceived_value", 0.0) < 0.5: weaknesses.append("Low perceived value")
-        
-        pers = data.get("personality_performance", {})
-        best_trait = max(pers.items(), key=lambda x: x[1]) if pers else ("unknown", 0)
-        personality_insight = f"Resonates strongest with High {best_trait[0].title()} audiences."
-        
-        prospect_insight = f"Perceived value is {pros.get('perceived_value', 0):.2f}, price elasticity is {pros.get('price_elasticity', 0):.1f}%."
-        
-        return {
-            "strengths": strengths,
-            "weaknesses": weaknesses,
-            "personality_insight": personality_insight,
-            "prospect_insight": prospect_insight
-        }
-
-    ad_a_breakdown = analyze_ad(ad_a_data, "A")
-    ad_b_breakdown = analyze_ad(ad_b_data, "B")
-    
-    gap = abs(cvr_a - cvr_b)
-    overall_summary = f"Ad {winner} won the test with a {gap:.2f}% higher conversion rate."
-    if gap < 0.5:
-        overall_summary += " The results are close, indicating both ads perform similarly overall."
-    else:
-        overall_summary += f" Ad {winner} significantly outperformed the alternative."
-
-    key_drivers = []
-    if ad_a_data.get("scores", {}).get("trust", 0) != ad_b_data.get("scores", {}).get("trust", 0):
-        better = "A" if ad_a_data.get("scores", {}).get("trust", 0) > ad_b_data.get("scores", {}).get("trust", 0) else "B"
-        key_drivers.append(f"Trust & Social Proof (Ad {better} leads)")
-    if ad_a_data.get("prospect_insights", {}).get("perceived_value", 0) != ad_b_data.get("prospect_insights", {}).get("perceived_value", 0):
-        better = "A" if ad_a_data.get("prospect_insights", {}).get("perceived_value", 0) > ad_b_data.get("prospect_insights", {}).get("perceived_value", 0) else "B"
-        key_drivers.append(f"Perceived Value (Ad {better} conveys higher value)")
-    if not key_drivers:
-        key_drivers = ["Overall Conversion Rate", "Engagement Rate"]
-        
-    actionable_recs = []
-    for rec in ad_a_data.get("recommendations", []):
-        actionable_recs.append({"ad": "A", **rec})
-    for rec in ad_b_data.get("recommendations", []):
-        actionable_recs.append({"ad": "B", **rec})
-        
-    benchmark_comparison = "No external benchmarks provided."
-    if benchmarks:
-        ind_cvr = benchmarks.get("industry_avg_conversion", 0)
-        if ind_cvr:
-            diff = max(cvr_a, cvr_b) - ind_cvr
-            if diff > 0:
-                benchmark_comparison = f"The winning ad's conversion rate is {diff:.1f}% above the industry average ({ind_cvr}%)."
-            else:
-                benchmark_comparison = f"The winning ad is {-diff:.1f}% below the industry average ({ind_cvr}%)."
-        if "seasonality_factor" in benchmarks:
-            benchmark_comparison += f" Seasonality note: {benchmarks['seasonality_factor']}."
-
-    return {
-        "winner": winner,
-        "overall_summary": overall_summary,
-        "ad_a_breakdown": ad_a_breakdown,
-        "ad_b_breakdown": ad_b_breakdown,
-        "key_drivers": key_drivers[:3],
-        "actionable_recommendations": actionable_recs,
-        "benchmark_comparison": benchmark_comparison
-    }
-=======
             'details': []
         }

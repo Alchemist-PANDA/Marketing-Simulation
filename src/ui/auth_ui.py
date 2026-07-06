@@ -16,14 +16,10 @@ def initialize_auth_session():
         st.session_state["user"] = None
         st.session_state["access_token"] = None
 
-=======
-        # In local mode, auto-authenticate with local user
->>>>>>> origin/claude/marketing-sim-enterprise-7peo6y
         if st.session_state["auth_mode"] == "local":
             st.session_state["user"] = get_local_user()
 
 
-<<<<<<< HEAD
 def require_auth():
     """Enforces that a user is logged in. Redirects to Login if not."""
     initialize_auth_session()
@@ -46,6 +42,15 @@ def require_role(allowed_roles: List[str]):
         st.error(f"Access Denied. This feature requires one of the following roles: {', '.join(allowed_roles)}")
         st.stop()
 
+
+def render_auth_sidebar():
+    """Render authentication UI in the sidebar."""
+    initialize_auth_session()
+
+    auth_mode = st.session_state["auth_mode"]
+    user = st.session_state["user"]
+
+    st.sidebar.markdown("### Authentication")
 
     if auth_mode == "local":
         st.sidebar.success("🟢 Local Developer Mode")
