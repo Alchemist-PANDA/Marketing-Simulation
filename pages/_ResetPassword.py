@@ -1,10 +1,16 @@
 import streamlit as st
 from src.core.supabase_client import SupabaseManager
 
-st.set_page_config(page_title="Reset Password", page_icon="🔑", layout="centered")
+st.set_page_config(page_title="Reset Password", page_icon="🔑", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
+    [data-testid="stSidebar"] { display: none !important; }
+    [data-testid="stSidebarNav"] { display: none !important; }
+    section[data-testid="stSidebar"] { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
     .stApp {
         background: radial-gradient(circle at center, #1e1e2f 0%, #0a0a12 100%);
     }

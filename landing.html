@@ -230,6 +230,40 @@
  
   [data-reveal]{opacity:0;transform:translateY(22px);}
   .fade-init [data-reveal]{transition:opacity .7s ease, transform .7s ease;}
+  
+  .landing-btn {
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 32px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(167, 139, 250, 0.3);
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+  }
+  .landing-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(167, 139, 250, 0.5);
+  }
+  .landing-btn-secondary {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 12px 32px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+  }
+  .landing-btn-secondary:hover {
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, 0.1);
+  }
 </style>
 </head>
 <body class="fade-init">
@@ -242,7 +276,9 @@
       <a href="#how">How it works</a>
       <a href="#pricing">Pricing</a>
     </div>
-    <a href="?login=true" target="_parent" class="nav-cta">Start Free Trial</a>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <a href="?login=true" target="_parent" class="landing-btn" style="padding:8px 20px;">Login</a>
+    </div>
   </nav>
   <div class="header-telemetry telemetry" id="header-telemetry">
     <span>RUN <b>#48213</b></span>
@@ -259,9 +295,9 @@
     <div class="hero-eyebrow">DIGITAL WIND TUNNEL FOR AD CREATIVE</div>
     <h1 class="hero-head">Predict Ad Winners <em>Before You Spend a Dollar</em></h1>
     <p class="hero-sub">Run every creative through 500 AI-simulated consumers, each with a distinct personality, before it ever reaches a real audience — and see exactly why it wins or fails.</p>
-    <div class="hero-ctas">
-      <button class="btn-primary" onclick="window.parent.location.href='?login=true'">Start Free Trial</button>
-      <a href="#how"><button class="btn-secondary">See how it works</button></a>
+    <div class="hero-ctas" style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
+      <a href="?login=true" target="_parent" class="landing-btn">Login</a>
+      <a href="?register=true" target="_parent" class="landing-btn-secondary">Create Account</a>
     </div>
   </div>
 </section>

@@ -14,6 +14,7 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
     section[data-testid="stSidebar"] { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     .stApp { background: transparent !important; }

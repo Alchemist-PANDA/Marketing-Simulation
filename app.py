@@ -20,6 +20,8 @@ st.set_page_config(page_title="Marketing Sim Dashboard", page_icon="🚀")
 if "user" not in st.session_state or st.session_state.user is None:
     if st.query_params.get("login") == "true":
         st.switch_page("pages/_Login.py")
+    elif st.query_params.get("register") == "true":
+        st.switch_page("pages/_Register.py")
     else:
         # Render the custom SaaS landing page
         import streamlit.components.v1 as components
@@ -39,6 +41,15 @@ if "user" not in st.session_state or st.session_state.user is None:
                     display: none !important;
                 }
                 #MainMenu {
+                    display: none !important;
+                }
+                [data-testid="stSidebar"] {
+                    display: none !important;
+                }
+                [data-testid="collapsedControl"] {
+                    display: none !important;
+                }
+                [data-testid="stSidebarNav"] {
                     display: none !important;
                 }
             </style>
