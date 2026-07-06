@@ -608,16 +608,42 @@ if (window.gsap && window.ScrollTrigger) {
 })();
 </script>
 <script>
+function setHeight(height) {
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setFrameHeight",
+      height: height
+    }, "*");
+}
+
+function sendValue(value) {
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setComponentValue",
+      value: value
+    }, "*");
+}
+
+// Signal to Streamlit that we're ready
+window.parent.postMessage({
+  isStreamlitMessage: true,
+  type: "streamlit:componentReady",
+  apiVersion: 1
+}, "*");
+
+// Initialize height
+setHeight(1200);
+
 function goToAuth(type) {
     const isStreamlitIframe = window.self !== window.top;
-    const url = type === 'login' ? '?login=true' : '?register=true';
     if (window.location.port === '8000') {
-        window.location.href = window.location.protocol + '//' + window.location.hostname + ':8501/' + url;
+        window.location.href = window.location.protocol + '//' + window.location.hostname + ':8501/?' + type + '=true';
     } else {
         if (isStreamlitIframe) {
-            window.parent.location.href = url;
+            // Use Streamlit Custom Component API instead of window.parent.location
+            sendValue(type);
         } else {
-            window.location.href = url;
+            window.location.href = '?' + type + '=true';
         }
     }
 }

@@ -55,10 +55,14 @@ if "user" not in st.session_state or st.session_state.user is None:
             </style>
         """, unsafe_allow_html=True)
         
-        with open("landing.html", "r", encoding="utf-8") as f:
-            landing_html = f.read()
+        landing_component = components.declare_component("landing", path="landing_component")
+        action = landing_component(default=None)
+        
+        if action == "login":
+            st.switch_page("pages/_Login.py")
+        elif action == "register":
+            st.switch_page("pages/_Register.py")
             
-        components.html(landing_html, height=1200, scrolling=True)
         st.stop()
 
 # --- Custom Sidebar Navigation (only when logged in) ---

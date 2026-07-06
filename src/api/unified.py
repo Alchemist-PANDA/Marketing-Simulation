@@ -160,7 +160,7 @@ _calibrator.fit(DEFAULT_HISTORICAL)
 @app.get("/")
 async def root():
     """Serve the SaaS landing page."""
-    landing_path = os.path.join(os.path.dirname(__file__), '../../landing.html')
+    landing_path = os.path.join(os.path.dirname(__file__), '../../landing_component/index.html')
     if not os.path.exists(landing_path):
         raise HTTPException(status_code=404, detail="Landing page not found")
     return FileResponse(landing_path)
