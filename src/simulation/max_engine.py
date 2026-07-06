@@ -123,9 +123,9 @@ class MaxSimulation:
             + pop['extraversion'] * 0.2
             + pop['openness'] * 0.1
             - pop['neuroticism'] * 0.05
-            + ad.price_score * 0.1
-            + ad.trust_score * 0.25
-            + ad.urgency_score * 0.4
+            + ad.price_score * 0.12
+            + ad.trust_score * 0.08
+            + ad.urgency_score * 0.55
         ).astype(np.float32)
         if ad.channel in ('tiktok', 'instagram'):
             like_prob *= 1.5
