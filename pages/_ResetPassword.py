@@ -19,16 +19,12 @@ if submit:
         st.error("Please enter your email.")
     else:
         manager = SupabaseManager()
-        client = manager._get_client()
-        if client:
-            try:
-                with st.spinner("Sending link..."):
-                    client.auth.reset_password_email(email)
-                    st.success("If an account with that email exists, a reset link has been sent.")
-            except Exception as e:
-                st.error(f"Error: {e}")
-        else:
-            st.error("Supabase client not configured.")
+        with st.spinner("Sending link..."):
+            result = manager.reset_password(email)
+            if result.get("status") == "success":
+                st.success("If an account with that email exists, a reset link has been sent.")
+            else:
+                st.error(f"Error: {result.get('message')}")
 
 st.markdown('<div class="secondary-btn">', unsafe_allow_html=True)
 if st.button("Back to Login"):

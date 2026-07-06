@@ -7,8 +7,10 @@ import hashlib
 from typing import List, Dict, Optional, Any
 from fastapi import FastAPI, HTTPException, Request, Depends, Header, BackgroundTasks, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
@@ -19,6 +21,7 @@ from src.simulation.failure_analysis import analyze_failure
 from src.api.auth_handler import get_current_user_logic
 from src.core.auth_utils import is_auth_enabled
 from src.core.supabase_client import SupabaseManager
+from src.api.auth import router as auth_router
 from .models import (CampaignRequest, SimulationResult, AgentProfile,
                      SegmentType, AdRequest, SimulateResponse, CalibrationRecord)
 from scripts.validate_with_real_data import validate_data
@@ -52,6 +55,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -180,6 +185,22 @@ async def health():
 @app.get("/api/me")
 async def get_me(auth=Depends(auth_dependency)):
     return auth
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return JSONResponse(
+            status_code=404,
+            content={"status": "error", "message": "Resource not found", "path": request.url.path}
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"status": "error", "message": str(exc.detail)}
+    )
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 @app.post("/predict", tags=["Simulation"])
 async def predict(request: AdRequest, background_tasks: BackgroundTasks, auth=Depends(auth_dependency)):

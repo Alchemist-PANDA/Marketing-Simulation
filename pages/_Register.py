@@ -24,19 +24,12 @@ if submit:
         st.error("Password must be at least 6 characters.")
     else:
         manager = SupabaseManager()
-        client = manager._get_client()
-        if client:
-            try:
-                with st.spinner("Creating account..."):
-                    res = client.auth.sign_up({"email": email, "password": password})
-                    if res.user:
-                        st.success("Registration successful! Please check your email to verify your account (if enabled) and then login.")
-                    else:
-                        st.error("Registration failed. Please try again.")
-            except Exception as e:
-                st.error(f"Error: {e}")
-        else:
-            st.error("Supabase client not configured.")
+        with st.spinner("Creating account..."):
+            result = manager.sign_up(email, password)
+            if result.get("status") == "success":
+                st.success("Verification email sent.")
+            else:
+                st.error(f"Registration failed: {result.get('message', 'Unknown error')}")
 
 st.markdown('<div class="secondary-btn">', unsafe_allow_html=True)
 if st.button("Back to Login"):

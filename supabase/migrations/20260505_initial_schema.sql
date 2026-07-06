@@ -80,6 +80,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists handle_updated_at_campaigns on public.campaigns;
 create trigger handle_updated_at_campaigns
   before update on public.campaigns
   for each row
