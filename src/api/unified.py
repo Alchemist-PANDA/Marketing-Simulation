@@ -214,7 +214,7 @@ async def predict(request: AdRequest, background_tasks: BackgroundTasks, auth=De
             creative_type='text', 
             price=request.price
         )
-        sim = MaxSimulation(num_agents=request.agents)
+        sim = MaxSimulation(num_agents=request.agents, seed=request.seed)
         results = sim.simulate_exposure(ad)
 
         raw_ctr = results['likes'] / request.agents
