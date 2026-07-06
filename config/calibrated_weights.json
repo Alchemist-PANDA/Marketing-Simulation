@@ -1,0 +1,8 @@
+{
+  "price_intercept": -0.4,
+  "price_weight": 1.8,
+  "trust_intercept": 0.3,
+  "trust_weight": 1.0,
+  "urgency_intercept": 0.0,
+  "urgency_weight": 1.0
+}

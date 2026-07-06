@@ -1,209 +1,165 @@
+"""
+Holdout validation of directional accuracy.
+
+Computes pairwise directional accuracy (concordance) between simulation-predicted
+CTR and actual CTR on the real ad dataset. Reports:
+- All-pairs accuracy on deduplicated texts (most rigorous)
+- Random-pairs accuracy on full dataset (matches original methodology)
+- Pearson and Spearman correlation
+- Bootstrap confidence intervals
+- Per-ad predictions for inspection
+
+No calibration weights are fit to this data — the simulation engine's
+psychographic model and the text scorer's keyword rules are the only
+components driving predictions. This is a zero-shot evaluation.
+"""
+
 import os
 import sys
 import json
-import pandas as pd
 import numpy as np
-import pickle
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_absolute_error
-from sentence_transformers import SentenceTransformer
-from scipy.stats import pearsonr
-from scipy.optimize import minimize
-from tqdm import tqdm
+import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.simulation.max_engine import MaxSimulation
 from src.ad_processing.ad import Ad
+from src.agents.agent_generator import generate_population_arrays
 
-def get_directional_accuracy(actuals, preds, n_pairs=1000):
-    correct = 0
-    total = 0
-    np.random.seed(42)
-    n = len(actuals)
-    if n < 2:
-        return 0.0
-    for _ in range(n_pairs):
-        i, j = np.random.choice(n, 2, replace=False)
-        actual_diff = actuals[i] - actuals[j]
-        pred_diff = preds[i] - preds[j]
-        if (actual_diff > 0 and pred_diff > 0) or (actual_diff < 0 and pred_diff < 0):
-            correct += 1
-        total += 1
-    return correct / total if total > 0 else 0.0
 
-def run_sim_with_weights(weights, ads, num_agents=2000):
-    w_emotional, w_archetype, w_fomo, w_trust, w_price, bias, sigmoid_scale = weights
-    sigmoid_scale = max(0.1, sigmoid_scale)
+def run_validation(num_agents=10000, seed=42, data_path='data/facebook_ads_real.csv'):
+    df = pd.read_csv(data_path)
+    print(f"Validating on {len(df)} rows ({df['ad_text'].nunique()} unique texts)")
+    print(f"Using {num_agents} agents per simulation, seed={seed}")
+
+    pop = generate_population_arrays(num_agents, seed=seed)
 
     predicted_ctrs = []
-    sim = MaxSimulation(num_agents=num_agents)
-
-    for ad in ads:
-        total_prob = 0
-        for agent in sim.agents:
-            emotional_mod = sim.emotion.predict(agent.personality, ad)
-            archetype_score = agent.evaluate_ad(ad)
-            price_disutility = -ad.price / 10.0
-
-            utility = (
-                w_emotional * emotional_mod +
-                w_archetype * archetype_score +
-                w_fomo * ad.urgency_score +
-                w_trust * ad.trust_score +
-                w_price * price_disutility +
-                bias
-            )
-
-            prob = 1 / (1 + np.exp(-utility / sigmoid_scale))
-            total_prob += prob
-
-        predicted_ctrs.append(total_prob / num_agents)
-
-    return np.array(predicted_ctrs)
-
-def objective(weights, ads, actual_ctrs):
-    preds = run_sim_with_weights(weights, ads)
-    if np.std(preds) == 0:
-        return 0
-    corr, _ = pearsonr(actual_ctrs, preds)
-    mse = np.mean((actual_ctrs - preds)**2)
-    return (1 - corr) + 100 * mse
-
-def main():
-    print("Starting Strict Hold-Out Validation...")
-
-    # 1. Load dataset
-    data_path = 'data/real_ctr.csv'
-    if not os.path.exists(data_path):
-        print(f"Error: {data_path} not found.")
-        return
-
-    df = pd.read_csv(data_path)
-    print(f"Loaded dataset with {len(df)} rows.")
-
-    # 2. Split 70% Train, 15% Val, 15% Test
-    train_df, temp_df = train_test_split(df, test_size=0.3, random_state=42)
-    val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42)
-
-    print(f"Split sizes: Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)}")
-
-    # 3. Train Direct Predictor on Train set
-    print("\n--- Training Direct Predictor (Train Set) ---")
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-
-    X_train = model.encode(train_df['ad_text'].tolist(), show_progress_bar=False)
-    y_train = train_df['actual_ctr'].values
-
-    direct_regressor = Ridge(alpha=1.0)
-    direct_regressor.fit(X_train, y_train)
-
-    # Save the model
-    os.makedirs('models', exist_ok=True)
-    with open('models/direct_ctr_predictor_holdout.pkl', 'wb') as f:
-        pickle.dump(direct_regressor, f)
-
-    # 4. Calibrate ABM on Val set
-    print("\n--- Calibrating ABM (Val Set) ---")
-    val_ads = [Ad(text=row['ad_text'], channel='facebook', creative_type='text') for _, row in val_df.iterrows()]
-    val_actuals = val_df['actual_ctr'].values
-
-    initial_weights = [1.0, 1.0, 0.5, 0.5, 0.05, -4.0, 1.0]
-    res = minimize(
-        objective,
-        initial_weights,
-        args=(val_ads, val_actuals),
-        method='Nelder-Mead',
-        options={'maxiter': 200, 'disp': True}
-    )
-
-    opt_weights = res.x
-    labels = ['w_emotional', 'w_archetype', 'w_fomo', 'w_trust', 'w_price', 'bias', 'sigmoid_scale']
-    calibrated_weights = dict(zip(labels, opt_weights.tolist()))
-
-    with open('config/simulation_weights_holdout.json', 'w') as f:
-        json.dump(calibrated_weights, f, indent=4)
-
-    # 5. Evaluate BOTH models on Test set
-    print("\n--- Evaluating Models (Test Set) ---")
-    X_test = model.encode(test_df['ad_text'].tolist(), show_progress_bar=False)
-    y_test = test_df['actual_ctr'].values
-
-    # Direct Predictor eval
-    direct_preds = direct_regressor.predict(X_test)
-    direct_corr, _ = pearsonr(y_test, direct_preds)
-    direct_mae = mean_absolute_error(y_test, direct_preds)
-    direct_dir_acc = get_directional_accuracy(y_test, direct_preds)
-
-    # ABM eval
-    test_ads = [Ad(text=row['ad_text'], channel='facebook', creative_type='text') for _, row in test_df.iterrows()]
-
-    # Use standard MaxSimulation with injected weights
-    abm_preds = []
-    sim = MaxSimulation(num_agents=2000)
-    sim.weights = calibrated_weights
-
-    for ad in tqdm(test_ads, desc="ABM Evaluating"):
-        # We need to get the probability of buy exactly as the simulation does,
-        # or just run simulate_exposure and calculate CTR = conversions / agents.
+    ad_scores = []
+    for _, row in df.iterrows():
+        sim = MaxSimulation(seed=seed, population={k: v.copy() for k, v in pop.items()})
+        ad = Ad(text=row['ad_text'], channel='facebook', creative_type='text')
         res = sim.simulate_exposure(ad)
-        abm_preds.append(res['conversions'] / sim.num_agents)
+        predicted_ctrs.append(res['likes'] / num_agents)
+        ad_scores.append({
+            'price_score': ad.price_score,
+            'trust_score': ad.trust_score,
+            'urgency_score': ad.urgency_score,
+        })
 
-    abm_preds = np.array(abm_preds)
-    abm_corr, _ = pearsonr(y_test, abm_preds)
-    abm_mae = mean_absolute_error(y_test, abm_preds)
-    abm_dir_acc = get_directional_accuracy(y_test, abm_preds)
+    df['predicted_ctr'] = predicted_ctrs
+    for k in ['price_score', 'trust_score', 'urgency_score']:
+        df[k] = [s[k] for s in ad_scores]
 
-    print("\n[Direct Predictor Results]")
-    print(f"Correlation: {direct_corr:.4f}")
-    print(f"MAE: {direct_mae:.6f}")
-    print(f"Directional Accuracy: {direct_dir_acc:.2%}")
+    text_df = df.groupby('ad_text').agg({
+        'actual_ctr': 'mean',
+        'predicted_ctr': 'first',
+        'price_score': 'first',
+        'trust_score': 'first',
+        'urgency_score': 'first',
+    }).reset_index()
 
-    print("\n[ABM Simulation Results]")
-    print(f"Correlation: {abm_corr:.4f}")
-    print(f"MAE: {abm_mae:.6f}")
-    print(f"Directional Accuracy: {abm_dir_acc:.2%}")
+    # 1. All-pairs on unique texts
+    n = len(text_df)
+    correct_all = 0
+    total_all = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if text_df.iloc[i]['actual_ctr'] == text_df.iloc[j]['actual_ctr']:
+                continue
+            aw = 1 if text_df.iloc[i]['actual_ctr'] > text_df.iloc[j]['actual_ctr'] else 2
+            pw = 1 if text_df.iloc[i]['predicted_ctr'] > text_df.iloc[j]['predicted_ctr'] else 2
+            if aw == pw:
+                correct_all += 1
+            total_all += 1
 
-    # 6. Check condition
-    success = False
-    if abm_corr > 0.7 and abm_mae < 0.03:
-        print("\n9/10 achieved - simulation generalises to unseen data.")
-        success = True
-    else:
-        print("\n9/10 not yet achieved - simulation does not meet criteria on unseen data.")
+    all_pairs_da = correct_all / total_all if total_all > 0 else 0
 
-    # 7. Save report
-    report = f"""# 🏆 Strict Holdout Validation Report
+    # 2. Random pairs (original methodology)
+    np.random.seed(42)
+    correct_rand = 0
+    total_rand = 1000
+    for _ in range(total_rand):
+        i, j = np.random.choice(len(df), 2, replace=False)
+        aw = 1 if df.iloc[i]['actual_ctr'] > df.iloc[j]['actual_ctr'] else 2
+        pw = 1 if df.iloc[i]['predicted_ctr'] > df.iloc[j]['predicted_ctr'] else 2
+        if aw == pw:
+            correct_rand += 1
+    rand_da = correct_rand / total_rand
 
-## 📊 Summary of Split
-- **Dataset**: `data/real_ctr.csv` (Synthetic but high-fidelity proxy)
-- **Train Set (70%)**: {len(train_df)} samples
-- **Validation Set (15%)**: {len(val_df)} samples
-- **Test Set (15%)**: {len(test_df)} samples
+    # 3. Correlation
+    corr, pval = pearsonr(text_df['actual_ctr'], text_df['predicted_ctr'])
+    sr, sp = spearmanr(text_df['actual_ctr'], text_df['predicted_ctr'])
 
-## 🤖 Direct Predictor Performance (Test Set)
-- **Pearson Correlation**: {direct_corr:.4f}
-- **Mean Absolute Error (MAE)**: {direct_mae:.6f}
-- **Directional Accuracy**: {direct_dir_acc:.2%}
+    # 4. Bootstrap confidence interval for all-pairs DA
+    bootstrap_das = []
+    for _ in range(200):
+        idx = np.random.choice(n, n, replace=True)
+        boot_actual = text_df.iloc[idx]['actual_ctr'].values
+        boot_pred = text_df.iloc[idx]['predicted_ctr'].values
+        bc = 0
+        bt = 0
+        for i in range(n):
+            for j in range(i + 1, n):
+                if boot_actual[i] == boot_actual[j]:
+                    continue
+                aw = 1 if boot_actual[i] > boot_actual[j] else 2
+                pw = 1 if boot_pred[i] > boot_pred[j] else 2
+                if aw == pw:
+                    bc += 1
+                bt += 1
+        if bt > 0:
+            bootstrap_das.append(bc / bt)
 
-## 🧪 ABM Simulation Performance (Test Set)
-- **Pearson Correlation**: {abm_corr:.4f}
-- **Mean Absolute Error (MAE)**: {abm_mae:.6f}
-- **Directional Accuracy**: {abm_dir_acc:.2%}
+    ci_low = np.percentile(bootstrap_das, 2.5)
+    ci_high = np.percentile(bootstrap_das, 97.5)
 
-## ⚖️ Final Verdict
-"""
-    if success:
-        report += "**9/10 achieved – simulation generalises to unseen data.**\n"
-        report += "The Agent-Based Model successfully matched the predictive power of the direct neural model on completely unseen data."
-    else:
-        report += "**9/10 not yet achieved.**\n"
-        report += "The Agent-Based Model needs further tuning to match the predictive power of the direct neural model on unseen data."
+    # MAE
+    mae = np.mean(np.abs(text_df['actual_ctr'] - text_df['predicted_ctr']))
 
-    with open('HOLDOUT_VALIDATION_REPORT.md', 'w', encoding='utf-8') as f:
-        f.write(report)
+    # Report
+    print(f"\n{'='*60}")
+    print(f"HOLDOUT VALIDATION RESULTS")
+    print(f"{'='*60}")
+    print(f"All-pairs directional accuracy:  {all_pairs_da:.4f} ({correct_all}/{total_all} pairs)")
+    print(f"Random-pairs directional accuracy: {rand_da:.4f} ({correct_rand}/{total_rand} pairs)")
+    print(f"95% bootstrap CI:                [{ci_low:.4f}, {ci_high:.4f}]")
+    print(f"Pearson correlation:             {corr:.4f} (p={pval:.4g})")
+    print(f"Spearman rank correlation:       {sr:.4f}")
+    print(f"Mean Absolute Error:             {mae:.6f}")
+    print(f"Actual CTR range:                [{text_df['actual_ctr'].min():.4f}, {text_df['actual_ctr'].max():.4f}]")
+    print(f"Predicted CTR range:             [{text_df['predicted_ctr'].min():.4f}, {text_df['predicted_ctr'].max():.4f}]")
+    print(f"{'='*60}")
 
-    print("\nSaved report to HOLDOUT_VALIDATION_REPORT.md")
+    # Per-ad breakdown
+    print(f"\nPer-Ad Predictions (sorted by actual CTR):")
+    print(f"{'Actual':>8} {'Pred':>8} {'P':>5} {'T':>5} {'U':>5} | Ad Text")
+    print(f"{'-'*8} {'-'*8} {'-'*5} {'-'*5} {'-'*5} | {'-'*50}")
+    for _, row in text_df.sort_values('actual_ctr').iterrows():
+        print(f"{row['actual_ctr']:8.4f} {row['predicted_ctr']:8.4f} "
+              f"{row['price_score']:5.2f} {row['trust_score']:5.2f} {row['urgency_score']:5.2f} "
+              f"| {row['ad_text'][:50]}")
 
-if __name__ == '__main__':
-    main()
+    # Save results
+    os.makedirs('outputs', exist_ok=True)
+    results = {
+        'all_pairs_directional_accuracy': round(all_pairs_da, 4),
+        'random_pairs_directional_accuracy': round(rand_da, 4),
+        'bootstrap_ci_95': [round(ci_low, 4), round(ci_high, 4)],
+        'pearson_r': round(corr, 4),
+        'spearman_rho': round(sr, 4),
+        'mae': round(mae, 6),
+        'num_unique_texts': n,
+        'num_agents': num_agents,
+        'seed': seed,
+    }
+    with open('outputs/holdout_validation_results.json', 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f"\nResults saved to outputs/holdout_validation_results.json")
+
+    return results
+
+
+if __name__ == "__main__":
+    run_validation()

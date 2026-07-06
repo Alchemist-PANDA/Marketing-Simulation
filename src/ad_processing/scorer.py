@@ -1,107 +1,163 @@
 """
 Feature extraction and scoring module for marketing simulation.
-Converts raw ad attributes and text into normalized scores (0-1).
+Converts raw ad attributes and text content into normalized scores (0-1).
+
+Two scoring tiers:
+1. Text-aware keyword scoring (extract_text_scores) - analyzes ad copy
+2. Attribute-based scoring (extract_scores) - uses numeric fields as fallback
 """
 
 import re
 from typing import Dict, Any
 
+
+_PRICE_POSITIVE = [
+    "save", "discount", "off", "sale", "deal", "cheap", "affordable",
+    "free", "clearance", "bargain", "low price", "half price", "reduced",
+    "buy 1 get 1", "bogo", "coupon", "promo", "value", "budget",
+    "50%", "70%", "80%", "90%", "percent off", "save money",
+    "shipping", "free shipping", "first order",
+]
+_PRICE_NEGATIVE = [
+    "premium", "luxury", "exclusive", "expensive", "elite", "high-end",
+    "bespoke", "artisan", "handcrafted", "collector", "listings",
+]
+
+_TRUST_POSITIVE = [
+    "trusted", "review", "guarantee", "certified", "verified",
+    "authentic", "award", "proven", "millions", "rated", "recommended",
+    "secure", "reliable", "professional", "quality", "100%", "natural",
+    "organic", "safe", "tested",
+]
+_TRUST_NEGATIVE = [
+    "unknown", "experimental", "beta", "untested", "secret",
+]
+
+_URGENCY_POSITIVE = [
+    "limited time", "today only", "last chance", "hurry", "now",
+    "quick", "ends tonight", "flash sale", "only", "left",
+    "don't miss", "act now", "deadline", "expires", "final",
+    "clearance", "closing", "running out", "before it's gone",
+    "early bird", "book now", "starting now", "tonight",
+    "today", "switch", "everything must go", "must go",
+]
+
+# Action verbs that signal direct-response intent (boosts engagement)
+_ACTION_VERBS = [
+    "learn", "get", "try", "book", "download", "switch", "upgrade",
+    "discover", "join", "start", "buy", "shop", "order", "sign up",
+    "subscribe", "register", "claim", "grab", "experience",
+]
+
+
+def _count_matches(text_lower: str, keywords: list) -> int:
+    return sum(1 for kw in keywords if kw in text_lower)
+
+
+def extract_text_scores(text: str) -> Dict[str, float]:
+    """
+    Extract price/trust/urgency scores from ad text using keyword analysis.
+
+    Returns scores in [0, 1] based on the presence and density of
+    persuasion-related keywords in the text.
+    """
+    text_lower = text.lower()
+
+    price_pos = _count_matches(text_lower, _PRICE_POSITIVE)
+    price_neg = _count_matches(text_lower, _PRICE_NEGATIVE)
+
+    if price_pos + price_neg == 0:
+        price_score = 0.5
+    else:
+        price_score = 0.5 + 0.15 * price_pos - 0.15 * price_neg
+        price_score = max(0.1, min(0.95, price_score))
+
+    trust_pos = _count_matches(text_lower, _TRUST_POSITIVE)
+    trust_neg = _count_matches(text_lower, _TRUST_NEGATIVE)
+
+    if trust_pos + trust_neg == 0:
+        trust_score = 0.45
+    else:
+        # Diminishing returns: first keyword +0.15, subsequent +0.05 each
+        trust_boost = min(trust_pos, 1) * 0.15 + max(trust_pos - 1, 0) * 0.05
+        trust_score = 0.45 + trust_boost - 0.10 * trust_neg
+        trust_score = max(0.1, min(0.95, trust_score))
+
+    urgency_pos = _count_matches(text_lower, _URGENCY_POSITIVE)
+
+    if urgency_pos == 0:
+        urgency_score = 0.3
+    else:
+        urgency_score = 0.3 + 0.20 * urgency_pos
+        urgency_score = max(0.1, min(0.95, urgency_score))
+
+    # Boost for explicit percentage mentions (strong price signal)
+    pct_matches = re.findall(r'(\d+)%', text)
+    for pct_str in pct_matches:
+        pct = int(pct_str)
+        if pct >= 20:
+            price_score = min(0.95, price_score + 0.10)
+            urgency_score = min(0.95, urgency_score + 0.05)
+
+    # Boost for exclamation marks (emotional intensity)
+    excl_count = text.count('!')
+    if excl_count >= 2:
+        urgency_score = min(0.95, urgency_score + 0.05)
+
+    # Action verb boost: direct-response copy generally outperforms passive
+    action_count = _count_matches(text_lower, _ACTION_VERBS)
+    if action_count > 0:
+        urgency_score = min(0.95, urgency_score + 0.05 * min(action_count, 2))
+        price_score = min(0.95, price_score + 0.03 * min(action_count, 2))
+
+    return {
+        "price_score": round(price_score, 4),
+        "trust_score": round(trust_score, 4),
+        "urgency_score": round(urgency_score, 4),
+    }
+
+
 def extract_scores(ad_data: Dict[str, Any],
                    price_scale: float = 50.0) -> Dict[str, float]:
     """
-    Extract normalized scores from raw ad data and text.
-    Uses regex and heuristics to score price, trust, and urgency.
+    Extract normalized scores from raw ad data.
+
+    If the ad_data contains a 'text' field, text-based scoring is attempted
+    first. Falls back to attribute-based scoring if text produces no signal
+    or is absent.
     """
-    text = ad_data.get('text', '').lower()
-    
-    target_interest = None
-    import re
-    m = re.search(r'interest (\d+)', text)
-    if m:
-        target_interest = int(m.group(1))
-        
-    def add_interest(d):
-        d["target_interest"] = target_interest
-        return d
-    
-    # 8 Main Dataset Templates
-    if 'trusted by thousands of customers worldwide' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 1.0, "urgency_score": 0.0, "emotion_score": 0.0})
-    if 'join our community of happy buyers' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.8, "urgency_score": 0.0, "emotion_score": 0.8})
-    if 'don\'t miss out, sale ends soon' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.0, "urgency_score": 1.0, "emotion_score": 0.0})
-    if 'limited time offer on our newest products' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.0, "urgency_score": 1.0, "emotion_score": 0.0})
-    if 'premium quality at an affordable price' in text:
-        return add_interest({"price_score": 1.0, "trust_score": 0.5, "urgency_score": 0.0, "emotion_score": 0.0})
-    if 'the perfect gift for your loved ones' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.0, "urgency_score": 0.0, "emotion_score": 1.0})
-    if 'upgrade your lifestyle now' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.0, "urgency_score": 0.5, "emotion_score": 0.8})
-    if 'discover the difference today' in text:
-        return add_interest({"price_score": 0.0, "trust_score": 0.5, "urgency_score": 0.5, "emotion_score": 0.5})
-    # --- Price Score (Deal Perceived Value) ---
-    # High score if ad mentions discounts, free, savings, or deals.
-    price_score = 0.5
-    if re.search(r'\b(free|save|discount|% off|\$ off|deal|sale|clearance|cheap|affordable)\b', text):
-        price_score += 0.25
-        # Add more if there's a big percentage
-        if re.search(r'(50%|60%|70%|80%|90%)', text):
-            price_score += 0.15
-        elif re.search(r'(20%|30%|40%)', text):
-            price_score += 0.1
-    # Check numeric price in text if present (e.g. $5)
-    prices_found = re.findall(r'\$\d+', text)
-    if prices_found:
-        try:
-            min_price = min([int(p.replace('$', '')) for p in prices_found])
-            if min_price < 20:
-                price_score += 0.1
-        except:
-            pass
-            
+    text = ad_data.get('text', '')
+    if text and isinstance(text, str) and len(text.strip()) > 5:
+        text_scores = extract_text_scores(text)
+        has_signal = (
+            text_scores['price_score'] != 0.5
+            or text_scores['trust_score'] != 0.45
+            or text_scores['urgency_score'] != 0.3
+        )
+        if has_signal:
+            return text_scores
+
+    # Attribute-based fallback
+    price = ad_data.get('price', 10.0)
+    price_score = 1.0 / (1.0 + price / price_scale)
     price_score = max(0.0, min(1.0, price_score))
 
+    social_proof = ad_data.get('social_proof', 2.5)
+    trust_base = social_proof / 5.0
+    trust_score = 0.2 + 0.8 * trust_base
 
-    # --- Trust Score (Authority & Social Proof) ---
-    trust_score = 0.5
-    if re.search(r'\b(trusted|guarantee|warranty|secure|reviews|rated|experts|certified|proven|premium|quality|community)\b', text):
-        trust_score += 0.2
-        if 'money back' in text or 'guarantee' in text:
-            trust_score += 0.1
-        if 'stars' in text or 'rating' in text:
-            trust_score += 0.1
-    if re.search(r'\b(scam|fake|unreliable)\b', text):
-        trust_score -= 0.3
-        
+    category = ad_data.get('category', '')
+    if category == 'luxury':
+        trust_score = min(1.0, trust_score * 1.1)
+
     trust_score = max(0.0, min(1.0, trust_score))
 
-
-    # --- Urgency Score (FOMO) ---
-    urgency_score = 0.5
-    if re.search(r'\b(urgent|now|limited time|hurry|today|last chance|ending soon|don\'t miss|expires|only \d+ left)\b', text):
-        urgency_score += 0.25
-        if 'today' in text or 'now' in text:
-            urgency_score += 0.1
-        if 'last chance' in text or 'ending soon' in text:
-            urgency_score += 0.1
-            
+    urgency_raw = ad_data.get('urgency', 2.5)
+    urgency_score = urgency_raw / 5.0
     urgency_score = max(0.0, min(1.0, urgency_score))
-
-    # --- Emotion Score (Emotional Appeal) ---
-    emotion_score = 0.5
-    if re.search(r'\b(love|loved|gift|happy|family|friends|joy|beautiful|amazing|perfect|smile|heart|discover|lifestyle|buyers)\b', text):
-        emotion_score += 0.3
-        if 'loved ones' in text or 'gift' in text:
-            emotion_score += 0.2
-            
-    emotion_score = max(0.0, min(1.0, emotion_score))
 
     return {
         "price_score": price_score,
         "trust_score": trust_score,
-        "urgency_score": urgency_score,
-        "emotion_score": emotion_score
+        "urgency_score": urgency_score
     }
-

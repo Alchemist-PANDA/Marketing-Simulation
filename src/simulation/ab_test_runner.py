@@ -84,7 +84,7 @@ class ABTestRunner:
         )
         res_a['analysis']['predicted_ctr'] = round(ctr_a, 6)
         res_a['analysis']['predicted_cvr'] = round(cvr_a, 6)
-        res_a['analysis']['confidence_score'] = 0.7
+        res_a['analysis']['confidence_score'] = min(1.0, cohort_a_size / 500)
         res_a['cohort_size'] = cohort_a_size
 
         res_b['analysis'] = analyze_failure(
@@ -93,7 +93,7 @@ class ABTestRunner:
         )
         res_b['analysis']['predicted_ctr'] = round(ctr_b, 6)
         res_b['analysis']['predicted_cvr'] = round(cvr_b, 6)
-        res_b['analysis']['confidence_score'] = 0.7
+        res_b['analysis']['confidence_score'] = min(1.0, cohort_b_size / 500)
         res_b['cohort_size'] = cohort_b_size
 
         val_a = res_a.get(objective, 0)

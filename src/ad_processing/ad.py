@@ -21,40 +21,49 @@ class Ad:
     visual_scores: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Auto-calculate scores using Neural Scorer or Keyword Fallback"""
-        try:
-            from src.ad_processing.neural_scorer import predict_scores
-            neural_available = True
-        except ImportError:
-            neural_available = False
+        """Auto-calculate scores from ad text.
 
-        from src.ad_processing.scorer import extract_scores
+        Scoring priority:
+        1. Text-aware keyword analysis (always available, no ML deps)
+        2. Neural scorer via sentence-transformers (when installed and
+           the keyword scorer found no signal in the text)
+        3. Attribute-based fallback (price/social_proof/urgency numbers)
+        """
+        from src.ad_processing.scorer import extract_scores, extract_text_scores
 
-        # Only auto-calculate if scores are at their default 0.5
         if self.price_score == 0.5 and self.trust_score == 0.5 and self.urgency_score == 0.5:
-            # 1. Attempt Neural Scoring if available
-            if neural_available:
+            # Try text-aware keyword scoring first
+            text_scores = extract_text_scores(self.text)
+            has_keyword_signal = (
+                text_scores['price_score'] != 0.5
+                or text_scores['trust_score'] != 0.45
+                or text_scores['urgency_score'] != 0.3
+            )
+
+            if has_keyword_signal:
+                self.price_score = text_scores['price_score']
+                self.trust_score = text_scores['trust_score']
+                self.urgency_score = text_scores['urgency_score']
+            else:
+                # No keyword signal — try neural scorer for semantic analysis
                 try:
+                    from src.ad_processing.neural_scorer import predict_scores
                     scores = predict_scores(self.text)
-                    # If neural scorer returns all 0.5, it might be in fallback mode
-                    # In that case, we still try the heuristic scorer for better results
-                    if all(v == 0.5 for v in scores.values()):
-                        neural_available = False
-                    else:
+                    if not all(v == 0.5 for v in scores.values()):
                         self.price_score = scores['price_score']
                         self.trust_score = scores['trust_score']
                         self.urgency_score = scores['urgency_score']
-                except Exception:
-                    neural_available = False
+                        return
+                except (ImportError, Exception):
+                    pass
 
-            # 2. Fallback to Keyword/Heuristic Scoring if neural failed or was disabled
-            if not neural_available:
+                # Final fallback: attribute-based scoring
                 data = {
                     'price': self.price,
                     'category': self.category,
                     'social_proof': self.social_proof,
                     'urgency': self.urgency,
-                    'text': self.text
+                    'text': self.text,
                 }
                 scores = extract_scores(data)
                 self.price_score = scores.get('price_score', 0.5)
