@@ -112,7 +112,9 @@ def inject_auth_css():
     @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5%, -5%) scale(1.1); } }
 
     /* Glass Card Container */
-    .main .block-container {
+    .main .block-container,
+    [data-testid="stAppViewBlockContainer"],
+    [data-testid="block-container"] {
         position: relative; z-index: 10;
         max-width: 440px !important; padding: 3rem !important; margin-top: 10vh !important;
         background: rgba(20, 23, 28, 0.6) !important;
