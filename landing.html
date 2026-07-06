@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Wind Tunnel — Predict Ad Winners Before You Spend a Dollar</title>
+<meta name="description" content="Marketing Simulation runs your ad creative through 500 AI-simulated consumers before it reaches a real audience. 87.9% directional accuracy on real Facebook ad outcomes.">
+<meta property="og:title" content="Digital Wind Tunnel — Predict Ad Winners Before You Spend a Dollar">
+<meta property="og:description" content="Stress-test your creative against 500 AI-simulated consumers before you spend a dollar.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chamber:#0B0D10;
+    --panel:#14171C;
+    --panel-2:#1B1F26;
+    --steel:#3E6B8A;
+    --steel-dim:#28455A;
+    --pass:#FF7A3D;
+    --fail:#E14B4B;
+    --data:#4FD1E8;
+    --ink:#E9EBEE;
+    --ink-dim:#9AA3AE;
+    --line:rgba(233,235,238,0.09);
+    --display:'Space Grotesk',sans-serif;
+    --body:'Inter',sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--chamber);
+    color:var(--ink);
+    font-family:var(--body);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none;}
+  ::selection{background:var(--pass);color:#0B0D10;}
+  :focus-visible{outline:2px solid var(--data);outline-offset:3px;}
+ 
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+ 
+  /* Telemetry strip — signature element, reused across sections */
+  .telemetry{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+    display:flex;
+    gap:28px;
+    overflow:hidden;
+    white-space:nowrap;
+  }
+  .telemetry span{opacity:0.8;}
+  .telemetry b{color:var(--data);font-weight:500;}
+  .telemetry .fail-tag{color:var(--fail);}
+  .telemetry .pass-tag{color:var(--pass);}
+ 
+  /* Header */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    background:rgba(11,13,16,0.72);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 32px;max-width:1180px;margin:0 auto;
+  }
+  .logo{
+    font-family:var(--display);font-weight:600;font-size:17px;
+    display:flex;align-items:center;gap:9px;
+  }
+  .logo .dot{width:7px;height:7px;border-radius:50%;background:var(--pass);
+    box-shadow:0 0 8px var(--pass);animation:pulse 2.2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .navlinks{display:flex;gap:34px;font-size:14px;color:var(--ink-dim);}
+  .navlinks a:hover{color:var(--ink);}
+  .nav-cta{
+    font-size:13px;font-weight:600;padding:9px 18px;border-radius:6px;
+    background:var(--ink);color:var(--chamber);
+  }
+  .header-telemetry{padding:0 32px 10px;max-width:1180px;margin:0 auto;}
+  @media(max-width:760px){.navlinks{display:none;} .header-telemetry span:nth-child(n+3){display:none;}}
+ 
+  /* Hero */
+  .hero{
+    position:relative;min-height:100vh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding-top:110px;
+  }
+  #chamber-canvas{
+    position:absolute;inset:0;width:100%;height:100%;
+    opacity:0;transition:opacity 1.2s ease;
+  }
+  #chamber-canvas.ready{opacity:1;}
+  .hero-content{position:relative;z-index:2;text-align:center;}
+  .hero-eyebrow{
+    font-family:var(--mono);font-size:12px;color:var(--data);
+    letter-spacing:0.14em;text-transform:uppercase;margin-bottom:22px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .hero-eyebrow::before,.hero-eyebrow::after{content:'';width:28px;height:1px;background:var(--steel-dim);}
+  h1.hero-head{
+    font-family:var(--display);font-weight:700;
+    font-size:clamp(2.4rem,5.6vw,4.6rem);
+    line-height:1.05;letter-spacing:-0.01em;
+    max-width:920px;margin:0 auto 22px;
+  }
+  h1.hero-head em{
+    font-style:normal;color:var(--pass);
+  }
+  .hero-sub{
+    font-size:clamp(1rem,1.6vw,1.2rem);color:var(--ink-dim);
+    max-width:560px;margin:0 auto 36px;line-height:1.55;
+  }
+  .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
+  .btn-primary{
+    background:var(--pass);color:#12100D;font-weight:600;font-size:15px;
+    padding:14px 30px;border-radius:7px;border:none;cursor:pointer;
+    box-shadow:0 0 0 0 rgba(255,122,61,0.5);transition:transform .18s ease, box-shadow .3s ease;
+  }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(255,122,61,0.35);}
+  .btn-secondary{
+    background:transparent;color:var(--ink);font-weight:600;font-size:15px;
+    padding:14px 26px;border-radius:7px;border:1px solid var(--line);cursor:pointer;
+    transition:border-color .18s ease, background .18s ease;
+  }
+  .btn-secondary:hover{border-color:var(--steel);background:rgba(62,107,138,0.12);}
+ 
+  /* Section shared */
+  section{padding:108px 0;position:relative;}
+  .section-head{max-width:640px;margin:0 auto 56px;text-align:center;}
+  .eyebrow-mono{
+    font-family:var(--mono);font-size:12px;color:var(--steel);
+    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;
+  }
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(1.7rem,3vw,2.4rem);letter-spacing:-0.01em;margin-bottom:14px;}
+  .section-sub{color:var(--ink-dim);font-size:15.5px;line-height:1.6;}
+ 
+  /* Trust bar */
+  .trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:34px 0;}
+  .trust-row{display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;}
+  .trust-stat{text-align:center;}
+  .trust-stat .num{font-family:var(--mono);font-size:26px;color:var(--data);font-weight:500;}
+  .trust-stat .lbl{font-size:12.5px;color:var(--ink-dim);margin-top:4px;}
+ 
+  /* Features */
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  @media(max-width:900px){.feature-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.feature-grid{grid-template-columns:1fr;}}
+  .feature-card{
+    background:var(--panel);padding:34px 28px;
+  }
+  .feature-icon{width:38px;height:38px;margin-bottom:20px;}
+  .feature-card h3{font-family:var(--display);font-size:17px;font-weight:600;margin-bottom:10px;}
+  .feature-card p{font-size:14px;color:var(--ink-dim);line-height:1.6;}
+ 
+  /* How it works */
+  .flow{display:flex;gap:0;position:relative;}
+  @media(max-width:860px){.flow{flex-direction:column;gap:36px;}}
+  .flow-step{flex:1;position:relative;padding:0 24px;}
+  .flow-step:not(:last-child)::after{
+    content:'';position:absolute;top:26px;right:-4px;width:34px;height:1px;
+    background:repeating-linear-gradient(90deg,var(--steel) 0 6px,transparent 6px 11px);
+  }
+  @media(max-width:860px){.flow-step::after{display:none;}}
+  .flow-num{
+    font-family:var(--mono);font-size:13px;color:var(--data);
+    width:52px;height:52px;border:1px solid var(--steel-dim);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin-bottom:22px;
+  }
+  .flow-step h3{font-family:var(--display);font-size:17px;font-weight:600;margin-bottom:10px;}
+  .flow-step p{font-size:14px;color:var(--ink-dim);line-height:1.6;}
+ 
+  /* Testimonials */
+  .test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  @media(max-width:900px){.test-grid{grid-template-columns:1fr;}}
+  .test-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:28px;
+  }
+  .test-quote{font-size:14.5px;line-height:1.65;color:var(--ink);margin-bottom:20px;}
+  .test-who{font-size:12.5px;color:var(--ink-dim);font-family:var(--mono);}
+  .disclaimer{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:24px;opacity:0.7;}
+ 
+  /* Pricing */
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;}
+  @media(max-width:900px){.price-grid{grid-template-columns:1fr;}}
+  .price-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:32px 28px;display:flex;flex-direction:column;
+  }
+  .price-card.featured{border-color:var(--pass);background:linear-gradient(180deg,rgba(255,122,61,0.06),var(--panel) 40%);position:relative;}
+  .price-tag{
+    position:absolute;top:-11px;left:28px;background:var(--pass);color:#12100D;
+    font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;letter-spacing:0.04em;
+  }
+  .price-name{font-family:var(--display);font-size:16px;font-weight:600;color:var(--ink-dim);margin-bottom:10px;}
+  .price-amt{font-family:var(--mono);font-size:34px;font-weight:500;margin-bottom:4px;}
+  .price-amt span{font-size:14px;color:var(--ink-dim);font-family:var(--body);}
+  .price-desc{font-size:13.5px;color:var(--ink-dim);margin-bottom:26px;}
+  .price-feats{list-style:none;font-size:13.5px;color:var(--ink);margin-bottom:28px;flex:1;}
+  .price-feats li{padding:8px 0;border-top:1px solid var(--line);display:flex;gap:10px;}
+  .price-feats li::before{content:'—';color:var(--steel);}
+  .price-cta{
+    text-align:center;padding:12px;border-radius:7px;font-weight:600;font-size:14px;
+    background:var(--panel-2);border:1px solid var(--line);cursor:pointer;
+  }
+  .price-card.featured .price-cta{background:var(--pass);color:#12100D;border:none;}
+ 
+  /* Footer CTA */
+  .cta-footer{
+    background:var(--panel);border-top:1px solid var(--line);
+    text-align:center;padding:100px 0 60px;
+  }
+  .cta-footer h2{font-size:clamp(1.8rem,3.6vw,2.7rem);}
+  .signup-row{
+    display:flex;gap:10px;max-width:440px;margin:32px auto 0;justify-content:center;flex-wrap:wrap;
+  }
+  .signup-row input{
+    background:var(--chamber);border:1px solid var(--line);border-radius:7px;
+    padding:13px 16px;color:var(--ink);font-size:14px;flex:1;min-width:220px;
+  }
+  .signup-row input:focus{border-color:var(--data);}
+  footer.foot{padding:36px 0;border-top:1px solid var(--line);}
+  .foot-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+  .foot-links{display:flex;gap:24px;font-size:13px;color:var(--ink-dim);}
+ 
+  [data-reveal]{opacity:0;transform:translateY(22px);}
+  .fade-init [data-reveal]{transition:opacity .7s ease, transform .7s ease;}
+</style>
+</head>
+<body class="fade-init">
+ 
+<header>
+  <nav class="nav">
+    <div class="logo"><span class="dot"></span>DIGITAL WIND TUNNEL</div>
+    <div class="navlinks">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <a href="http://localhost:8501/" class="nav-cta">Start Free Trial</a>
+  </nav>
+  <div class="header-telemetry telemetry" id="header-telemetry">
+    <span>RUN <b>#48213</b></span>
+    <span>ACCURACY <b>87.9%</b></span>
+    <span>PERSONAS <b>512</b> ACTIVE</span>
+    <span class="pass-tag">● CREATIVE_B — PASS</span>
+    <span class="fail-tag">● CREATIVE_A — FAIL (low salience)</span>
+  </div>
+</header>
+ 
+<section class="hero">
+  <canvas id="chamber-canvas"></canvas>
+  <div class="hero-content wrap">
+    <div class="hero-eyebrow">DIGITAL WIND TUNNEL FOR AD CREATIVE</div>
+    <h1 class="hero-head">Predict Ad Winners <em>Before You Spend a Dollar</em></h1>
+    <p class="hero-sub">Run every creative through 500 AI-simulated consumers, each with a distinct personality, before it ever reaches a real audience — and see exactly why it wins or fails.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="window.location.href='http://localhost:8501/'">Start Free Trial</button>
+      <a href="#how"><button class="btn-secondary">See how it works</button></a>
+    </div>
+  </div>
+</section>
+ 
+<div class="trust wrap">
+  <div class="trust-row">
+    <div class="trust-stat"><div class="num">87.9%</div><div class="lbl">Directional accuracy on real Facebook ad outcomes</div></div>
+    <div class="trust-stat"><div class="num">500+</div><div class="lbl">Distinct simulated consumer personalities</div></div>
+    <div class="trust-stat"><div class="num">&lt;2 min</div><div class="lbl">From upload to full diagnostic</div></div>
+    <div class="trust-stat"><div class="num">$0</div><div class="lbl">Spent before you know if it works</div></div>
+  </div>
+</div>
+ 
+<section id="features">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <div class="eyebrow-mono">INSTRUMENTATION</div>
+      <h2>Everything the chamber measures</h2>
+      <p class="section-sub">Five instruments run on every creative you send through — no manual setup, no configuration.</p>
+    </div>
+    <div class="feature-grid" data-reveal>
+      <div class="feature-card">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#4FD1E8" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <h3>AI-Powered Scoring</h3>
+        <p>Every creative gets a single directional score, backed by 87.9% accuracy against real ad outcomes — not a vague "sentiment" grade.</p>
+      </div>
+      <div class="feature-card">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#4FD1E8" stroke-width="1.5"><path d="M12 4a4 4 0 100 8 4 4 0 000-8z"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+        <h3>Psychology-Based Simulation</h3>
+        <p>512 simulated personas with distinct attention patterns, values, and buying psychology react independently to your creative.</p>
+      </div>
+      <div class="feature-card">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#4FD1E8" stroke-width="1.5"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+        <h3>Instant Results</h3>
+        <p>Full simulation runs in under two minutes — fast enough to test five variants before your coffee's cold.</p>
+      </div>
+      <div class="feature-card">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#4FD1E8" stroke-width="1.5"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 15l4-4 4 3 5-6 5 5"/></svg>
+        <h3>Image + Text Analysis</h3>
+        <p>The chamber reads your creative the way a scroll-stopped thumb does — visual salience and copy, together, not separately.</p>
+      </div>
+      <div class="feature-card">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#4FD1E8" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
+        <h3>Creative Ideation</h3>
+        <p>When a creative fails, you get the specific reason and a concrete direction for the next version — not just a score.</p>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<section id="how" style="background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <div class="eyebrow-mono">TEST SEQUENCE</div>
+      <h2>Three passes through the chamber</h2>
+      <p class="section-sub">Every run follows the same fixed sequence, so results are always comparable across creatives.</p>
+    </div>
+    <div class="flow" data-reveal>
+      <div class="flow-step">
+        <div class="flow-num">01</div>
+        <h3>Upload</h3>
+        <p>Drop in your ad creative — image, copy, or both. No formatting, no brand kit required.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">02</div>
+        <h3>Simulate</h3>
+        <p>512 AI personas independently react to the creative, each scored on attention, resonance, and intent to act.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">03</div>
+        <h3>Optimise</h3>
+        <p>Get a directional pass/fail call plus the specific reasons behind it, so the next version fixes the right thing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<section>
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <div class="eyebrow-mono">FIELD NOTES</div>
+      <h2>What early runs looked like</h2>
+    </div>
+    <div class="test-grid" data-reveal>
+      <div class="test-card">
+        <p class="test-quote">"We killed a creative we were about to spend $8k on. The chamber flagged the exact same weak hook our best-performing ad from last quarter didn't have."</p>
+        <p class="test-who">Performance Lead — DTC skincare brand</p>
+      </div>
+      <div class="test-card">
+        <p class="test-quote">"The diagnostic told us why, not just what. That's the part that actually changed how we brief creative now."</p>
+        <p class="test-who">Media Buyer — Independent agency</p>
+      </div>
+      <div class="test-card">
+        <p class="test-quote">"Two minutes per test means we run every variant before launch now. It's just part of the process."</p>
+        <p class="test-who">Growth Marketer — B2B SaaS</p>
+      </div>
+    </div>
+    <p class="disclaimer">Illustrative quotes from early access testers. Roles shown are representative, not verbatim attributions.</p>
+  </div>
+</section>
+ 
+<section id="pricing" style="background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <div class="eyebrow-mono">ACCESS TIERS</div>
+      <h2>Pick your test capacity</h2>
+      <p class="section-sub">Start free. Upgrade when you're running more creatives than you can eyeball yourself.</p>
+    </div>
+    <div class="price-grid" data-reveal>
+      <div class="price-card">
+        <div class="price-name">FREE</div>
+        <div class="price-amt">$0<span>/mo</span></div>
+        <div class="price-desc">Try the chamber on your own creative.</div>
+        <ul class="price-feats">
+          <li>3 simulation runs / month</li>
+          <li>Core directional score</li>
+          <li>128 simulated personas</li>
+          <li>Email support</li>
+        </ul>
+        <div class="price-cta" onclick="window.location.href='http://localhost:8501/'">Start free</div>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">MOST USED</div>
+        <div class="price-name">PRO</div>
+        <div class="price-amt">$49<span>/mo</span></div>
+        <div class="price-desc">For marketers testing every creative before launch.</div>
+        <ul class="price-feats">
+          <li>Unlimited simulation runs</li>
+          <li>Full 512-persona panel</li>
+          <li>Failure diagnostics + ideation notes</li>
+          <li>Creative version history</li>
+          <li>Priority support</li>
+        </ul>
+        <div class="price-cta" onclick="window.location.href='http://localhost:8501/'">Start free trial</div>
+      </div>
+      <div class="price-card">
+        <div class="price-name">ENTERPRISE</div>
+        <div class="price-amt">$499<span>/mo</span></div>
+        <div class="price-desc">For agencies and teams running creative at volume.</div>
+        <ul class="price-feats">
+          <li>Everything in Pro</li>
+          <li>Multi-seat team access</li>
+          <li>Custom persona panels</li>
+          <li>API access</li>
+          <li>Dedicated onboarding</li>
+        </ul>
+        <div class="price-cta" onclick="window.location.href='mailto:contact@example.com'">Talk to us</div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<section class="cta-footer" id="signup">
+  <div class="wrap">
+    <div class="eyebrow-mono">READY WHEN YOU ARE</div>
+    <h2>Get started today — free</h2>
+    <p class="section-sub" style="max-width:440px;margin:0 auto;">No credit card. Your first three runs are on us.</p>
+    <div class="signup-row">
+      <input type="email" placeholder="you@company.com" aria-label="Email address">
+      <button class="btn-primary" onclick="window.location.href='http://localhost:8501/'">Start Free Trial</button>
+    </div>
+  </div>
+</section>
+ 
+<footer class="foot">
+  <div class="wrap foot-row">
+    <div class="logo" style="font-size:14px;"><span class="dot"></span>DIGITAL WIND TUNNEL</div>
+    <div class="foot-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+  </div>
+</footer>
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+document.body.classList.add('fade-init');
+ 
+/* ---------- Reveal on scroll ---------- */
+if (window.gsap && window.ScrollTrigger) {
+  gsap.registerPlugin(ScrollTrigger);
+  document.querySelectorAll('[data-reveal]').forEach((el) => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 85%' }
+    });
+  });
+}
+ 
+/* ---------- Header telemetry ticker ---------- */
+(function ticker(){
+  const el = document.getElementById('header-telemetry');
+  if(!el) return;
+  const runs = [
+    '<span>RUN <b>#48213</b></span><span>ACCURACY <b>87.9%</b></span><span>PERSONAS <b>512</b> ACTIVE</span><span class="pass-tag">\u25CF CREATIVE_B \u2014 PASS</span><span class="fail-tag">\u25CF CREATIVE_A \u2014 FAIL (low salience)</span>',
+    '<span>RUN <b>#48214</b></span><span>ACCURACY <b>87.9%</b></span><span>PERSONAS <b>512</b> ACTIVE</span><span class="pass-tag">\u25CF CREATIVE_C \u2014 PASS</span><span>LATENCY <b>1.4s</b></span>',
+    '<span>RUN <b>#48215</b></span><span>ACCURACY <b>87.9%</b></span><span>PERSONAS <b>512</b> ACTIVE</span><span class="fail-tag">\u25CF CREATIVE_D \u2014 FAIL (weak hook)</span><span>LATENCY <b>1.1s</b></span>'
+  ];
+  let i = 0;
+  setInterval(() => { i = (i+1) % runs.length; el.style.opacity = 0;
+    setTimeout(() => { el.innerHTML = runs[i]; el.style.opacity = 1; }, 260);
+  }, 4200);
+  el.style.transition = 'opacity .25s ease';
+})();
+ 
+/* ---------- 3D Wind Tunnel Chamber ---------- */
+(function initChamber(){
+  const canvas = document.getElementById('chamber-canvas');
+  if (!canvas || !window.THREE) return;
+ 
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ 
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const heroEl = canvas.parentElement;
+  const setSize = () => renderer.setSize(heroEl.clientWidth, heroEl.clientHeight);
+  setSize();
+ 
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, heroEl.clientWidth/heroEl.clientHeight, 0.1, 100);
+  camera.position.set(0, 0.6, 9);
+ 
+  // Streamline particles: points flowing along the tunnel's Z axis
+  const COUNT = window.innerWidth < 700 ? 900 : 1800;
+  const positions = new Float32Array(COUNT * 3);
+  const speeds = new Float32Array(COUNT);
+  const radii = new Float32Array(COUNT);
+  const angles = new Float32Array(COUNT);
+ 
+  for (let i = 0; i < COUNT; i++) {
+    const r = 1.6 + Math.random() * 3.2;
+    const a = Math.random() * Math.PI * 2;
+    radii[i] = r;
+    angles[i] = a;
+    positions[i*3]   = Math.cos(a) * r;
+    positions[i*3+1] = Math.sin(a) * r * 0.55;
+    positions[i*3+2] = (Math.random() - 0.5) * 20;
+    speeds[i] = 0.03 + Math.random() * 0.06;
+  }
+ 
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+ 
+  const mat = new THREE.PointsMaterial({
+    color: 0x3E6B8A,
+    size: 0.05,
+    transparent: true,
+    opacity: 0.55,
+    sizeAttenuation: true
+  });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+ 
+  // Suspended creative card (the thing being tested)
+  const cardGeo = new THREE.PlaneGeometry(2.6, 1.7);
+  const cardMat = new THREE.MeshBasicMaterial({ color: 0x14171C, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+  const card = new THREE.Mesh(cardGeo, cardMat);
+  scene.add(card);
+ 
+  const edges = new THREE.EdgesGeometry(cardGeo);
+  const cardLine = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xFF7A3D, transparent: true, opacity: 0.85 }));
+  card.add(cardLine);
+ 
+  // Ambient ring markers (chamber structure)
+  for (let ring = -1; ring <= 1; ring++) {
+    const ringGeo = new THREE.RingGeometry(3.6, 3.62, 48);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x28455A, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.position.z = ring * 6;
+    scene.add(ringMesh);
+  }
+ 
+  function resize(){
+    setSize();
+    camera.aspect = heroEl.clientWidth / heroEl.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+ 
+  let t = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    if (prefersReduced) { renderer.render(scene, camera); return; }
+    t += 0.01;
+ 
+    const pos = geo.attributes.position.array;
+    for (let i = 0; i < COUNT; i++) {
+      pos[i*3+2] += speeds[i];
+      if (pos[i*3+2] > 10) pos[i*3+2] = -10;
+    }
+    geo.attributes.position.needsUpdate = true;
+ 
+    card.rotation.y = Math.sin(t * 0.3) * 0.15;
+    card.rotation.x = Math.sin(t * 0.22) * 0.06;
+    card.position.y = Math.sin(t * 0.4) * 0.18;
+ 
+    camera.position.x = Math.sin(t * 0.08) * 0.6;
+    camera.lookAt(0, 0, 0);
+ 
+    renderer.render(scene, camera);
+  }
+  animate();
+  requestAnimationFrame(() => canvas.classList.add('ready'));
+})();
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ import hashlib
 from typing import List, Dict, Optional, Any
 from fastapi import FastAPI, HTTPException, Request, Depends, Header, BackgroundTasks, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security.api_key import APIKeyHeader
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -156,6 +156,14 @@ DEFAULT_HISTORICAL = [
 _calibrator = Calibrator(reference_n=10)
 _calibrator.fit(DEFAULT_HISTORICAL)
 
+
+@app.get("/")
+async def root():
+    """Serve the SaaS landing page."""
+    landing_path = os.path.join(os.path.dirname(__file__), '../../landing.html')
+    if not os.path.exists(landing_path):
+        raise HTTPException(status_code=404, detail="Landing page not found")
+    return FileResponse(landing_path)
 
 @app.get("/health")
 async def health():
