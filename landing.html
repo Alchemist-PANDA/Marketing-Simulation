@@ -277,7 +277,7 @@
       <a href="#pricing">Pricing</a>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-      <a href="?login=true" target="_parent" class="landing-btn" style="padding:8px 20px;">Login</a>
+      <a href="javascript:goToAuth('login')" class="landing-btn" style="padding:8px 20px;">Login</a>
     </div>
   </nav>
   <div class="header-telemetry telemetry" id="header-telemetry">
@@ -296,8 +296,8 @@
     <h1 class="hero-head">Predict Ad Winners <em>Before You Spend a Dollar</em></h1>
     <p class="hero-sub">Run every creative through 500 AI-simulated consumers, each with a distinct personality, before it ever reaches a real audience — and see exactly why it wins or fails.</p>
     <div class="hero-ctas" style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
-      <a href="?login=true" target="_parent" class="landing-btn">Login</a>
-      <a href="?register=true" target="_parent" class="landing-btn-secondary">Create Account</a>
+      <a href="javascript:goToAuth('login')" class="landing-btn">Login</a>
+      <a href="javascript:goToAuth('register')" class="landing-btn-secondary">Create Account</a>
     </div>
   </div>
 </section>
@@ -417,7 +417,7 @@
           <li>128 simulated personas</li>
           <li>Email support</li>
         </ul>
-        <div class="price-cta" onclick="window.parent.location.href='?login=true'">Start free</div>
+        <div class="price-cta" onclick="goToAuth('login')">Start free</div>
       </div>
       <div class="price-card featured">
         <div class="price-tag">MOST USED</div>
@@ -431,7 +431,7 @@
           <li>Creative version history</li>
           <li>Priority support</li>
         </ul>
-        <div class="price-cta" onclick="window.parent.location.href='?login=true'">Start free trial</div>
+        <div class="price-cta" onclick="goToAuth('login')">Start free trial</div>
       </div>
       <div class="price-card">
         <div class="price-name">ENTERPRISE</div>
@@ -457,7 +457,7 @@
     <p class="section-sub" style="max-width:440px;margin:0 auto;">No credit card. Your first three runs are on us.</p>
     <div class="signup-row">
       <input type="email" placeholder="you@company.com" aria-label="Email address">
-      <button class="btn-primary" onclick="window.parent.location.href='?login=true'">Start Free Trial</button>
+      <button class="btn-primary" onclick="goToAuth('login')">Start Free Trial</button>
     </div>
   </div>
 </section>
@@ -606,6 +606,21 @@ if (window.gsap && window.ScrollTrigger) {
   animate();
   requestAnimationFrame(() => canvas.classList.add('ready'));
 })();
+</script>
+<script>
+function goToAuth(type) {
+    const isStreamlitIframe = window.self !== window.top;
+    const url = type === 'login' ? '?login=true' : '?register=true';
+    if (window.location.port === '8000') {
+        window.location.href = window.location.protocol + '//' + window.location.hostname + ':8501/' + url;
+    } else {
+        if (isStreamlitIframe) {
+            window.parent.location.href = url;
+        } else {
+            window.location.href = url;
+        }
+    }
+}
 </script>
 </body>
 </html>
