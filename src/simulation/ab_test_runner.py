@@ -23,8 +23,7 @@ class ABTestRunner:
     def run_test(self, ad_a_text: str, ad_b_text: str,
                  channel: str = 'facebook', price: float = 20.0,
                  objective: str = 'conversions',
-                 progress_callback=None,
-                 benchmarks: Dict[str, Any] = None) -> Dict[str, Any]:
+                 progress_callback=None) -> Dict[str, Any]:
         """
         Run an A/B test with strictly independent cohorts.
 
@@ -118,14 +117,16 @@ class ABTestRunner:
 
         if progress_callback:
             progress_callback(1.0, "Analysis complete")
-
-        reasoning = generate_reasoning(res_a, res_b, benchmarks)
+>>>>>>> origin/claude/marketing-sim-enterprise-7peo6y
 
         return {
             'ad_a': res_a,
             'ad_b': res_b,
             'winner': winner,
             'lift_percentage': round(lift, 2),
+<<<<<<< HEAD
             'objective': objective,
             'reasoning': reasoning
+=======
+            'objective': objective
         }

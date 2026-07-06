@@ -1,28 +1,6 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from typing import Dict, Any, Optional
-
-class SupabaseManager:
-    """
-    Wrapper for Supabase client with lazy initialization and robust local fallback.
-    """
-    def __init__(self):
-        self.url = os.getenv("SUPABASE_URL")
-        self.key = os.getenv("SUPABASE_ANON_KEY")
-        self.service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        self._client = None
-        self._initialized = False
-
-        env = os.getenv("ENV", "production").lower()
-
-        # Determine mode based on env vars
-        if env == "development" and not (self.url and self.key):
-            self.mode = "local"
-            self.enabled = False
-        else:
-            self.mode = "supabase"
-            self.enabled = True
 
     def _get_client(self):
         """Lazily initialize the Supabase client only when needed."""
@@ -86,25 +64,6 @@ class SupabaseManager:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    def select(self, table: str, query: str = "*", filters: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Select data from a Supabase table, or return disabled status."""
-        client = self._get_client()
-        if not client or not self.enabled:
-            return {"status": "disabled", "data": [], "message": "Persistence disabled."}
-
-        try:
-            q = client.table(table).select(query)
-            if filters:
-                for k, v in filters.items():
-                    q = q.eq(k, v)
-            response = q.execute()
-            return {"status": "success", "data": response.data}
-        except Exception as e:
-            return {"status": "error", "data": [], "message": str(e)}
-
-    def sign_in(self, email: str, password: str) -> Dict[str, Any]:
-        """Sign in with email and password."""
-        
         client = self._get_client()
         if not client or not self.enabled:
             return {"status": "disabled", "message": "Auth disabled. Use local mode."}

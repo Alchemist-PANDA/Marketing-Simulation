@@ -1,5 +1,5 @@
 import pytest
-from src.simulation.decision_engine import DecisionEngine
+from src.core.decision_engine import DecisionEngine
 
 def test_decision_engine_initialization():
     engine = DecisionEngine()

@@ -1,28 +1,41 @@
-import os
-import easyocr
-import numpy as np
-from PIL import Image
-import io
+"""
+OCR engine using EasyOCR for image-to-text extraction.
+Pure Python — no Tesseract system binaries required.
+"""
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 _READER = None
 
+
 def get_reader():
+    """Lazy-initialize EasyOCR reader (heavy model load, cached globally)."""
     global _READER
     if _READER is None:
-        gpu = os.environ.get("EASYOCR_GPU", "false").lower() == "true"
-        _READER = easyocr.Reader(['en'], gpu=gpu, verbose=False)
+        try:
+            import easyocr
+            _READER = easyocr.Reader(['en'], gpu=False)
+        except ImportError:
+            logger.error("easyocr not installed. Run: pip install easyocr")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to initialize EasyOCR: {e}")
+            raise
     return _READER
 
+
 def extract_text_from_image(image_bytes: bytes) -> str:
-    if not image_bytes:
-        return ""
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        img_np = np.array(img)
-        reader = get_reader()
-        results = reader.readtext(img_np)
-        return " ".join([item[1] for item in results]).strip()
-    except Exception:
-        return ""
+    """
+    Extract text from image bytes using EasyOCR.
+
+    Args:
+        image_bytes: Raw image bytes (JPG, PNG, WEBP).
+
+    Returns:
+        Extracted text as a single string, or empty string if nothing found.
+    """
+    reader = get_reader()
+    results = reader.readtext(image_bytes, detail=0)
+    return " ".join(results).strip()
