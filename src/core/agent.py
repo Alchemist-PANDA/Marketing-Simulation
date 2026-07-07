@@ -45,7 +45,20 @@ class Agent:
     ):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.personality = Personality(**personality_dict)
+
+        # Filter personality_dict to only include valid OCEAN + marketing traits
+        valid_traits = {
+            'openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism',
+            'price_sensitivity', 'ad_skepticism', 'social_influence', 'impulse_control', 'brand_loyalty'
+        }
+        filtered_personality = {k: v for k, v in personality_dict.items() if k in valid_traits}
+
+        # Ensure default values if missing
+        for trait in valid_traits:
+            if trait not in filtered_personality:
+                filtered_personality[trait] = 0.5
+
+        self.personality = Personality(**filtered_personality)
         self.state = AgentState(money=initial_wealth)
         self.interests = interests or []
         self.memory_keys: List[str] = []

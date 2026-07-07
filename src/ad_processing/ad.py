@@ -17,30 +17,54 @@ class Ad:
     embedding: Optional[List[float]] = None # to be filled by embedder
 
     def __post_init__(self):
-        """Auto-calculate scores using Neural Scorer or Keyword Fallback"""
-        from src.ad_processing.neural_scorer import predict_scores
-        from src.ad_processing.scorer import extract_scores
+        """Auto-calculate scores from ad text.
 
-        # Only auto-calculate if scores are at their default 0.5
+        Scoring priority:
+        1. Text-aware keyword analysis (always available, no ML deps)
+        2. Neural scorer via sentence-transformers (when installed and
+           the keyword scorer found no signal in the text)
+        3. Attribute-based fallback (price/social_proof/urgency numbers)
+        """
+        from src.ad_processing.scorer import extract_scores, extract_text_scores
+
         if self.price_score == 0.5 and self.trust_score == 0.5 and self.urgency_score == 0.5:
-            # 1. Attempt Neural Scoring (Weeks 1-2 Fix)
-            try:
-                scores = predict_scores(self.text)
-                self.price_score = scores['price_score']
-                self.trust_score = scores['trust_score']
-                self.urgency_score = scores['urgency_score']
-            except Exception as e:
-                # 2. Fallback to Keyword/Heuristic Scoring
+            # Try text-aware keyword scoring first
+            text_scores = extract_text_scores(self.text)
+            has_keyword_signal = (
+                text_scores['price_score'] != 0.5
+                or text_scores['trust_score'] != 0.45
+                or text_scores['urgency_score'] != 0.3
+            )
+
+            if has_keyword_signal:
+                self.price_score = text_scores['price_score']
+                self.trust_score = text_scores['trust_score']
+                self.urgency_score = text_scores['urgency_score']
+            else:
+                # No keyword signal — try neural scorer for semantic analysis
+                try:
+                    from src.ad_processing.neural_scorer import predict_scores
+                    scores = predict_scores(self.text)
+                    if not all(v == 0.5 for v in scores.values()):
+                        self.price_score = scores['price_score']
+                        self.trust_score = scores['trust_score']
+                        self.urgency_score = scores['urgency_score']
+                        return
+                except (ImportError, Exception):
+                    pass
+
+                # Final fallback: attribute-based scoring
                 data = {
                     'price': self.price,
                     'category': self.category,
                     'social_proof': self.social_proof,
-                    'urgency': self.urgency
+                    'urgency': self.urgency,
+                    'text': self.text,
                 }
                 scores = extract_scores(data)
-                self.price_score = scores['price_score']
-                self.trust_score = scores['trust_score']
-                self.urgency_score = scores['urgency_score']
+                self.price_score = scores.get('price_score', 0.5)
+                self.trust_score = scores.get('trust_score', 0.5)
+                self.urgency_score = scores.get('urgency_score', 0.5)
 
         # Ensure embedding is filled if not present
         if self.embedding is None:

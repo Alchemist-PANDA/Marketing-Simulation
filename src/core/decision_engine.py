@@ -15,7 +15,7 @@ class DecisionEngine:
 
     def decide_action(
         self,
-        agent: Agent,
+        agent: Any,
         context: Dict[str, Any],
         options: List[str]
     ) -> str:
@@ -31,6 +31,31 @@ class DecisionEngine:
 
         # Softmax selection or simple max
         return max(utilities, key=utilities.get)
+
+    def calculate_response_probability(self, agent: Any, campaign: Dict[str, Any]) -> float:
+        """
+        Legacy/Alias for compatibility with older tests.
+        Calculates a response probability (0-1).
+        """
+        # If agent is a dict (legacy test style), convert to object-like or use directly
+        if isinstance(agent, dict):
+            # Extract basic traits
+            ps = agent.get('price_sensitivity', 0.5)
+            ds = agent.get('digital_savviness', 0.5)
+            pc = agent.get('preferred_channel', '')
+        else:
+            ps = getattr(agent.personality, 'price_sensitivity', 0.5)
+            ds = getattr(agent.personality, 'openness', 0.5) # Using openness as proxy for digital_savviness
+            pc = '' # Placeholder
+
+        modifier = campaign.get('effectiveness_modifier', 1.0)
+        target_trait_val = ds if campaign.get('trait_target') == 'digital_savviness' else (1-ps)
+
+        prob = target_trait_val * modifier
+        if pc == campaign.get('channel'):
+            prob *= 1.2
+
+        return max(0.0, min(1.0, prob))
 
     def _calculate_utility(self, agent: Agent, option: str, context: Dict[str, Any]) -> float:
         """Utility function driven by Big Five traits"""
