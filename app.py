@@ -198,6 +198,8 @@ ad2_text = ""
 ad1_image = None
 ad2_image = None
 
+col1, col2 = st.columns(2)
+
 with col1:
     if ad_type == "Image Upload":
         ad1_image = st.file_uploader("Upload Ad A Image", type=["jpg", "png", "jpeg", "webp"])
