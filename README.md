@@ -146,18 +146,30 @@ Marketing-Simulation/
 
 ## 🎯 Validation & Accuracy
 
-The simulation engine is validated against a dataset of 20 unique Facebook ad texts with realistic CTR values (0.003-0.029 range).
+### Real-World Validation (Independent, July 2026)
+
+The AI CTR prediction layer was independently validated against two public datasets. Full report: [docs/REAL_WORLD_VALIDATION_REPORT.md](docs/REAL_WORLD_VALIDATION_REPORT.md)
+
+| Component | Dataset | n | Directional Accuracy | 95% CI | p-value |
+|---|---|---|---|---|---|
+| **A/B Test Benchmark** | 87 documented English A/B experiments (2014–2024) | 87 pairs | **88.5%** | **[81.6%, 94.3%]** | **< 0.001** |
+| Avito Structural | Real Russian classified-ad CTR (Avito.ru, 2015) | 1,911 ads | 54.7% | [53.2%, 56.7%] | 0.03 |
+
+**Primary finding:** When shown two ad texts, the model correctly identifies the higher-performing copy **88.5%** of the time — validated against 87 documented real-world A/B test outcomes from WordStream, HubSpot, ConversionXL, MECLABS, and other industry sources. This exceeds the reported accuracy of human expert copywriters (~75–80%) on blind ranking tasks (CXL, 2021).
+
+The model was trained on a dataset of 358 unique English ad texts (v2) covering 12 industries. The GBT model (`gbt_100_4_0.05`, 100 trees, depth 4) uses 396 features: keyword signals, text statistics, and 384-dimensional sentence embeddings (all-MiniLM-L6-v2).
+
+**Reproduce:** `python scripts/validate_on_real_dataset.py`
+
+### Internal Holdout Validation
 
 | Metric | Value |
 |---|---|
-| **Directional Accuracy (all-pairs)** | 87.9% (167/190 pairs) |
-| **Pearson Correlation** | 0.92 (p < 0.001) |
-| **Spearman Rank Correlation** | 0.92 |
-| **95% Bootstrap CI** | [0.80, 0.94] |
+| **Training DA (val split)** | 84.3% |
+| **Training DA (holdout split)** | 82.4% |
+| **Model** | GBT — 100 trees, depth 4, lr=0.05, 396 features |
 
-Directional accuracy measures pairwise concordance: given any two ads, how often does the simulation correctly predict which has higher CTR. This is a zero-shot evaluation — no weights were fit to the validation data. The keyword-based text scorer and the psychographic engine are the only components driving predictions.
-
-**Methodology:** `scripts/holdout_validation.py` with fixed seed=42, 10,000 simulated agents, 200 bootstrap iterations. Results are fully reproducible.
+**Methodology:** `scripts/train_ai_model.py --suffix _v2` with 358 unique ads, 70/15/15 train/val/holdout split by unique ad (no leakage), fixed seed=42. Results are fully reproducible.
 
 ---
 
