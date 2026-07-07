@@ -41,8 +41,11 @@ def compute_directional_accuracy(actual, predicted):
     return correct / total if total > 0 else 0.5
 
 
+SPLIT_SUFFIX = ''  # overridden by --suffix argument
+
+
 def load_features(split):
-    path = f'data/features_{split}.csv'
+    path = f'data/features_{split}{SPLIT_SUFFIX}.csv'
     if not os.path.exists(path):
         raise FileNotFoundError(f'{path} not found. Run extract_features.py first.')
     df = pd.read_csv(path)
@@ -228,4 +231,9 @@ def train_and_evaluate():
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--suffix', default='', help='Suffix for split filenames, e.g. _v2')
+    args = parser.parse_args()
+    SPLIT_SUFFIX = args.suffix
     train_and_evaluate()

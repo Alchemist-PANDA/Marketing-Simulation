@@ -109,7 +109,14 @@ def process_dataset(csv_path, output_path=None, include_embeddings=True):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--suffix', default='', help='Suffix for split filenames, e.g. _v2')
+    args = parser.parse_args()
+
     for split in ['train', 'val', 'holdout']:
-        path = f'data/{split}.csv'
+        path = f'data/{split}{args.suffix}.csv'
         if os.path.exists(path):
-            process_dataset(path, f'data/features_{split}.csv')
+            process_dataset(path, f'data/features_{split}{args.suffix}.csv')
+        else:
+            print(f'Skipped (not found): {path}')
