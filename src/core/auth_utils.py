@@ -17,8 +17,23 @@ def is_auth_enabled() -> bool:
     key = os.getenv("SUPABASE_ANON_KEY")
     env = os.getenv("ENV", "production").lower()
     
-    # In production, ALWAYS enforce auth. If keys are missing, it will crash / fail gracefully.
+    try:
+        import streamlit as st
+        if "SUPABASE_URL" in st.secrets:
+            url = st.secrets["SUPABASE_URL"]
+        if "SUPABASE_ANON_KEY" in st.secrets:
+            key = st.secrets["SUPABASE_ANON_KEY"]
+        if "ENV" in st.secrets:
+            env = st.secrets["ENV"].lower()
+    except Exception:
+        pass
+    
+    # In production, ALWAYS enforce auth. If keys are missing, show a clear error.
     if env != "development":
+        if not (url and key):
+            import streamlit as st
+            st.error("Authentication Error: Supabase credentials not found in production. Please check Streamlit Cloud Secrets.")
+            st.stop()
         return True
         
     return bool(url and key)

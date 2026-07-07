@@ -11,13 +11,26 @@ class SupabaseManager:
         self.url = os.getenv("SUPABASE_URL")
         self.key = os.getenv("SUPABASE_ANON_KEY")
         self.service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        self.env = os.getenv("ENV", "production").lower()
+        
+        try:
+            import streamlit as st
+            if "SUPABASE_URL" in st.secrets:
+                self.url = st.secrets["SUPABASE_URL"]
+            if "SUPABASE_ANON_KEY" in st.secrets:
+                self.key = st.secrets["SUPABASE_ANON_KEY"]
+            if "SUPABASE_SERVICE_ROLE_KEY" in st.secrets:
+                self.service_role_key = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+            if "ENV" in st.secrets:
+                self.env = st.secrets["ENV"].lower()
+        except Exception:
+            pass
+            
         self._client = None
         self._initialized = False
 
-        env = os.getenv("ENV", "production").lower()
-
         # Determine mode based on env vars
-        if env == "development" and not (self.url and self.key):
+        if self.env == "development" and not (self.url and self.key):
             self.mode = "local"
             self.enabled = False
         else:
@@ -32,6 +45,14 @@ class SupabaseManager:
         if self._initialized:
             return self._client
 
+        if not self.url or not self.key:
+            if self.env == "development":
+                self.enabled = False
+                self.mode = "local"
+                return None
+            else:
+                raise RuntimeError("Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) are missing in production. Please check Streamlit Cloud Secrets.")
+
         try:
             from supabase import create_client, Client
             self._client = create_client(self.url, self.key)
@@ -39,14 +60,20 @@ class SupabaseManager:
             return self._client
         except ImportError:
             # If supabase-py is not installed, fail gracefully to local mode
-            self.enabled = False
-            self.mode = "local"
-            return None
+            if self.env == "development":
+                self.enabled = False
+                self.mode = "local"
+                return None
+            else:
+                raise RuntimeError("supabase-py is not installed but required in production environment.")
         except Exception as e:
             # Catch bad URLs or keys
-            self.enabled = False
-            self.mode = "local"
-            return None
+            if self.env == "development":
+                self.enabled = False
+                self.mode = "local"
+                return None
+            else:
+                raise RuntimeError(f"Failed to initialize Supabase client: {e}")
 
     def get_status(self) -> Dict[str, Any]:
         """Returns the current operational status of the persistence layer."""
