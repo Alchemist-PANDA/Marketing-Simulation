@@ -13,8 +13,8 @@ pydantic>=2.5.2
 streamlit
 plotly
 networkx
-httpx>=0.24.0,<0.25.0
-supabase==2.3.0
+httpx>=0.24.0
+supabase>=2.12.0
 easyocr==1.7.1
 Pillow>=10.0.0
 sentence-transformers==3.3.0
