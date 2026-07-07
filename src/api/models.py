@@ -80,3 +80,15 @@ class AuthSession(BaseModel):
     expires_in: int
     refresh_token: Optional[str] = None
     user: User
+
+
+class AIPredictRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Ad creative text")
+    mode: str = Field(default="classic", description="Prediction mode: classic, ai, or ensemble")
+    ai_weight: float = Field(default=0.5, ge=0, le=1, description="Weight for AI model in ensemble mode")
+    num_agents: int = Field(default=10000, ge=100, le=100000, description="Number of agents for simulation")
+    seed: Optional[int] = Field(default=42, description="Random seed for reproducibility")
+
+
+class ExplainRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Ad creative text to explain")

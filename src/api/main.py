@@ -20,7 +20,8 @@ from src.simulation.failure_analysis import analyze_failure
 from src.api.auth_handler import get_current_user_logic
 from src.core.auth_utils import is_auth_enabled
 from .models import (CampaignRequest, SimulationResult, AgentProfile,
-                     SegmentType, AdRequest, SimulateResponse, CalibrationRecord)
+                     SegmentType, AdRequest, SimulateResponse, CalibrationRecord,
+                     AIPredictRequest, ExplainRequest)
 
 app = FastAPI(
     title="Marketing Simulation API",
@@ -234,6 +235,47 @@ async def get_result(campaign_id: str):
     if campaign_id not in simulations:
         raise HTTPException(status_code=404, detail="Simulation not found")
     return simulations[campaign_id]
+
+
+@app.post("/predict_ai")
+async def predict_ai(request: AIPredictRequest):
+    try:
+        from src.ai.predictor import get_predictor
+        predictor = get_predictor()
+
+        kwargs = {}
+        if request.mode in ("classic", "ensemble"):
+            kwargs["num_agents"] = request.num_agents
+            kwargs["seed"] = request.seed
+        if request.mode == "ensemble":
+            kwargs["ai_weight"] = request.ai_weight
+
+        result = predictor.predict(text=request.text, mode=request.mode, **kwargs)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/predict_ai")
+async def api_predict_ai(request: AIPredictRequest):
+    return await predict_ai(request)
+
+
+@app.post("/explain")
+async def explain(request: ExplainRequest):
+    try:
+        from src.ai.predictor import get_predictor
+        predictor = get_predictor()
+        return predictor.explain(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/explain")
+async def api_explain(request: ExplainRequest):
+    return await explain(request)
 
 
 if __name__ == "__main__":

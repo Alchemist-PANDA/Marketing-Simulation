@@ -61,7 +61,7 @@ def get_available_ram_mb():
         return None
 
 
-tab1, tab2 = st.tabs(["🚀 New Simulation", "📂 History"])
+tab1, tab2, tab3 = st.tabs(["🚀 New Simulation", "📂 History", "🤖 AI Predictions"])
 
 with tab1:
     with st.sidebar:
@@ -356,3 +356,95 @@ with tab1:
 
 with tab2:
     render_history_tab()
+
+with tab3:
+    st.header("AI-Enhanced CTR Prediction")
+    st.markdown("Predict click-through rates using Classic simulation, trained ML models, or a weighted ensemble.")
+
+    ai_mode = st.radio(
+        "Prediction Mode",
+        ["Classic (Simulation Engine)", "AI (ML Model)", "Ensemble (Weighted Blend)"],
+        horizontal=True,
+        key="ai_pred_mode"
+    )
+
+    mode_map = {
+        "Classic (Simulation Engine)": "classic",
+        "AI (ML Model)": "ai",
+        "Ensemble (Weighted Blend)": "ensemble",
+    }
+    selected_mode = mode_map[ai_mode]
+
+    if selected_mode == "ensemble":
+        ai_weight = st.slider("AI Model Weight", 0.0, 1.0, 0.5, step=0.1, key="ai_weight_slider",
+                              help="0.0 = pure simulation, 1.0 = pure AI model")
+
+    ai_ad_text = st.text_area("Ad Creative Text", "Save 50% on your first purchase today!",
+                              height=120, key="ai_ad_text")
+
+    col_predict, col_explain = st.columns(2)
+    with col_predict:
+        run_ai_pred = st.button("Predict CTR", type="primary", key="run_ai_pred")
+    with col_explain:
+        run_explain = st.button("Explain Prediction", key="run_explain")
+
+    if run_ai_pred and ai_ad_text.strip():
+        from src.ai.predictor import get_predictor
+        predictor = get_predictor()
+
+        kwargs = {}
+        if selected_mode == "ensemble":
+            kwargs["ai_weight"] = ai_weight
+
+        with st.spinner("Running prediction..."):
+            result = predictor.predict(ai_ad_text, mode=selected_mode, **kwargs)
+
+        st.success(f"Predicted CTR: **{result['predicted_ctr']:.4%}** (mode: {result['mode']})")
+
+        if "scores" in result:
+            sc1, sc2, sc3 = st.columns(3)
+            with sc1:
+                render_metric_card("Price Score", f"{result['scores']['price_score']:.2f}", "💰")
+            with sc2:
+                render_metric_card("Trust Score", f"{result['scores']['trust_score']:.2f}", "🛡️")
+            with sc3:
+                render_metric_card("Urgency Score", f"{result['scores']['urgency_score']:.2f}", "⏰")
+
+        if result['mode'] == 'ensemble':
+            e1, e2 = st.columns(2)
+            with e1:
+                st.metric("Classic CTR", f"{result['classic_ctr']:.4%}")
+            with e2:
+                st.metric("AI CTR", f"{result['ai_ctr']:.4%}")
+
+        if "engagement" in result:
+            st.subheader("Engagement Breakdown")
+            eng = result["engagement"]
+            eng_cols = st.columns(3)
+            with eng_cols[0]:
+                st.metric("Likes", f"{eng['likes']:,}")
+            with eng_cols[1]:
+                st.metric("Shares", f"{eng['shares']:,}")
+            with eng_cols[2]:
+                st.metric("Conversions", f"{eng['conversions']:,}")
+
+        with st.expander("Raw Prediction Data"):
+            st.json(result)
+
+    if run_explain and ai_ad_text.strip():
+        from src.ai.predictor import get_predictor
+        predictor = get_predictor()
+
+        with st.spinner("Generating explanation..."):
+            explanation = predictor.explain(ai_ad_text)
+
+        st.subheader("Feature Explanations")
+        for exp in explanation['explanations']:
+            direction_icon = "✅" if exp['direction'] == 'positive' else "⚠️" if exp['direction'] == 'negative' else "➖"
+            with st.expander(f"{direction_icon} {exp['factor']}", expanded=True):
+                st.write(f"**Impact:** {exp['impact']}")
+                st.write(f"**Explanation:** {exp['explanation']}")
+                if exp['keywords']:
+                    st.write(f"**Keywords matched:** {', '.join(exp['keywords'])}")
+
+        st.info(f"**Recommendation:** {explanation['recommendation']}")
