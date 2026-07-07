@@ -51,21 +51,25 @@ class SupabaseManager:
                 self.mode = "local"
                 return None
             else:
-                raise RuntimeError("Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) are missing in production. Please check Streamlit Cloud Secrets.")
+                import streamlit as st
+                st.error("Authentication Error: Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) are missing in production. Please check Streamlit Cloud Secrets.")
+                st.stop()
 
         try:
             from supabase import create_client, Client
             self._client = create_client(self.url, self.key)
             self._initialized = True
             return self._client
-        except ImportError:
+        except ImportError as e:
             # If supabase-py is not installed, fail gracefully to local mode
             if self.env == "development":
                 self.enabled = False
                 self.mode = "local"
                 return None
             else:
-                raise RuntimeError("supabase-py is not installed but required in production environment.")
+                import streamlit as st
+                st.error(f"Authentication Error: supabase-py is not installed but required in production. {e}")
+                st.stop()
         except Exception as e:
             # Catch bad URLs or keys
             if self.env == "development":
@@ -73,7 +77,12 @@ class SupabaseManager:
                 self.mode = "local"
                 return None
             else:
-                raise RuntimeError(f"Failed to initialize Supabase client: {e}")
+                import streamlit as st
+                import traceback
+                error_trace = traceback.format_exc()
+                st.error(f"Failed to initialize Supabase client. Exception: {e}")
+                st.code(error_trace, language="python")
+                st.stop()
 
     def get_status(self) -> Dict[str, Any]:
         """Returns the current operational status of the persistence layer."""
