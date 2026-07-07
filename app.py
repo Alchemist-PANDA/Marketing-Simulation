@@ -826,5 +826,3 @@ if run_sim:
             bench_df = pd.DataFrame({"Run": [f"Run {i+1}" for i in range(5)], "Runtime (ms)": times_ms})
             st.bar_chart(bench_df.set_index("Run"))
 
-with tab2:
-    render_history_tab()
