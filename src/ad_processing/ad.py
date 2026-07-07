@@ -14,7 +14,11 @@ class Ad:
     price_score: float = 0.5   # 0-1 (perceived deal quality)
     trust_score: float = 0.5   # 0-1 (brand authority/social proof)
     urgency_score: float = 0.5 # 0-1 (FOMO factor)
+    emotion_score: float = 0.5 # 0-1 (Emotional appeal)
+    target_interest: Optional[int] = None # Interest ID match
     embedding: Optional[List[float]] = None # to be filled by embedder
+    image_path: Optional[str] = None
+    visual_scores: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self):
         """Auto-calculate scores from ad text.
@@ -62,6 +66,9 @@ class Ad:
                     'text': self.text,
                 }
                 scores = extract_scores(data)
+                self.price_score = scores.get('price_score', 0.5)
+                self.trust_score = scores.get('trust_score', 0.5)
+                self.urgency_score = scores.get('urgency_score', 0.5)
                 self.price_score = scores.get('price_score', 0.5)
                 self.trust_score = scores.get('trust_score', 0.5)
                 self.urgency_score = scores.get('urgency_score', 0.5)

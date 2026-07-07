@@ -3,15 +3,39 @@ Authentication utilities for the Marketing Simulation project.
 Provides shared logic for checking auth status and returning fallback users.
 """
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from typing import Dict, Any, Optional
 
 def is_auth_enabled() -> bool:
     """
     Check if Supabase authentication is enabled based on environment variables.
-    Returns True only if both SUPABASE_URL and SUPABASE_ANON_KEY are present.
+    Returns True only if both SUPABASE_URL and SUPABASE_ANON_KEY are present
+    and we are NOT explicitly in a 'development' environment without keys.
     """
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY")
+    env = os.getenv("ENV", "production").lower()
+    
+    try:
+        import streamlit as st
+        if "SUPABASE_URL" in st.secrets:
+            url = st.secrets["SUPABASE_URL"]
+        if "SUPABASE_ANON_KEY" in st.secrets:
+            key = st.secrets["SUPABASE_ANON_KEY"]
+        if "ENV" in st.secrets:
+            env = st.secrets["ENV"].lower()
+    except Exception:
+        pass
+    
+    # In production, ALWAYS enforce auth. If keys are missing, show a clear error.
+    if env != "development":
+        if not (url and key):
+            import streamlit as st
+            st.error("Authentication Error: Supabase credentials not found in production. Please check Streamlit Cloud Secrets.")
+            st.stop()
+        return True
+        
     return bool(url and key)
 
 def get_local_user() -> Dict[str, Any]:
@@ -29,3 +53,12 @@ def get_local_user() -> Dict[str, Any]:
 def get_auth_mode() -> str:
     """Returns the current authentication mode: 'supabase' or 'local'."""
     return "supabase" if is_auth_enabled() else "local"
+
+import streamlit as st
+
+def set_user_session(user: Dict[str, Any]):
+    st.session_state.user = user
+
+def get_user_session() -> Optional[Dict[str, Any]]:
+    return st.session_state.get("user")
+

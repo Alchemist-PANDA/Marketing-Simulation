@@ -199,3 +199,95 @@ class MaxSimulation:
             'conversions': int(bought.sum()),
             'details': []
         }
+
+def generate_reasoning(ad_a_data: Dict[str, Any], ad_b_data: Dict[str, Any], benchmarks: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Rule-based marketing intelligence engine that produces deterministic insights.
+    """
+    cvr_a = ad_a_data.get("conversion_rate", 0)
+    cvr_b = ad_b_data.get("conversion_rate", 0)
+    winner = "A" if cvr_a >= cvr_b else "B"
+    
+    def analyze_ad(data, name):
+        strengths = []
+        weaknesses = []
+        
+        cvr = data.get("conversion_rate", 0)
+        eng = data.get("engagement_rate", 0)
+        
+        if cvr > 3.0: strengths.append(f"Strong conversion rate ({cvr:.1f}%)")
+        elif cvr < 1.0: weaknesses.append(f"Low conversion rate ({cvr:.1f}%)")
+            
+        if eng > 15.0: strengths.append(f"High engagement ({eng:.1f}%) suggests good creative resonance")
+        elif eng < 5.0: weaknesses.append(f"Low engagement ({eng:.1f}%)")
+            
+        scores = data.get("scores", {})
+        if scores.get("trust", 0.5) < 0.4: weaknesses.append("Low trust score")
+        if scores.get("urgency", 0.5) < 0.3: weaknesses.append("Low urgency")
+        if scores.get("persuasion", 0.5) < 0.4: weaknesses.append("Weak persuasion")
+        if scores.get("emotional_appeal", 0.5) < 0.3: weaknesses.append("Low emotional appeal")
+            
+        pros = data.get("prospect_insights", {})
+        if pros.get("loss_aversion_impact", 0.0) > 0.4: weaknesses.append("High price sensitivity")
+        if pros.get("perceived_value", 0.0) < 0.5: weaknesses.append("Low perceived value")
+        
+        pers = data.get("personality_performance", {})
+        best_trait = max(pers.items(), key=lambda x: x[1]) if pers else ("unknown", 0)
+        personality_insight = f"Resonates strongest with High {best_trait[0].title()} audiences."
+        
+        prospect_insight = f"Perceived value is {pros.get('perceived_value', 0):.2f}, price elasticity is {pros.get('price_elasticity', 0):.1f}%."
+        
+        return {
+            "strengths": strengths,
+            "weaknesses": weaknesses,
+            "personality_insight": personality_insight,
+            "prospect_insight": prospect_insight
+        }
+
+    ad_a_breakdown = analyze_ad(ad_a_data, "A")
+    ad_b_breakdown = analyze_ad(ad_b_data, "B")
+    
+    gap = abs(cvr_a - cvr_b)
+    overall_summary = f"Ad {winner} won the test with a {gap:.2f}% higher conversion rate."
+    if gap < 0.5:
+        overall_summary += " The results are close, indicating both ads perform similarly overall."
+    else:
+        overall_summary += f" Ad {winner} significantly outperformed the alternative."
+
+    key_drivers = []
+    if ad_a_data.get("scores", {}).get("trust", 0) != ad_b_data.get("scores", {}).get("trust", 0):
+        better = "A" if ad_a_data.get("scores", {}).get("trust", 0) > ad_b_data.get("scores", {}).get("trust", 0) else "B"
+        key_drivers.append(f"Trust & Social Proof (Ad {better} leads)")
+    if ad_a_data.get("prospect_insights", {}).get("perceived_value", 0) != ad_b_data.get("prospect_insights", {}).get("perceived_value", 0):
+        better = "A" if ad_a_data.get("prospect_insights", {}).get("perceived_value", 0) > ad_b_data.get("prospect_insights", {}).get("perceived_value", 0) else "B"
+        key_drivers.append(f"Perceived Value (Ad {better} conveys higher value)")
+    if not key_drivers:
+        key_drivers = ["Overall Conversion Rate", "Engagement Rate"]
+        
+    actionable_recs = []
+    for rec in ad_a_data.get("recommendations", []):
+        actionable_recs.append({"ad": "A", **rec})
+    for rec in ad_b_data.get("recommendations", []):
+        actionable_recs.append({"ad": "B", **rec})
+        
+    benchmark_comparison = "No external benchmarks provided."
+    if benchmarks:
+        ind_cvr = benchmarks.get("industry_avg_conversion", 0)
+        if ind_cvr:
+            diff = max(cvr_a, cvr_b) - ind_cvr
+            if diff > 0:
+                benchmark_comparison = f"The winning ad's conversion rate is {diff:.1f}% above the industry average ({ind_cvr}%)."
+            else:
+                benchmark_comparison = f"The winning ad is {-diff:.1f}% below the industry average ({ind_cvr}%)."
+        if "seasonality_factor" in benchmarks:
+            benchmark_comparison += f" Seasonality note: {benchmarks['seasonality_factor']}."
+
+    return {
+        "winner": winner,
+        "overall_summary": overall_summary,
+        "ad_a_breakdown": ad_a_breakdown,
+        "ad_b_breakdown": ad_b_breakdown,
+        "key_drivers": key_drivers[:3],
+        "actionable_recommendations": actionable_recs,
+        "benchmark_comparison": benchmark_comparison
+    }

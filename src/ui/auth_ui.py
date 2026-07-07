@@ -1,9 +1,9 @@
 """
 Streamlit authentication UI components.
-Provides login/logout forms and auth status display for the sidebar.
+Provides logout form and auth status display for the sidebar, plus RBAC helpers.
 """
 import streamlit as st
-from typing import Dict, Any, Optional
+from typing import List, Optional
 from src.core.auth_utils import is_auth_enabled, get_local_user
 from src.core.supabase_client import SupabaseManager
 
@@ -16,9 +16,31 @@ def initialize_auth_session():
         st.session_state["user"] = None
         st.session_state["access_token"] = None
 
-        # In local mode, auto-authenticate with local user
         if st.session_state["auth_mode"] == "local":
             st.session_state["user"] = get_local_user()
+
+
+def require_auth():
+    """Enforces that a user is logged in. Redirects to Login if not."""
+    initialize_auth_session()
+    if not st.session_state.get("user") or not st.session_state["user"].get("is_authenticated"):
+        st.warning("Please log in to access this page.")
+        st.switch_page("pages/_Login.py")
+
+
+def require_role(allowed_roles: List[str]):
+    """Enforces that the logged-in user has a specific role."""
+    require_auth()
+    user = st.session_state.get("user")
+    
+    # Local dev mode bypasses RBAC
+    if user.get("mode") == "local":
+        return
+        
+    user_role = user.get("role", "free")
+    if user_role not in allowed_roles and "admin" not in allowed_roles:
+        st.error(f"Access Denied. This feature requires one of the following roles: {', '.join(allowed_roles)}")
+        st.stop()
 
 
 def render_auth_sidebar():
@@ -30,74 +52,20 @@ def render_auth_sidebar():
 
     st.sidebar.markdown("### Authentication")
 
-    # Local Mode: Show status only
     if auth_mode == "local":
         st.sidebar.success("🟢 Local Developer Mode")
         st.sidebar.caption("Running without Supabase credentials")
         return
 
-    # Supabase Mode: Show login/logout UI
     if user and user.get("is_authenticated") and user.get("mode") == "supabase":
-        # User is logged in
         st.sidebar.success(f"🟢 Logged in as: {user.get('email')}")
+        st.sidebar.caption(f"Role: **{user.get('role', 'free').upper()}**")
         if st.sidebar.button("Logout", key="logout_btn"):
             handle_logout()
     else:
-        # User is not logged in
         st.sidebar.warning("🔴 Not Authenticated")
-        render_login_form()
-
-
-def render_login_form():
-    """Render the login form in Supabase mode."""
-    with st.sidebar.form("login_form"):
-        st.markdown("#### Sign In")
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
-        submit = st.form_submit_button("Sign In")
-
-        if submit:
-            if not email or not password:
-                st.error("❌ Email and password are required")
-            else:
-                handle_login(email, password)
-
-
-def handle_login(email: str, password: str):
-    """Handle login attempt with Supabase."""
-    manager = SupabaseManager()
-
-    try:
-        response = manager.sign_in(email, password)
-
-        if response.get("status") == "success":
-            # Extract session and user
-            session = response.get("session")
-            user_data = response.get("user")
-
-            if session and user_data:
-                st.session_state["access_token"] = session.access_token
-                st.session_state["user"] = {
-                    "id": user_data.id,
-                    "email": user_data.email,
-                    "is_authenticated": True,
-                    "mode": "supabase"
-                }
-                st.rerun()
-            else:
-                st.error("❌ Login failed: Invalid response from auth service")
-
-        elif response.get("status") == "disabled":
-            # Supabase credentials present but client failed to initialize
-            st.error("⚠️ Auth service unavailable. Please contact support.")
-
-        else:
-            # Login failed (invalid credentials or other error)
-            error_msg = response.get("message", "Unknown error")
-            st.error(f"❌ Login failed: {error_msg}")
-
-    except Exception as e:
-        st.error(f"⚠️ Connection error: {str(e)}")
+        if st.sidebar.button("Go to Login"):
+            st.switch_page("pages/_Login.py")
 
 
 def handle_logout():
@@ -108,7 +76,90 @@ def handle_logout():
         manager = SupabaseManager()
         manager.sign_out(token)
 
-    # Clear session state
     st.session_state["user"] = None
     st.session_state["access_token"] = None
-    st.rerun()
+    st.switch_page("pages/_Login.py")
+
+
+def inject_auth_css():
+    """Injects 3D glassmorphism UI matching the landing page."""
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    /* Hide Sidebar completely for public pages */
+    [data-testid="stSidebar"], [data-testid="stSidebarNav"], section[data-testid="stSidebar"], [data-testid="collapsedControl"] { 
+        display: none !important; 
+    }
+    #MainMenu, footer { display: none !important; }
+
+    /* 3D Animated Background */
+    .stApp {
+        background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, #0B0D10 100%) !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    .stApp::before {
+        content: ''; position: fixed; top: -20%; left: -10%; width: 60%; height: 60%;
+        background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, transparent 70%);
+        filter: blur(60px); animation: float1 15s ease-in-out infinite; z-index: 0; pointer-events: none;
+    }
+    .stApp::after {
+        content: ''; position: fixed; bottom: -20%; right: -10%; width: 60%; height: 60%;
+        background: radial-gradient(circle, rgba(96, 165, 250, 0.1) 0%, transparent 70%);
+        filter: blur(60px); animation: float2 18s ease-in-out infinite; z-index: 0; pointer-events: none;
+    }
+    @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(5%, 5%) scale(1.1); } }
+    @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5%, -5%) scale(1.1); } }
+
+    /* Glass Card Container */
+    .main .block-container,
+    [data-testid="stAppViewBlockContainer"],
+    [data-testid="block-container"] {
+        position: relative; z-index: 10;
+        max-width: 440px !important; padding: 3rem !important; margin-top: 10vh !important;
+        background: rgba(20, 23, 28, 0.6) !important;
+        backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important;
+        border-radius: 20px !important; border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+        color: white !important; animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Typography */
+    h1 {
+        font-family: 'Space Grotesk', sans-serif !important; font-weight: 700 !important; font-size: 32px !important;
+        background: linear-gradient(135deg, #a78bfa, #60a5fa) !important;
+        -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
+        text-align: center !important; margin-bottom: 2rem !important; letter-spacing: -0.02em !important;
+    }
+    
+    .stMarkdown p { text-align: center !important; color: rgba(255,255,255,0.7) !important; }
+
+    /* Input Fields */
+    .stTextInput > div > div > input {
+        background: #0B0D10 !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 10px !important;
+        color: white !important; padding: 14px 16px !important; font-family: 'Inter', sans-serif !important; font-size: 15px !important;
+        transition: all 0.3s ease !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #a78bfa !important; box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2), inset 0 2px 4px rgba(0,0,0,0.2) !important;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        width: 100% !important; background: linear-gradient(135deg, #a78bfa, #60a5fa) !important;
+        border: none !important; border-radius: 10px !important; padding: 12px 24px !important;
+        font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 16px !important; color: white !important;
+        transition: all 0.3s ease !important; box-shadow: 0 4px 15px rgba(167, 139, 250, 0.2) !important; margin-top: 1rem !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px) !important; box-shadow: 0 8px 25px rgba(167, 139, 250, 0.4) !important;
+    }
+
+    /* Links container styling */
+    a { color: #a78bfa !important; text-decoration: none !important; font-size: 14px !important; transition: color 0.2s ease !important; }
+    a:hover { color: #c4b5fd !important; }
+    .links-container { display: flex; justify-content: space-between; margin-top: 24px; }
+    </style>
+    """, unsafe_allow_html=True)
+
