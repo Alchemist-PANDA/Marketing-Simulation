@@ -63,6 +63,26 @@ class MaxSimulation:
 
         self.num_agents = len(self.population['money'])
 
+        # Default weights (uncalibrated)
+        self.weights = {
+            'w_emotional': 1.0,
+            'w_archetype': 1.0,
+            'w_fomo': 0.5,
+            'w_trust': 0.5,
+            'w_price': 0.05,
+            'bias': -4.0,
+            'sigmoid_scale': 1.0
+        }
+
+        # Load optimized weights if available
+        weights_path = 'config/simulation_weights.json'
+        if os.path.exists(weights_path):
+            try:
+                with open(weights_path, 'r') as f:
+                    self.weights.update(json.load(f))
+            except Exception:
+                pass
+
         self.archetype_calibration = {}
         config_path = 'config/archetype_calibration.json'
         if os.path.exists(config_path):
@@ -103,17 +123,29 @@ class MaxSimulation:
             - pop['skepticism']
         ).astype(np.float32)
 
-        price_disutility = float(self.prospect.apply(-ad.price, reference=0))
-
-        if progress_callback:
-            progress_callback(0.4, "Utility calculation complete")
-
-        urgency_arr = np.full(n, ad.urgency_score, dtype=np.float32)
-        if self.use_numba:
-            prob_buy = _compute_probs_numba(emotional_mod, archetype_score, price_disutility, urgency_arr)
+        if hasattr(self, 'weights'):
+            w = self.weights
+            price_disutility = -ad.price / 10.0
+            utility = (
+                w['w_emotional'] * emotional_mod +
+                w['w_archetype'] * archetype_score +
+                w['w_fomo'] * ad.urgency_score +
+                w['w_trust'] * ad.trust_score +
+                w['w_price'] * price_disutility +
+                w['bias']
+            )
+            prob_buy = 1.0 / (1.0 + np.exp(np.clip(-utility / w['sigmoid_scale'], -50, 50)))
         else:
-            prob_buy = _compute_probs_numpy(emotional_mod, archetype_score, price_disutility,
-                                             urgency_arr, None, None)
+            price_disutility = float(self.prospect.apply(-ad.price, reference=0))
+            if progress_callback:
+                progress_callback(0.4, "Utility calculation complete")
+
+            urgency_arr = np.full(n, ad.urgency_score, dtype=np.float32)
+            if self.use_numba:
+                prob_buy = _compute_probs_numba(emotional_mod, archetype_score, price_disutility, urgency_arr)
+            else:
+                prob_buy = _compute_probs_numpy(emotional_mod, archetype_score, price_disutility,
+                                                 urgency_arr, None, None)
 
         can_afford = pop['money'] >= ad.price
         prob_buy = prob_buy * can_afford

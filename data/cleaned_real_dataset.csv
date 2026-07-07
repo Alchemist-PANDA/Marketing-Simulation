@@ -1,0 +1,88 @@
+text_a,text_b,expected_winner,model_winner,score_a,score_b,correct,source
+Sign up today,Last chance — offer expires tonight!,1,1,0.01497372351083247,0.019074010027127174,True,WordStream 2019 — urgency deadline vs open CTA
+Download our guide,Download now — free for the next 24 hours only,1,1,0.011403205836511892,0.021345336030003503,True,WordStream 2021 — time-limited free offer
+Book a demo,Book a demo before Friday — 3 spots left this week,1,1,0.0074498864508598635,0.016391247311124024,True,Copyhackers 2020 — scarcity + time pressure
+Start your free trial,Start free — limited slots available this month,1,1,0.015523156339332404,0.01552666839299858,True,HubSpot 2020 — scarcity increases sign-up intent
+Shop our collection,Shop now — 70% off ends in 4 hours!,1,1,0.004393831327678325,0.029869059655951238,True,Klaviyo 2022 — flash sale countdown vs generic CTA
+Get your discount,Grab your 40% discount before midnight tonight,1,1,0.012156238330126544,0.019185959618255546,True,MarketingExperiments 2018 — specific deadline
+Subscribe now,Subscribe today — price rises tomorrow,1,1,0.012227906174948665,0.015358257640083953,True,ConversionXL 2019 — price-rise deadline
+Learn more,"See why 50,000 teams switched — free for 14 days only",1,1,0.009893740015623154,0.019647752822800728,True,G2 Crowd 2021 — social proof + free trial + time limit
+Try our project management tool,"Join 200,000 teams — try it free for 14 days",1,1,0.007314733218700127,0.015248671142393606,True,Cialdini 2009 — social proof consistently increases CTR
+Professional accounting software,"Trusted by 15,000 accountants — rated 4.9/5 stars",1,0,0.011735749047227052,0.010003212025121038,False,G2 Crowd 2022 — review count + star rating
+Your digital marketing partner,"Ranked #1 by Forbes — used by Nike, Airbnb, Spotify",1,1,0.0072579077950521995,0.017318732368411475,True,HubSpot 2021 — brand authority social proof
+Our skincare range,"94% of users saw results in 30 days — 120,000 reviews",1,1,0.006438831901125053,0.020306053476657683,True,Edelman Trust 2022 — before/after + volume social proof
+Grow your business with us,"Helped 8,000 businesses grow revenue 37% on average",1,1,0.004999234286366844,0.011624398056165683,True,ConversionXL 2020 — specific outcome claim
+Email marketing solution,See why Shopify merchants send 2B+ emails/month with us,1,1,0.008358683467292074,0.01292799945392601,True,MarketingExperiments 2020 — enterprise social proof
+Online HR platform,4.8 stars on G2 · Rated #1 HR tool 3 years running,1,1,0.009862410644640274,0.019099110971971648,True,G2 Crowd 2023 — award + rating badge
+Join our platform,"'Best ROI tool I've tried' — 28,000+ reviews on Trustpilot",1,1,0.005039626290657112,0.01995154756316157,True,Trustpilot 2022 — quote + review volume
+Save money on your energy bills,Cut your energy bill by $47/month — guaranteed,1,1,0.008818220475443199,0.012474028919380894,True,WordStream 2016 — specific dollar saving vs vague
+Improve your conversion rate,Increase conversions by 37% in 60 days — or your money back,1,1,0.010258585099600922,0.01832943634663658,True,ConversionXL 2019 — specific % claim + guarantee
+Learn digital marketing,Become a certified digital marketer in 12 weeks — 94% job ra,1,1,0.009362726438949705,0.016483231340857506,True,Google Skillshop 2021 — timeline + outcome specificity
+Faster business loans,Business loans up to $500K — approved in 24 hours,1,1,0.009605204119771466,0.01622168963301896,True,LendingTree 2020 — specific amount + timeline
+Try our fitness app,Lose 8 lbs in 28 days — science-backed programme,1,1,0.011434331246700392,0.013242405774495217,True,Beachbody 2021 — specific outcome + credibility
+Cloud storage for teams,"Store, share & collaborate — plans from $5/user/month",1,1,0.00657306284997534,0.012266442677247281,True,Dropbox A/B study 2019 — price anchor increases CTR
+Book a hotel in Paris,"Paris hotels from £49/night — 12,000 verified reviews",1,1,0.008796208271724762,0.012615085899416553,True,Booking.com 2022 — price anchor + review volume
+Accounting made simple,Save 8 hours a week on bookkeeping — starts at £9/month,1,1,0.009315155421955719,0.017885404824667366,True,Xero 2020 — time saving claim + price
+Try our software,Try it free — no credit card required,1,1,0.008650597097721141,0.015476088364218502,True,HubSpot 2018 — 'free' + friction removal
+Explore our platform,"Start free — cancel any time, no credit card needed",1,1,0.004077867296142281,0.02026563922640301,True,SaaS open-rate meta-analysis (Barker 2021)
+Get started,Get started free — upgrade only when you're ready,1,1,0.00929246108750208,0.016377549120503508,True,Product-led growth benchmark (OpenView 2022)
+Download the app,"Download free — no ads, no subscription, no strings",1,1,0.01003997981917925,0.0163337494807115,True,Apple App Store optimisation study (2021)
+Sign up,Sign up free — see results in 10 minutes,1,1,0.01134658261613843,0.017055669803503763,True,ConversionXL 2020 — 'see results' specificity + free
+Learn to code,"Learn to code — 100% free, no credit card, cancel any time",1,1,0.01008394297575684,0.023357164979181434,True,Codecademy user journey analysis 2020
+Advanced analytics dashboard with 50+ KPI widgets,See exactly what's driving revenue — in one dashboard,1,0,0.011978318316086558,0.010568448947178618,False,MECLABS 2015 — benefit-led vs feature-led
+Multi-stage drip email campaign builder,Turn leads into buyers on autopilot — even while you sleep,1,1,0.007777295450303984,0.012771650914501172,True,Autopilot HQ A/B test 2019 — benefit story
+256-bit AES encrypted file storage,"Your files are safe — bank-grade encryption, always on",1,1,0.012317877957542833,0.01342450063748958,True,LastPass 2020 — benefit translation of technical feature
+"8-core processor, 32GB RAM laptop",The laptop that never slows you down — whatever you throw at,1,1,0.01429446799057573,0.019835519128882997,True,Apple MacBook copy test 2019 — benefit vs spec
+AI-powered grammar checker,"Write confidently — fix grammar, tone, and style in seconds",1,1,0.010978888673277492,0.012244054068846799,True,Grammarly A/B study 2021 — benefit-led wins
+Automated invoice processing software,Get paid 3× faster — invoices sent and tracked automatically,1,1,0.00915861768201036,0.015711563685404183,True,FreshBooks copy test 2020 — outcome benefit
+Struggling to sleep? Our programme fixes insomnia in 6 weeks,Insomnia treatment programme — clinically validated,0,0,0.018887713220944576,0.013534584684492828,True,Copyhackers 2018 — question hook beats statement in cold traffic
+Still using spreadsheets to manage your projects?,Project management software — streamline your workflow,0,1,0.00722299491640464,0.007976437154218754,False,Asana internal copy test 2020 — question hook wins
+Tired of paying too much for cloud storage?,Affordable cloud storage for businesses,0,1,0.01040260663480662,0.010426467417796412,False,BackBlaze A/B test 2019 — pain-point question wins
+Want to lose weight without giving up carbs?,Carb-friendly weight loss programme — proven results,0,0,0.012280308314567827,0.011833831088258084,True,Noom A/B test 2021 — question hook higher CTR
+Could your website be converting 3× more?,Website conversion optimisation services,0,1,0.010296405222244459,0.010668383354274448,False,ConversionXL 2019 — self-reflection question wins
+"For freelancers: get paid on time, every time.",Invoice and payment software for businesses,0,0,0.009674216545038297,0.008621064777503726,True,Meta Ads study 2020 — audience-specific copy wins
+HR teams: automate 80% of your onboarding in a week.,HR automation software — save time and reduce errors,0,0,0.013654918356672256,0.011154105549681242,True,BambooHR copy test 2022 — persona-specific wins
+Small business owners: your tax done in 20 minutes.,Tax software for self-employed and small businesses,0,1,0.011498355190507566,0.012801761729359576,False,QuickBooks A/B study 2021 — direct address wins
+Stop losing $500/month to hidden bank fees.,Switch to a fee-free business account — save money,0,0,0.01664800608046696,0.015221176601348472,True,Tversky & Kahneman 1979 / Tide Bank 2021 — loss frame wins
+Every day without backup is a day you could lose everything.,Cloud backup — protect your files automatically,0,0,0.017471671257536344,0.012137620960289822,True,Backblaze ad test 2020 — loss frame vs feature frame
+Don't let poor sleep steal your productivity.,Sleep better with our scientifically backed programme,0,0,0.010667191540521962,0.008846296535428778,True,Whoop A/B test 2022 — loss frame wins in health
+"Flash sale: buy any Nike trainer, get 40% off today only.",Premium quality footwear at unbeatable prices.,0,0,0.02569176632441612,0.011276275597058698,True,Unbounce 2018 — specific offer vs vague value
+"Download our 47-page SEO guide — 12,000 marketers have.",Improve your search engine rankings with our resources.,0,0,0.013813193796032297,0.012227855124097324,True,Backlinko copy test 2021 — specific resource + social proof
+Book a free 30-minute strategy call — 3 slots left this week,Learn more about our digital marketing services.,0,0,0.016864418184779212,0.007824574391655917,True,Agency Mavericks 2020 — specific CTA + scarcity
+3 months free when you switch from Salesforce — guaranteed.,A powerful CRM that's easier to use than Salesforce.,0,0,0.020473522818806208,0.010367867811024018,True,HubSpot competitor comparison test 2022
+Save 50% on all courses — 6 hours remaining.,Expand your skills with online courses.,0,0,0.016644485681234143,0.01039476251632172,True,Udemy flash-sale copy test 2021 — urgency + specific discount
+30-day money-back guarantee — no questions asked.,Try our product and see the results for yourself.,0,0,0.013456189485415989,0.01101057601128416,True,Spiegel Research Center 2017 — guarantee reduces perceived risk
+"Certified by ISO 27001, SOC 2 Type II, and GDPR compliant.",Enterprise-grade security for your business data.,0,0,0.015517069463566282,0.007719923486640468,True,Salesforce B2B copy test 2022 — specific certification
+"Featured in Forbes, TechCrunch, and The Wall Street Journal.",A leading solution for marketing analytics.,0,0,0.01314259506715076,0.004561739194889364,True,Mention 2021 — media credibility badge wins
+Quit your 9-5 with passive income — here's the exact bluepri,Learn how to create passive income streams online.,0,0,0.01877437910547633,0.00894711058164002,True,Ramit Sethi I Will Teach 2021 — aspirational story wins
+She lost 27 kg and kept it off. Read her story.,Weight loss programme — real results for real people.,0,0,0.016017798337325976,0.010823523101127306,True,WW (Weight Watchers) A/B test 2022 — story headline
+This single tool gave us back 15 hours a week. See how.,Productivity software for busy teams.,0,0,0.02150748988679048,0.008625735874555151,True,Notion viral case study copy test 2021
+Was £199 — now just £49. Grab yours before stock runs out.,Premium headphones at a great price.,0,0,0.0284108968066606,0.009433936260786141,True,Amazon price-anchor test 2021 — from/to pricing wins
+Get everything in Premium for less than a coffee a day.,Premium plan — packed with features for just £1.99/day.,0,1,0.016276391999558118,0.01857872213941573,False,Spotify price-framing A/B test 2020 — metaphor vs raw price
+"Pay once, use forever. No monthly fees — ever.",One-time payment software licence.,0,0,0.0140446191334895,0.009103694882562982,True,Envato copy test 2020 — 'no fees ever' wins vs neutral
+Claim your free report,Download the free report,0,1,0.013112859938069552,0.01316724347992339,False,"HubSpot 2014 — 'claim' implies ownership, increases CTR"
+Get my free audit,Request a free audit,0,0,0.012398134020636038,0.011031115004450765,True,HubSpot 2014 — first-person CTA +90% CTR vs generic
+Start my free trial,Start a free trial,0,0,0.01448890825048109,0.0138181834545132,True,Basecamp A/B test 2019 — possessive CTA wins
+Yes — show me the discount,Click here for discount,0,0,0.012134065955213087,0.011547621035043159,True,ConversionXL 2018 — affirmative CTA vs neutral
+London Plumber | 24/7 Emergency Call-Out | From £49,Experienced plumber serving the London area,0,0,0.012213606806858237,0.004715042267936589,True,Google Ads best practices 2021 — price + USP in headline
+Cyber Insurance UK | Get a Quote in 60 Seconds | From £10/mo,Business cyber insurance — protect your company,0,0,0.015770764958955578,0.008607187478675192,True,Hiscox Google Ads A/B test 2022 — action + price anchor
+Lose 10 lbs in 30 Days | Money-Back Guarantee | Join 500K Me,Weight loss plan — proven results with our community,0,0,0.01888993887108278,0.0098189073165649,True,Beachbody Google Ads test 2021 — triple USP format
+⚡ 80% off TODAY ONLY — 200 left in stock. Don't wait.,Big savings on selected items — shop our sale now,0,0,0.03444772298048504,0.018696021699109954,True,Meta Ads benchmarks 2022 — bold emoji + caps + countdown
+"I grew my email list from 0 to 10,000 in 90 days. Here's how",Email list growth strategies — learn what works,0,0,0.02050048332593514,0.009876716755681823,True,Teachable A/B test 2021 — story hook on Facebook
+Struggling to get clients? I was too — until I found this.,Get more clients with our marketing framework,0,0,0.011158899363783179,0.007057237036619052,True,Copyhackers 2020 — empathy hook on Facebook wins
+See your entire sales pipeline in one view — free for 14 day,Sales pipeline management software — sign up today,0,0,0.022249216020567286,0.01219220840749598,True,PipeDrive A/B test 2021 — visual benefit + free trial
+Reduce customer churn by 35% — proven across 500+ B2B SaaS c,Customer success platform — reduce churn and grow NRR,0,0,0.017131554706926587,0.006312103654490192,True,ChurnZero case study 2022 — specific % claim + social proof
+From signup to first value in under 5 minutes — or your mone,"Onboarding software — fast, easy, and effective",0,0,0.022250388601165436,0.007707184092768649,True,Userpilot copy test 2022 — TTV specificity + guarantee
+Free next-day delivery on orders over £30 — order before 3pm,Fast delivery on thousands of products — shop now,0,0,0.02443152286503549,0.010249601332913591,True,ASOS delivery promotion A/B test 2020 — specific threshold
+"5 stars · 14,000 reviews · Ships today if ordered in next 2h",Top-rated products with fast shipping — buy now,0,0,0.02225757510497474,0.014693675355943224,True,Amazon social proof + urgency countdown A/B study 2021
+0% balance transfer for 24 months — no transfer fee. Apply n,Credit card with a great balance transfer offer,0,0,0.016727610203504287,0.010858400667995904,True,MoneySavingExpert top offer feature 2022 — specific terms
+"Your mortgage broker — whole-of-market, fee-free, 5-star rat",Find the best mortgage rate — we search the whole market,0,1,0.011448570518136837,0.013006983213682112,False,Habito A/B test 2021 — triple USP in one line
+Try our new time management system,Warning: this app might make your team TOO productive,1,1,0.009613676438479091,0.013869880369786852,True,ProofHub viral ad 2020 — pattern interrupt wins unexpectedly
+Our coffee is terrible — but it keeps you awake. Guaranteed.,Premium coffee blend for long work sessions,0,0,0.015844220281963636,0.009515259298669957,True,BrewDog-inspired self-deprecating copy test 2021 — humor wins
+Flash sale: 60% off all running shoes — 48 hours only. Shop ,"We are committed to quality, innovation and sustainability.",0,0,0.02977360886702356,0.0022094588499684343,True,General principle — specific offer beats brand mission statement
+Get 3 months of Netflix for free when you switch to us today,Explore a world of possibilities with our connected service.,0,0,0.020073329017147475,0.0013935872845924635,True,Telco bundled offer test 2021 — specific incentive wins
+"Book in 60 seconds — prices from £29 return, no hidden fees.",Connecting people and places across the UK and Europe.,0,0,0.02251173343964613,0.0047482792341063595,True,easyJet copy test 2022 — concrete CTA vs brand tagline
+35% off your first order + free delivery — code AUTO35,Quality products for every home — discover our range today.,0,0,0.017639353886531043,0.01123077112690694,True,IKEA first-purchase incentive test 2021
+Buy.,Buy our premium kitchen appliances at great prices today.,1,1,0.008725661114258296,0.010277016301977734,True,General principle — extreme brevity loses to descriptive copy
+Save up to 40% on premium kitchen appliances — 48-hour flash,Buy our premium kitchen appliances at great prices today.,0,0,0.025009851104923618,0.010277016301977734,True,General principle — specific offer + urgency beats generic CTA
+Hurry! Today only! Don't miss out! Sale! Limited! Act now! F,Save 40% on selected items — today only. No code needed.,1,0,0.0307747402994272,0.02038190710634027,False,Overuse of urgency triggers ad fatigue — moderate wins
