@@ -12,21 +12,24 @@ def render_history_tab():
     st.header("📂 Campaign History")
 
     auth_mode = st.session_state.get("auth_mode")
-    user = st.session_state.get("user", {})
+    user = st.session_state.get("user")
 
     # 1. Access Control
     if auth_mode == "local":
         st.info("📂 History unavailable in local mode. Connect to Supabase to enable persistence.")
         return
 
-    if not user or not user.get("is_authenticated") or user.get("mode") != "supabase":
+    if not user:
         st.warning("🔐 Log in via the sidebar to view your saved campaigns.")
         return
+
+    # Extract user ID safely whether it's a dict or an object
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
 
     # 2. Fetch Data
     service = PersistenceService()
     with st.spinner("Loading history..."):
-        result = service.list_campaigns(user["id"])
+        result = service.list_campaigns(user_id)
 
     if result["status"] != "success":
         st.error(f"❌ Failed to load history: {result.get('message', 'Unknown error')}")
