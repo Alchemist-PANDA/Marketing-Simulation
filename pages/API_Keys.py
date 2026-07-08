@@ -3,8 +3,10 @@ import uuid
 import hashlib
 from src.ui.auth_ui import require_auth
 from src.core.supabase_client import SupabaseManager
+from src.ui.theme import apply_theme
 
 st.set_page_config(page_title="API Keys", page_icon="🔑", layout="wide")
+apply_theme()
 require_auth()
 
 st.title("API Key Management")

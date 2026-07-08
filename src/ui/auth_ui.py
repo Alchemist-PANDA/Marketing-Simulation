@@ -6,6 +6,8 @@ import streamlit as st
 from typing import List, Optional
 from src.core.auth_utils import is_auth_enabled, get_local_user
 from src.core.supabase_client import SupabaseManager
+from src.ui.theme import inject_galaxy_background
+
 
 
 def initialize_auth_session():
@@ -83,6 +85,7 @@ def handle_logout():
 
 def inject_auth_css():
     """Injects 3D glassmorphism UI matching the landing page."""
+    inject_galaxy_background()
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
@@ -93,9 +96,10 @@ def inject_auth_css():
     }
     #MainMenu, footer { display: none !important; }
 
-    /* 3D Animated Background */
-    .stApp {
-        background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, #0B0D10 100%) !important;
+    /* 3D Animated Background Reset to reveal galaxy canvas */
+    .stApp, .main, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
+        background-color: transparent !important;
+        background: transparent !important;
         font-family: 'Inter', sans-serif !important;
     }
     .stApp::before {
@@ -162,4 +166,5 @@ def inject_auth_css():
     .links-container { display: flex; justify-content: space-between; margin-top: 24px; }
     </style>
     """, unsafe_allow_html=True)
+
 

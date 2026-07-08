@@ -1,8 +1,10 @@
 import streamlit as st
 import time
 import random
+from src.ui.theme import apply_theme
 
 st.set_page_config(page_title="Free Ad Prediction", page_icon="🎁", layout="centered")
+apply_theme()
 
 st.title("🎁 Will Your Ad Win? Get a Free Prediction.")
 st.markdown("""

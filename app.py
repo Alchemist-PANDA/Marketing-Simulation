@@ -1,3 +1,12 @@
+import streamlit as st
+
+st.set_page_config(
+    page_title="Marketing Simulation: Digital Wind Tunnel",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import os
 
 # Must be set before numpy/MKL-linked libraries are imported anywhere in the
@@ -9,7 +18,6 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 import gc
 import time
 import json
-import streamlit as st
 import pandas as pd
 import plotly.express as px
 from dotenv import load_dotenv
@@ -17,28 +25,8 @@ load_dotenv()
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ad_processing.neural_scorer import predict_scores
 from src.utils.ai_reasoning import get_ai_insights
-from src.ui.theme import render_app_header, render_metric_card
+from src.ui.theme import render_app_header, render_metric_card, apply_theme
 from src.ui.history_ui import render_history_tab
-
-def apply_theme():
-    """Apply custom theme and styling for the app."""
-    st.set_page_config(
-        page_title="Marketing Simulation: Digital Wind Tunnel",
-        page_icon="🚀",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-    # Optional: inject custom CSS for a more polished look
-    st.markdown("""
-        <style>
-            .reportview-container {
-                background: #0e1117;
-            }
-            .sidebar .sidebar-content {
-                background: #1e2430;
-            }
-        </style>
-    """, unsafe_allow_html=True)
 
 
 @st.cache_data
