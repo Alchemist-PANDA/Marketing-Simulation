@@ -148,6 +148,7 @@ with st.sidebar:
 
     num_agents = st.slider("Number of Agents", 100, max_agents, 100_000)
     channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
+    objective = st.radio("Optimization Objective", ["conversions", "engagement", "conversion_rate"])
     
     st.subheader("DTC Offer Settings")
     price = st.slider("Product Price ($)", 5.0, 500.0, 49.99)
@@ -158,6 +159,28 @@ with st.sidebar:
     use_ai = st.checkbox("✨ Enable AI Insights (beta)", value=False)
     if not multi_ad_mode:
         run_sim = st.button("Run Simulation")
+
+    if st.session_state.get("sim_results") is not None:
+        if st.button("Clear Results", use_container_width=True):
+            st.session_state["sim_results"] = None
+            st.session_state["sim_ad1"] = ""
+            st.session_state["sim_ad2"] = ""
+            st.rerun()
+
+    st.divider()
+    st.caption("⚡ Engine Stats")
+    mc1, mc2 = st.columns(2)
+    with mc1:
+        mem_val = st.session_state.get("last_pop_memory_mb")
+        st.metric("Population RAM", f"{mem_val:.2f} MB" if mem_val else "—")
+    with mc2:
+        rt_val = st.session_state.get("last_runtime_ms")
+        st.metric("Last Runtime", f"{rt_val:.1f} ms" if rt_val else "—")
+    avail_ram = get_available_ram_mb()
+    if avail_ram is not None:
+        st.caption(f"System RAM available: {avail_ram:,.0f} MB")
+    else:
+        st.caption("Install `psutil` for system RAM monitoring")
 
 if multi_ad_mode:
     st.header("🧪 Multi-Ad Experimentation")
@@ -402,216 +425,6 @@ if val_file:
     st.stop()
 
 
-
-if run_sim:
-    if ad_type == "Image Upload":
-        if not ad1_image or not ad2_image:
-            st.error("Please upload images for both Ad A and Ad B to run the simulation.")
-            st.stop()
-        with st.spinner("Extracting text from images via OCR..."):
-            from src.utils.ocr_engine import extract_text_from_image
-            ad1_text = extract_text_from_image(ad1_image.getvalue())
-            ad2_text = extract_text_from_image(ad2_image.getvalue())
-            
-    if not ad1_text.strip() or not ad2_text.strip():
-        st.error("Ad text cannot be empty.")
-        st.stop()
-
-    runner = ABTestRunner(num_agents=num_agents)
-
-    with st.spinner("Simulating audience reaction..."):
-        try:
-            result = runner.run_test(ad1_text, ad2_text, channel=channel, price=price)
-        except Exception as e:
-            st.error(f"Simulation failed: {e}")
-            st.stop()
-            
-    ai_insights = None
-    if use_ai:
-        with st.spinner("✨ AI is generating insights..."):
-            ai_insights = get_ai_insights(result, ad1_text, ad2_text, benchmarks=benchmarks)
-
-
-    # Section 1: Key Metrics (Enhanced)
-    st.subheader("📊 Key Metrics")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Lift", f"{result['lift_percentage']:.2f}%", delta="vs Control")
-    m2.metric("Ad A Conversions", result['ad_a']['conversions'], delta=f"{result['ad_a'].get('conversion_rate', 0.0):.1f}%")
-    m3.metric("Ad B Conversions", result['ad_b']['conversions'], delta=f"{result['ad_b'].get('conversion_rate', 0.0):.1f}%")
-    m4.metric("Confidence", f"{result.get('confidence_score', 98.7):.1f}%", delta="High")
-
-    # Section 2: Audience Segmentation
-    st.subheader("🎯 Audience Segmentation Breakdown")
-    seg_data = []
-    for income_group in ["high_income", "medium_income", "low_income"]:
-        seg_data.append({
-            "Segment": income_group.replace("_", " ").title(),
-            "Ad A Conv %": result['ad_a'].get('segment_analysis', {}).get(income_group, {}).get('conversion_rate', 0.0),
-            "Ad B Conv %": result['ad_b'].get('segment_analysis', {}).get(income_group, {}).get('conversion_rate', 0.0),
-            "Count": result['ad_a'].get('segment_analysis', {}).get(income_group, {}).get('count', 0)
-        })
-    seg_df = pd.DataFrame(seg_data)
-    st.dataframe(seg_df, use_container_width=True)
-    st.caption("Breakdown of conversion rates by income segment")
-
-    # Section 3: Personality Heatmap
-    st.subheader("🧠 Personality-Driven Emotional Response")
-    ad_a_pers = result['ad_a'].get('personality_performance', {})
-    ad_b_pers = result['ad_b'].get('personality_performance', {})
-    personality_data = {
-        "Trait": ["Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism"],
-        "Ad A": [ad_a_pers.get('openness', 0.0), ad_a_pers.get('conscientiousness', 0.0), ad_a_pers.get('extraversion', 0.0), ad_a_pers.get('agreeableness', 0.0), ad_a_pers.get('neuroticism', 0.0)],
-        "Ad B": [ad_b_pers.get('openness', 0.0), ad_b_pers.get('conscientiousness', 0.0), ad_b_pers.get('extraversion', 0.0), ad_b_pers.get('agreeableness', 0.0), ad_b_pers.get('neuroticism', 0.0)]
-    }
-    df_personality = pd.DataFrame(personality_data).set_index("Trait")
-    st.bar_chart(df_personality, use_container_width=True)
-    st.caption("Emotional resonance by personality trait (higher = better)")
-
-    # Section 4: Prospect Theory Breakdown
-    with st.expander("📉 Prospect Theory Analysis (Advanced Economics)"):
-        c1, c2, c3 = st.columns(3)
-        ad_a_pros = result['ad_a'].get('prospect_insights', {})
-        ad_b_pros = result['ad_b'].get('prospect_insights', {})
-        c1.metric("Loss Aversion Impact", f"{ad_a_pros.get('loss_aversion_impact', 0.0):.2f}")
-        c2.metric("Perceived Value", f"{ad_a_pros.get('perceived_value', 0.0):.2f}")
-        c3.metric("Price Elasticity", f"{ad_a_pros.get('price_elasticity', 0.0):.1f}%")
-        st.write("**Price Sensitivity by Segment:**")
-        ad_a_sens = ad_a_pros.get('price_sensitivity', {})
-        ad_b_sens = ad_b_pros.get('price_sensitivity', {})
-        price_df = pd.DataFrame({
-            "Segment": ["High Income", "Medium Income", "Low Income"],
-            "Ad A": [ad_a_sens.get('high', 0.0), ad_a_sens.get('medium', 0.0), ad_a_sens.get('low', 0.0)],
-            "Ad B": [ad_b_sens.get('high', 0.0), ad_b_sens.get('medium', 0.0), ad_b_sens.get('low', 0.0)]
-        })
-        st.dataframe(price_df, use_container_width=True)
-
-    # Section 5: Actionable Recommendations
-    st.subheader("🧠 Marketing Intelligence Report")
-    
-    reasoning = result.get('reasoning', {})
-    if reasoning:
-        st.info(reasoning.get('overall_summary', 'No summary available.'))
-        
-        st.markdown("### 🔑 Key Drivers")
-        for driver in reasoning.get('key_drivers', []):
-            st.markdown(f"- {driver}")
-            
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("#### Ad A Breakdown")
-            ad_a_br = reasoning.get('ad_a_breakdown', {})
-            st.markdown("**Strengths:** " + ", ".join(ad_a_br.get('strengths', [])))
-            st.markdown("**Weaknesses:** " + ", ".join(ad_a_br.get('weaknesses', [])))
-            st.caption(ad_a_br.get('personality_insight', ''))
-        with c2:
-            st.markdown("#### Ad B Breakdown")
-            ad_b_br = reasoning.get('ad_b_breakdown', {})
-            st.markdown("**Strengths:** " + ", ".join(ad_b_br.get('strengths', [])))
-            st.markdown("**Weaknesses:** " + ", ".join(ad_b_br.get('weaknesses', [])))
-            st.caption(ad_b_br.get('personality_insight', ''))
-            
-        st.markdown("### 📋 Actionable Recommendations")
-        for rec in reasoning.get('actionable_recommendations', []):
-            icon = "🔴" if rec['priority'] == 'high' else ("🟡" if rec['priority'] == 'medium' else "🔵")
-            st.markdown(f"{icon} **Ad {rec['ad']} ({rec['category'].title()}):** {rec['message']}")
-            
-        st.markdown("### 📊 Market Context")
-        st.write(reasoning.get('benchmark_comparison', ''))
-        
-    if use_ai and ai_insights:
-        with st.expander("✨ AI-Powered Insights (beta)", expanded=True):
-            st.markdown(ai_insights)
-            
-    st.divider()
-    st.subheader("⚡ Generate Improved Ad Variants")
-    st.write("Turn diagnosis into treatment. Use AI to automatically rewrite your ads fixing identified weaknesses.")
-    
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("Generate 3 variants for Ad A"):
-            from src.recommendation.engine import generate_ad_variants
-            ad_a_br = reasoning.get('ad_a_breakdown', {})
-            with st.spinner("Generating variants..."):
-                variants = generate_ad_variants(ad1_text, ad_a_br.get('strengths', []), ad_a_br.get('weaknesses', []))
-            for i, v in enumerate(variants):
-                st.success(f"**Variant {i+1}** (Expected {v.get('predicted_lift', 'N/A')})\n\n**{v.get('new_text', '')}**\n\n*Why: {v.get('explanation', '')}*")
-                
-    with col_b:
-        if st.button("Generate 3 variants for Ad B"):
-            from src.recommendation.engine import generate_ad_variants
-            ad_b_br = reasoning.get('ad_b_breakdown', {})
-            with st.spinner("Generating variants..."):
-                variants = generate_ad_variants(ad2_text, ad_b_br.get('strengths', []), ad_b_br.get('weaknesses', []))
-            for i, v in enumerate(variants):
-                st.success(f"**Variant {i+1}** (Expected {v.get('predicted_lift', 'N/A')})\n\n**{v.get('new_text', '')}**\n\n*Why: {v.get('explanation', '')}*")
-
-    st.divider()
-    # Existing bar chart
-    df = pd.DataFrame({
-        "Ad": ["Ad A", "Ad B", "Ad A", "Ad B"],
-        "Metric": ["Likes", "Likes", "Conversions", "Conversions"],
-        "Count": [result['ad_a']['likes'], result['ad_b']['likes'],
-                  result['ad_a']['conversions'], result['ad_b']['conversions']]
-    })
-    fig = px.bar(df, x="Metric", y="Count", color="Ad", barmode="group", title="Engagement Comparison")
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Funnel visualization
-    funnel_data = {
-        "Stage": ["Impressions", "Engagement", "Conversion"],
-        "Ad A": [result['ad_a'].get('total_agents', 0), result['ad_a'].get('engaged_count', 0), result['ad_a'].get('purchase_count', result['ad_a']['conversions'])],
-        "Ad B": [result['ad_b'].get('total_agents', 0), result['ad_b'].get('engaged_count', 0), result['ad_b'].get('purchase_count', result['ad_b']['conversions'])]
-    }
-    funnel_df = pd.DataFrame(funnel_data)
-    fig_funnel = px.bar(funnel_df, x="Stage", y=["Ad A", "Ad B"], barmode="group", title="Conversion Funnel")
-    st.plotly_chart(fig_funnel, use_container_width=True)
-
-    # Section 6: Export & Share
-    with st.expander("📤 Export Results"):
-        if st.button("Download as JSON"):
-            import json
-            st.download_button("Download", data=json.dumps(result), file_name="simulation_results.json")
-        if st.button("Generate Shareable Link"):
-            st.info("Link copied to clipboard (feature coming soon)")
-
-    # Forensic Analysis
-    st.header("🕵️ Forensic Feedback")
-    fa1, fa2 = st.columns(2)
-    with fa1:
-        st.subheader("Ad A Analysis")
-        for reason in result['ad_a']['analysis']['failure_reasons']:
-            st.warning(reason)
-    with fa2:
-        st.subheader("Ad B Analysis")
-        for reason in result['ad_b']['analysis']['failure_reasons']:
-            st.warning(reason)
-
-        channel = st.selectbox("Marketing Channel", ["facebook", "tiktok", "instagram", "google", "email"])
-        price = st.slider("Product Price ($)", 1.0, 500.0, 20.0, step=1.0)
-        objective = st.radio("Optimization Objective", ["conversions", "engagement", "conversion_rate"])
-        st.divider()
-        run_sim = st.button("Run Simulation", type="primary", use_container_width=True, disabled=not proceed_large)
-        if st.session_state["sim_results"] is not None:
-            if st.button("Clear Results", use_container_width=True):
-                st.session_state["sim_results"] = None
-                st.session_state["sim_ad1"] = ""
-                st.session_state["sim_ad2"] = ""
-                st.rerun()
-
-        st.divider()
-        st.caption("⚡ Engine Stats")
-        mc1, mc2 = st.columns(2)
-        with mc1:
-            mem_val = st.session_state["last_pop_memory_mb"]
-            st.metric("Population RAM", f"{mem_val:.2f} MB" if mem_val else "—")
-        with mc2:
-            rt_val = st.session_state["last_runtime_ms"]
-            st.metric("Last Runtime", f"{rt_val:.1f} ms" if rt_val else "—")
-        avail_ram = get_available_ram_mb()
-        if avail_ram is not None:
-            st.caption(f"System RAM available: {avail_ram:,.0f} MB")
-        else:
-            st.caption("Install `psutil` for system RAM monitoring")
 
     input_method = st.radio("Input Method", ["Text", "Image Upload"], horizontal=True)
 
