@@ -831,7 +831,7 @@ if run_sim:
             bench_df = pd.DataFrame({"Run": [f"Run {i+1}" for i in range(5)], "Runtime (ms)": times_ms})
             st.bar_chart(bench_df.set_index("Run"))
 
-<<<<<<< HEAD
+
 with tab2:
     render_history_tab()
 
@@ -926,5 +926,4 @@ with tab3:
                     st.write(f"**Keywords matched:** {', '.join(exp['keywords'])}")
 
         st.info(f"**Recommendation:** {explanation['recommendation']}")
-=======
->>>>>>> origin/main
+
