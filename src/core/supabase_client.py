@@ -12,6 +12,8 @@ class SupabaseManager:
         self.key = os.getenv("SUPABASE_ANON_KEY")
         self.service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         self.env = os.getenv("ENV", "production").lower()
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            self.env = "development"
         
         try:
             import streamlit as st

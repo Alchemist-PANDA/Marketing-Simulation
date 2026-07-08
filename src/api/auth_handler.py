@@ -3,7 +3,7 @@ JWT verification and user retrieval logic for FastAPI.
 Handles both Supabase-authenticated and local fallback users.
 """
 from typing import Optional, Dict, Any
-from src.core.auth_utils import is_auth_enabled, get_local_user
+from src.core.auth_utils import is_auth_enabled, get_local_user, safe_get
 from src.core.supabase_client import SupabaseManager
 
 def get_current_user_logic(token: Optional[str] = None) -> Dict[str, Any]:
@@ -36,8 +36,8 @@ def get_current_user_logic(token: Optional[str] = None) -> Dict[str, Any]:
         if user_response.get("status") == "success":
             user_data = user_response.get("user", {})
             return {
-                "id": user_data.get("id"),
-                "email": user_data.get("email"),
+                "id": safe_get(user_data, "id"),
+                "email": safe_get(user_data, "email"),
                 "is_authenticated": True,
                 "mode": "supabase"
             }

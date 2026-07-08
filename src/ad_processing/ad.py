@@ -77,4 +77,7 @@ class Ad:
         if self.embedding is None:
              from src.ad_processing.neural_scorer import get_embedder
              embedder = get_embedder()
-             self.embedding = embedder.encode([self.text])[0].tolist()
+             if embedder:
+                 self.embedding = embedder.encode([self.text])[0].tolist()
+             else:
+                 self.embedding = [0.0] * 384

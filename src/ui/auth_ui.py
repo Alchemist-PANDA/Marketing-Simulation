@@ -4,7 +4,7 @@ Provides logout form and auth status display for the sidebar, plus RBAC helpers.
 """
 import streamlit as st
 from typing import List, Optional
-from src.core.auth_utils import is_auth_enabled, get_local_user
+from src.core.auth_utils import is_auth_enabled, get_local_user, safe_get
 from src.core.supabase_client import SupabaseManager
 from src.ui.theme import inject_galaxy_background
 
@@ -25,7 +25,7 @@ def initialize_auth_session():
 def require_auth():
     """Enforces that a user is logged in. Redirects to Login if not."""
     initialize_auth_session()
-    if not st.session_state.get("user") or not st.session_state["user"].get("is_authenticated"):
+    if not st.session_state.get("user") or not safe_get(st.session_state["user"], "is_authenticated"):
         st.warning("Please log in to access this page.")
         st.switch_page("pages/_Login.py")
 
@@ -36,10 +36,10 @@ def require_role(allowed_roles: List[str]):
     user = st.session_state.get("user")
     
     # Local dev mode bypasses RBAC
-    if user.get("mode") == "local":
+    if safe_get(user, "mode") == "local":
         return
         
-    user_role = user.get("role", "free")
+    user_role = safe_get(user, "role", "free")
     if user_role not in allowed_roles and "admin" not in allowed_roles:
         st.error(f"Access Denied. This feature requires one of the following roles: {', '.join(allowed_roles)}")
         st.stop()
@@ -59,9 +59,9 @@ def render_auth_sidebar():
         st.sidebar.caption("Running without Supabase credentials")
         return
 
-    if user and user.get("is_authenticated") and user.get("mode") == "supabase":
-        st.sidebar.success(f"🟢 Logged in as: {user.get('email')}")
-        st.sidebar.caption(f"Role: **{user.get('role', 'free').upper()}**")
+    if user and safe_get(user, "is_authenticated") and safe_get(user, "mode") == "supabase":
+        st.sidebar.success(f"🟢 Logged in as: {safe_get(user, 'email')}")
+        st.sidebar.caption(f"Role: **{safe_get(user, 'role', 'free').upper()}**")
         if st.sidebar.button("Logout", key="logout_btn"):
             handle_logout()
     else:

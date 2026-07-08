@@ -5,6 +5,7 @@ import streamlit as st
 from typing import List, Dict, Any
 from src.services.persistence_service import PersistenceService
 from src.ui.export_ui import render_campaign_export_buttons
+from src.core.auth_utils import safe_get
 
 
 def render_history_tab():
@@ -19,12 +20,12 @@ def render_history_tab():
         st.info("📂 History unavailable in local mode. Connect to Supabase to enable persistence.")
         return
 
-    if not user:
+    if not user or not getattr(user, "is_authenticated", False) or getattr(user, "mode", None) == "local":
         st.warning("🔐 Log in via the sidebar to view your saved campaigns.")
         return
 
     # Extract user ID safely whether it's a dict or an object
-    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    user_id = safe_get(user, "id")
 
     # 2. Fetch Data
     service = PersistenceService()
@@ -45,7 +46,8 @@ def render_history_tab():
     st.write(f"Showing last {len(campaigns)} campaigns.")
 
     for campaign in campaigns:
-        render_campaign_entry(campaign, user["id"])
+        render_campaign_entry(campaign, user_id)
+
 
 
 def render_campaign_entry(campaign: Dict[str, Any], user_id: str):

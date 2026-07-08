@@ -1,5 +1,6 @@
 import streamlit as st
 from functools import wraps
+from src.core.auth_utils import safe_get
 
 def require_role(allowed_roles: list[str]):
     """
@@ -13,10 +14,10 @@ def require_role(allowed_roles: list[str]):
                 st.stop()
                 
             user = st.session_state.user
-            if user.get("mode") == "local":
+            if safe_get(user, "mode") == "local":
                 return func(*args, **kwargs)
                 
-            user_plan = user.get("plan", "free")
+            user_plan = safe_get(user, "plan", "free")
             if user_plan not in allowed_roles and "admin" not in allowed_roles:
                 st.error(f"Access Denied. This feature requires one of the following plans: {', '.join(allowed_roles)}")
                 st.info("Please upgrade your plan to access premium features.")

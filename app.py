@@ -25,8 +25,27 @@ load_dotenv()
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ad_processing.neural_scorer import predict_scores
 from src.utils.ai_reasoning import get_ai_insights
-from src.ui.theme import render_app_header, render_metric_card, apply_theme
+from src.ui.theme import render_app_header, render_metric_card
 from src.ui.history_ui import render_history_tab
+
+def apply_theme():
+    """Apply custom Streamlit theme and CSS styling."""
+    # Page config is already set via st.set_page_config, so we skip that here
+    # Only inject custom CSS for styling
+    st.markdown("""
+        <style>
+            .reportview-container {
+                background: #0e1117;
+            }
+            .sidebar .sidebar-content {
+                background: #1e2430;
+            }
+            .stButton > button {
+                border-radius: 8px;
+                font-weight: 500;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
 
 @st.cache_data

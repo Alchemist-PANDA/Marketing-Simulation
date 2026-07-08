@@ -6,6 +6,7 @@ import streamlit as st
 from typing import Dict, Any
 from datetime import datetime
 from src.services.persistence_service import PersistenceService
+from src.core.auth_utils import safe_get
 
 
 def render_save_results_section(result: Dict[str, Any], ad1_text: str, ad2_text: str,
@@ -28,18 +29,18 @@ def render_save_results_section(result: Dict[str, Any], ad1_text: str, ad2_text:
     save_tooltip = ""
 
     auth_mode = st.session_state.get("auth_mode")
-    user = st.session_state.get("user", {})
+    user = st.session_state.get("user")
 
     if auth_mode == "local":
         save_tooltip = "Persistence disabled in local mode"
-    elif not user.get("is_authenticated") or user.get("mode") != "supabase":
+    elif not safe_get(user, "is_authenticated") or safe_get(user, "mode") != "supabase":
         save_tooltip = "Log in to save results"
     else:
         can_save = True
         save_tooltip = "Save this simulation to your account"
 
     if st.button("Save Results", disabled=not can_save, help=save_tooltip, key="save_results_btn"):
-        _handle_save(result, ad1_text, ad2_text, channel, num_agents, user["id"])
+        _handle_save(result, ad1_text, ad2_text, channel, num_agents, safe_get(user, "id"))
 
 
 def _handle_save(result: Dict[str, Any], ad1_text: str, ad2_text: str,
