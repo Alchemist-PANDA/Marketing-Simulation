@@ -421,7 +421,7 @@ if run_sim:
 
     with st.spinner("Simulating audience reaction..."):
         try:
-            result = runner.run_test(ad1_text, ad2_text, channel=channel, price=price, benchmarks=benchmarks)
+            result = runner.run_test(ad1_text, ad2_text, channel=channel, price=price)
         except Exception as e:
             st.error(f"Simulation failed: {e}")
             st.stop()
