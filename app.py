@@ -56,6 +56,14 @@ try:
 except ImportError:
     _PSUTIL_AVAILABLE = False
 
+def get_available_ram_mb():
+    try:
+        import psutil
+        return psutil.virtual_memory().available / 1e6
+    except ImportError:
+        return None
+
+
 # Check if user is logged in
 from src.ui.auth_ui import initialize_auth_session
 initialize_auth_session()
