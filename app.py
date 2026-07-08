@@ -244,8 +244,6 @@ if multi_ad_mode:
         
     st.stop()
 
-ad_type = st.radio("Ad Type", ["Text", "Image Upload"], horizontal=True)
-
 if "sim_results" not in st.session_state:
     st.session_state["sim_results"] = None
 if "sim_ad1" not in st.session_state:
@@ -256,29 +254,6 @@ if "last_runtime_ms" not in st.session_state:
     st.session_state["last_runtime_ms"] = None
 if "last_pop_memory_mb" not in st.session_state:
     st.session_state["last_pop_memory_mb"] = None
-
-ad1_text = ""
-ad2_text = ""
-ad1_image = None
-ad2_image = None
-
-col1, col2 = st.columns(2)
-
-with col1:
-    if ad_type == "Image Upload":
-        ad1_image = st.file_uploader("Upload Ad A Image", type=["jpg", "png", "jpeg", "webp"])
-        if ad1_image:
-            st.image(ad1_image, caption="Ad A Preview")
-    else:
-        ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!")
-
-with col2:
-    if ad_type == "Image Upload":
-        ad2_image = st.file_uploader("Upload Ad B Image", type=["jpg", "png", "jpeg", "webp"])
-        if ad2_image:
-            st.image(ad2_image, caption="Ad B Preview")
-    else:
-        ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.")
 
 with st.sidebar:
     with st.expander("Stress Test"):
@@ -293,151 +268,152 @@ with st.sidebar:
 
 tab1, tab2, tab3 = st.tabs(["🚀 New Simulation", "📂 History", "🤖 AI Predictions"])
 
-if val_file:
-    st.header("✅ Smart Validation Mapping")
-    
-    if 'val_df_raw' not in st.session_state or st.session_state.get('val_file_name') != val_file.name:
-        st.session_state['val_df_raw'] = pd.read_csv(val_file)
-        st.session_state['val_file_name'] = val_file.name
+with tab1:
+    if val_file:
+        st.header("✅ Smart Validation Mapping")
         
-    df_raw = st.session_state['val_df_raw']
-    
-    aliases = {
-        "ad_name": ["ad_name", "campaign", "ad", "name", "title", "creative name", "ad set"],
-        "ad_text": ["ad_text", "copy", "creative", "headline", "body", "ad copy", "description", "message"],
-        "platform": ["platform", "channel", "source", "medium", "placement"],
-        "conversions": ["conversions", "purchases", "sales", "orders", "results", "goal completions", "conversion count"],
-        "impressions": ["impressions", "views", "reach", "exposure", "imp", "show"]
-    }
-    
-    if 'mapping' not in st.session_state or st.session_state.get('val_file_name_mapped') != val_file.name:
-        mapping = {}
-        cols = list(df_raw.columns)
-        for std, variants in aliases.items():
-            for col in cols:
-                if any(v in col.lower() for v in variants):
-                    mapping[std] = col
-                    break
-            if std not in mapping:
-                mapping[std] = "Not Found (Use Fallback)"
-        st.session_state['mapping'] = mapping
-        st.session_state['val_file_name_mapped'] = val_file.name
+        if 'val_df_raw' not in st.session_state or st.session_state.get('val_file_name') != val_file.name:
+            st.session_state['val_df_raw'] = pd.read_csv(val_file)
+            st.session_state['val_file_name'] = val_file.name
+            
+        df_raw = st.session_state['val_df_raw']
         
-    st.write("We auto-detected your columns based on common names. Please confirm or correct them below:")
-    
-    cols_opts = ["Not Found (Use Fallback)"] + list(df_raw.columns)
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.session_state['mapping']["ad_name"] = st.selectbox("Ad Name", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_name"]) if st.session_state['mapping']["ad_name"] in cols_opts else 0)
-        st.session_state['mapping']["ad_text"] = st.selectbox("Ad Text / Copy (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_text"]) if st.session_state['mapping']["ad_text"] in cols_opts else 0)
-        st.session_state['mapping']["platform"] = st.selectbox("Platform / Channel", cols_opts, index=cols_opts.index(st.session_state['mapping']["platform"]) if st.session_state['mapping']["platform"] in cols_opts else 0)
-    with c2:
-        st.session_state['mapping']["conversions"] = st.selectbox("Conversions / Sales (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["conversions"]) if st.session_state['mapping']["conversions"] in cols_opts else 0)
-        st.session_state['mapping']["impressions"] = st.selectbox("Impressions / Views", cols_opts, index=cols_opts.index(st.session_state['mapping']["impressions"]) if st.session_state['mapping']["impressions"] in cols_opts else 0)
-
-    # New Fallback Logic for Ad Text
-    ad_text_fallback_method = None
-    mapping_csv_path = None
-    ad_text_placeholder = None
-    identifier_col = None
-    
-    if st.session_state['mapping']["ad_text"] == "Not Found (Use Fallback)":
-        with st.expander("⚠️ Ad Text Missing – How would you like to proceed?", expanded=True):
-            option = st.radio("Ad Text Handling", 
-                              ["Upload mapping CSV", "Use generic placeholder", "Skip simulation"])
-            if option == "Upload mapping CSV":
-                ad_text_fallback_method = "csv"
-                st.info("Upload a secondary CSV containing your Ad IDs and their text.")
-                identifier_col = st.selectbox("Identifier Column in Main CSV", list(df_raw.columns))
-                mapping_file = st.file_uploader("Upload mapping CSV (must contain the identifier and 'ad_text')", type=["csv"], key="map_csv")
-                if mapping_file:
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as t_map:
-                        t_map.write(mapping_file.getvalue())
-                        mapping_csv_path = t_map.name
-            elif option == "Use generic placeholder":
-                ad_text_fallback_method = "placeholder"
-                ad_text_placeholder = st.text_input("Placeholder text", "Facebook Ad")
-            else:
-                ad_text_fallback_method = "skip"
-                st.info("Simulation will be skipped. Only descriptive statistics will be shown.")
-
-    st.write("---")
-    if st.button("Confirm & Run Validation"):
-        mapping = st.session_state['mapping']
+        aliases = {
+            "ad_name": ["ad_name", "campaign", "ad", "name", "title", "creative name", "ad set"],
+            "ad_text": ["ad_text", "copy", "creative", "headline", "body", "ad copy", "description", "message"],
+            "platform": ["platform", "channel", "source", "medium", "placement"],
+            "conversions": ["conversions", "purchases", "sales", "orders", "results", "goal completions", "conversion count"],
+            "impressions": ["impressions", "views", "reach", "exposure", "imp", "show"]
+        }
         
-        if mapping["conversions"] == "Not Found (Use Fallback)":
-            st.error("❌ 'Conversions' is strictly required.")
-        elif mapping["ad_text"] == "Not Found (Use Fallback)" and ad_text_fallback_method == "csv" and not mapping_csv_path:
-            st.error("❌ Please upload the mapping CSV to proceed.")
-        else:
-            df_mapped = df_raw.copy()
-            notes = []
+        if 'mapping' not in st.session_state or st.session_state.get('val_file_name_mapped') != val_file.name:
+            mapping = {}
+            cols = list(df_raw.columns)
+            for std, variants in aliases.items():
+                for col in cols:
+                    if any(v in col.lower() for v in variants):
+                        mapping[std] = col
+                        break
+                if std not in mapping:
+                    mapping[std] = "Not Found (Use Fallback)"
+            st.session_state['mapping'] = mapping
+            st.session_state['val_file_name_mapped'] = val_file.name
             
-            if mapping["ad_name"] != "Not Found (Use Fallback)":
-                df_mapped.rename(columns={mapping["ad_name"]: "ad_name"}, inplace=True)
-            else:
-                df_mapped["ad_name"] = [f"Ad {i+1}" for i in range(len(df_mapped))]
-                notes.append("Assigned generic names for 'ad_name'.")
-                
-            if mapping["ad_text"] != "Not Found (Use Fallback)":
-                df_mapped.rename(columns={mapping["ad_text"]: "ad_text"}, inplace=True)
+        st.write("We auto-detected your columns based on common names. Please confirm or correct them below:")
+        
+        cols_opts = ["Not Found (Use Fallback)"] + list(df_raw.columns)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.session_state['mapping']["ad_name"] = st.selectbox("Ad Name", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_name"]) if st.session_state['mapping']["ad_name"] in cols_opts else 0)
+            st.session_state['mapping']["ad_text"] = st.selectbox("Ad Text / Copy (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["ad_text"]) if st.session_state['mapping']["ad_text"] in cols_opts else 0)
+            st.session_state['mapping']["platform"] = st.selectbox("Platform / Channel", cols_opts, index=cols_opts.index(st.session_state['mapping']["platform"]) if st.session_state['mapping']["platform"] in cols_opts else 0)
+        with c2:
+            st.session_state['mapping']["conversions"] = st.selectbox("Conversions / Sales (Required)", cols_opts, index=cols_opts.index(st.session_state['mapping']["conversions"]) if st.session_state['mapping']["conversions"] in cols_opts else 0)
+            st.session_state['mapping']["impressions"] = st.selectbox("Impressions / Views", cols_opts, index=cols_opts.index(st.session_state['mapping']["impressions"]) if st.session_state['mapping']["impressions"] in cols_opts else 0)
+    
+        # New Fallback Logic for Ad Text
+        ad_text_fallback_method = None
+        mapping_csv_path = None
+        ad_text_placeholder = None
+        identifier_col = None
+        
+        if st.session_state['mapping']["ad_text"] == "Not Found (Use Fallback)":
+            with st.expander("⚠️ Ad Text Missing – How would you like to proceed?", expanded=True):
+                option = st.radio("Ad Text Handling", 
+                                  ["Upload mapping CSV", "Use generic placeholder", "Skip simulation"])
+                if option == "Upload mapping CSV":
+                    ad_text_fallback_method = "csv"
+                    st.info("Upload a secondary CSV containing your Ad IDs and their text.")
+                    identifier_col = st.selectbox("Identifier Column in Main CSV", list(df_raw.columns))
+                    mapping_file = st.file_uploader("Upload mapping CSV (must contain the identifier and 'ad_text')", type=["csv"], key="map_csv")
+                    if mapping_file:
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as t_map:
+                            t_map.write(mapping_file.getvalue())
+                            mapping_csv_path = t_map.name
+                elif option == "Use generic placeholder":
+                    ad_text_fallback_method = "placeholder"
+                    ad_text_placeholder = st.text_input("Placeholder text", "Facebook Ad")
+                else:
+                    ad_text_fallback_method = "skip"
+                    st.info("Simulation will be skipped. Only descriptive statistics will be shown.")
+    
+        st.write("---")
+        if st.button("Confirm & Run Validation"):
+            mapping = st.session_state['mapping']
             
-            df_mapped.rename(columns={mapping["conversions"]: "conversions"}, inplace=True)
-            
-            if mapping["impressions"] != "Not Found (Use Fallback)":
-                df_mapped.rename(columns={mapping["impressions"]: "impressions"}, inplace=True)
+            if mapping["conversions"] == "Not Found (Use Fallback)":
+                st.error("❌ 'Conversions' is strictly required.")
+            elif mapping["ad_text"] == "Not Found (Use Fallback)" and ad_text_fallback_method == "csv" and not mapping_csv_path:
+                st.error("❌ Please upload the mapping CSV to proceed.")
             else:
-                df_mapped["impressions"] = 1000
-                notes.append("Assigned default 1000 for missing 'impressions'.")
+                df_mapped = df_raw.copy()
+                notes = []
                 
-            if mapping["platform"] != "Not Found (Use Fallback)":
-                df_mapped.rename(columns={mapping["platform"]: "platform"}, inplace=True)
-            else:
-                df_mapped["platform"] = "facebook"
+                if mapping["ad_name"] != "Not Found (Use Fallback)":
+                    df_mapped.rename(columns={mapping["ad_name"]: "ad_name"}, inplace=True)
+                else:
+                    df_mapped["ad_name"] = [f"Ad {i+1}" for i in range(len(df_mapped))]
+                    notes.append("Assigned generic names for 'ad_name'.")
+                    
+                if mapping["ad_text"] != "Not Found (Use Fallback)":
+                    df_mapped.rename(columns={mapping["ad_text"]: "ad_text"}, inplace=True)
                 
-            # Check for test_id to support legacy paired test mode if present, else fallback
-            if "test_id" not in df_mapped.columns:
-                df_mapped["test_id"] = 1
-            if "ad_id" not in df_mapped.columns:
-                df_mapped["ad_id"] = [f"A{i}" for i in range(len(df_mapped))]
-
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-                df_mapped.to_csv(tmp.name, index=False)
-                tmp_path = tmp.name
+                df_mapped.rename(columns={mapping["conversions"]: "conversions"}, inplace=True)
                 
-            from scripts.validate_with_real_data import validate_data
-            with st.spinner("Running deep validation (this may take a minute)..."):
-                report = validate_data(
-                    tmp_path, 
-                    output_dir="outputs",
-                    ad_text_fallback_method=ad_text_fallback_method,
-                    ad_text_placeholder=ad_text_placeholder,
-                    mapping_csv_path=mapping_csv_path,
-                    identifier_col=identifier_col
-                )
-                
-            if report:
-                st.success("Validation Complete!")
-                st.metric("Directional Accuracy", f"{report.get('directional_accuracy', 0):.2f}%")
-                if notes:
-                    with st.expander("⚠️ Mapping Assumptions Applied"):
-                        for n in notes:
-                            st.write(f"- {n}")
-                
-                if report.get('tests'):
-                    st.subheader("Detailed Breakdown")
-                    for test in report['tests']:
-                        with st.expander(f"Test {test['test_id']} - Match: {'✅' if test['match'] else '❌'}"):
-                            st.write(f"**Actual Winner:** {test['actual_winner']} | **Predicted Winner:** {test['predicted_winner']}")
-                            if 'ad_a_text' in test:
-                                st.text(f"Ad A: {test['ad_a_text']}")
-                                st.text(f"Ad B: {test['ad_b_text']}")
-            else:
-                st.error("Validation failed. See console.")
-    st.stop()
+                if mapping["impressions"] != "Not Found (Use Fallback)":
+                    df_mapped.rename(columns={mapping["impressions"]: "impressions"}, inplace=True)
+                else:
+                    df_mapped["impressions"] = 1000
+                    notes.append("Assigned default 1000 for missing 'impressions'.")
+                    
+                if mapping["platform"] != "Not Found (Use Fallback)":
+                    df_mapped.rename(columns={mapping["platform"]: "platform"}, inplace=True)
+                else:
+                    df_mapped["platform"] = "facebook"
+                    
+                # Check for test_id to support legacy paired test mode if present, else fallback
+                if "test_id" not in df_mapped.columns:
+                    df_mapped["test_id"] = 1
+                if "ad_id" not in df_mapped.columns:
+                    df_mapped["ad_id"] = [f"A{i}" for i in range(len(df_mapped))]
+    
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                    df_mapped.to_csv(tmp.name, index=False)
+                    tmp_path = tmp.name
+                    
+                from scripts.validate_with_real_data import validate_data
+                with st.spinner("Running deep validation (this may take a minute)..."):
+                    report = validate_data(
+                        tmp_path, 
+                        output_dir="outputs",
+                        ad_text_fallback_method=ad_text_fallback_method,
+                        ad_text_placeholder=ad_text_placeholder,
+                        mapping_csv_path=mapping_csv_path,
+                        identifier_col=identifier_col
+                    )
+                    
+                if report:
+                    st.success("Validation Complete!")
+                    st.metric("Directional Accuracy", f"{report.get('directional_accuracy', 0):.2f}%")
+                    if notes:
+                        with st.expander("⚠️ Mapping Assumptions Applied"):
+                            for n in notes:
+                                st.write(f"- {n}")
+                    
+                    if report.get('tests'):
+                        st.subheader("Detailed Breakdown")
+                        for test in report['tests']:
+                            with st.expander(f"Test {test['test_id']} - Match: {'✅' if test['match'] else '❌'}"):
+                                st.write(f"**Actual Winner:** {test['actual_winner']} | **Predicted Winner:** {test['predicted_winner']}")
+                                if 'ad_a_text' in test:
+                                    st.text(f"Ad A: {test['ad_a_text']}")
+                                    st.text(f"Ad B: {test['ad_b_text']}")
+                else:
+                    st.error("Validation failed. See console.")
+        st.stop()
 
 
 
@@ -474,67 +450,82 @@ if val_file:
                 st.image(uploaded_img_b, caption="Ad B Preview", use_container_width=True)
 
     if run_sim:
-        if input_method == "Image Upload":
-            if not uploaded_img_a or not uploaded_img_b:
-                st.error("Please upload images for both Ad A and Ad B.")
-                st.stop()
+        st.write("🔍 DEBUG: Button clicked!")          # Confirm the button works
+        st.write(f"🔍 DEBUG: num_agents = {num_agents}")
+        st.write(f"🔍 DEBUG: ad1_text = '{ad1_text[:50]}...'")
+        st.write(f"🔍 DEBUG: ad2_text = '{ad2_text[:50]}...'")
+        st.write(f"🔍 DEBUG: channel = {channel}")
 
-            # Lazy import: OCR model only loads when image mode is actually used.
-            from src.utils.ocr_engine import extract_text_from_image
-
-            with st.spinner("Extracting text from Ad A image..."):
-                ad1_text = extract_text_from_image(uploaded_img_a.getvalue())
-            if not ad1_text:
-                st.error("No readable text found in Ad A image. Please upload a clearer image.")
-                st.stop()
-
-            with st.spinner("Extracting text from Ad B image..."):
-                ad2_text = extract_text_from_image(uploaded_img_b.getvalue())
-            if not ad2_text:
-                st.error("No readable text found in Ad B image. Please upload a clearer image.")
-                st.stop()
-
-            st.info(f"**Extracted Ad A text:** {ad1_text}")
-            st.info(f"**Extracted Ad B text:** {ad2_text}")
-
-        if not ad1_text or not ad1_text.strip():
-            st.error("Ad Creative A text cannot be empty. Please enter ad copy or upload an image.")
-            st.stop()
-        if not ad2_text or not ad2_text.strip():
-            st.error("Ad Creative B text cannot be empty. Please enter ad copy or upload an image.")
+        if not ad1_text or not ad2_text:
+            st.error("⚠️ Please enter ad copy for both Ad A and Ad B (or upload images).")
             st.stop()
 
-        master_population = cached_population(num_agents, None)
-        mem_bytes = population_memory_bytes(master_population)
-        runner = ABTestRunner(num_agents=num_agents, master_population=master_population)
+        try:
+            if input_method == "Image Upload":
+                if not uploaded_img_a or not uploaded_img_b:
+                    st.error("Please upload images for both Ad A and Ad B.")
+                    st.stop()
 
-        with st.status("Running Simulation...", expanded=True) as status:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+                # Lazy import: OCR model only loads when image mode is actually used.
+                from src.utils.ocr_engine import extract_text_from_image
 
-            def on_progress(pct, msg):
-                progress_bar.progress(min(pct, 1.0))
-                agent_count = int(pct * num_agents)
-                status_text.markdown(f"**{msg}** — Processing agent {agent_count:,} / {num_agents:,}")
+                with st.spinner("Extracting text from Ad A image..."):
+                    ad1_text = extract_text_from_image(uploaded_img_a.getvalue())
+                if not ad1_text:
+                    st.error("No readable text found in Ad A image. Please upload a clearer image.")
+                    st.stop()
 
-            t0 = time.perf_counter()
-            result = runner.run_test(
-                ad1_text, ad2_text,
-                channel=channel, price=price, objective=objective,
-                progress_callback=on_progress
-            )
-            runtime_ms = (time.perf_counter() - t0) * 1000
-            progress_bar.progress(1.0)
-            status.update(label=f"Simulation Complete! ({runtime_ms:.1f} ms)", state="complete", expanded=False)
+                with st.spinner("Extracting text from Ad B image..."):
+                    ad2_text = extract_text_from_image(uploaded_img_b.getvalue())
+                if not ad2_text:
+                    st.error("No readable text found in Ad B image. Please upload a clearer image.")
+                    st.stop()
 
-        st.session_state["sim_results"] = result
-        st.session_state["sim_ad1"] = ad1_text
-        st.session_state["sim_ad2"] = ad2_text
-        st.session_state["last_runtime_ms"] = runtime_ms
-        st.session_state["last_pop_memory_mb"] = mem_bytes / 1e6
+                st.info(f"**Extracted Ad A text:** {ad1_text}")
+                st.info(f"**Extracted Ad B text:** {ad2_text}")
 
-        del master_population, runner
-        gc.collect()
+            if not ad1_text or not ad1_text.strip():
+                st.error("Ad Creative A text cannot be empty. Please enter ad copy or upload an image.")
+                st.stop()
+            if not ad2_text or not ad2_text.strip():
+                st.error("Ad Creative B text cannot be empty. Please enter ad copy or upload an image.")
+                st.stop()
+
+            master_population = cached_population(num_agents, None)
+            mem_bytes = population_memory_bytes(master_population)
+            runner = ABTestRunner(num_agents=num_agents, master_population=master_population)
+
+            with st.status("Running Simulation...", expanded=True) as status:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                def on_progress(pct, msg):
+                    progress_bar.progress(min(pct, 1.0))
+                    agent_count = int(pct * num_agents)
+                    status_text.markdown(f"**{msg}** — Processing agent {agent_count:,} / {num_agents:,}")
+
+                t0 = time.perf_counter()
+                result = runner.run_test(
+                    ad1_text, ad2_text,
+                    channel=channel, price=price, objective=objective,
+                    progress_callback=on_progress
+                )
+                runtime_ms = (time.perf_counter() - t0) * 1000
+                progress_bar.progress(1.0)
+                status.update(label=f"Simulation Complete! ({runtime_ms:.1f} ms)", state="complete", expanded=False)
+
+            st.session_state["sim_results"] = result
+            st.session_state["sim_ad1"] = ad1_text
+            st.session_state["sim_ad2"] = ad2_text
+            st.session_state["last_runtime_ms"] = runtime_ms
+            st.session_state["last_pop_memory_mb"] = mem_bytes / 1e6
+
+            del master_population, runner
+            gc.collect()
+        except Exception as e:
+            import traceback
+            st.error(f"❌ Simulation failed: {e}")
+            st.code(traceback.format_exc())
 
     result = st.session_state.get("sim_results")
     if result:
