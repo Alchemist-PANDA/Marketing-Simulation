@@ -17,6 +17,7 @@ load_dotenv()
 from src.simulation.ab_test_runner import ABTestRunner
 from src.ad_processing.neural_scorer import predict_scores
 from src.utils.ai_reasoning import get_ai_insights
+from src.ui.theme import apply_theme, render_app_header
 
 @st.cache_data
 def get_benchmarks():
