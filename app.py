@@ -806,94 +806,271 @@ with tab2:
     render_history_tab()
 
 with tab3:
-    st.header("AI-Enhanced CTR Prediction")
-    st.markdown("Predict click-through rates using Classic simulation, trained ML models, or a weighted ensemble.")
+    # ── Header ──────────────────────────────────────────────────────────────
+    st.markdown(
+        """
+        <style>
+            .ai-tab-header {
+                font-size: 1.7rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: 2px;
+            }
+            .ai-tab-sub {
+                color: rgba(209, 213, 219, 0.75);
+                font-size: 0.95rem;
+                margin-bottom: 20px;
+            }
+            .ocr-preview-box {
+                background: rgba(79, 70, 229, 0.08);
+                border: 1px solid rgba(79, 70, 229, 0.3);
+                border-radius: 8px;
+                padding: 12px 16px;
+                font-family: monospace;
+                font-size: 0.85rem;
+                color: #D1D5DB;
+                white-space: pre-wrap;
+                margin-bottom: 8px;
+            }
+        </style>
+        <div class="ai-tab-header">🤖 AI-Enhanced CTR Prediction</div>
+        <div class="ai-tab-sub">
+            Predict click-through rates using Classic simulation, trained ML models, or a weighted ensemble.
+            Upload an ad screenshot to automatically extract text via OCR.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
+    # ── Prediction Mode ──────────────────────────────────────────────────────
     ai_mode = st.radio(
         "Prediction Mode",
         ["Classic (Simulation Engine)", "AI (ML Model)", "Ensemble (Weighted Blend)"],
         horizontal=True,
-        key="ai_pred_mode"
+        key="ai_pred_mode",
     )
-
     mode_map = {
         "Classic (Simulation Engine)": "classic",
-        "AI (ML Model)": "ai",
-        "Ensemble (Weighted Blend)": "ensemble",
+        "AI (ML Model)":              "ai",
+        "Ensemble (Weighted Blend)":  "ensemble",
     }
     selected_mode = mode_map[ai_mode]
 
     if selected_mode == "ensemble":
-        ai_weight = st.slider("AI Model Weight", 0.0, 1.0, 0.5, step=0.1, key="ai_weight_slider",
-                              help="0.0 = pure simulation, 1.0 = pure AI model")
+        ai_weight = st.slider(
+            "AI Model Weight", 0.0, 1.0, 0.5, step=0.1,
+            key="ai_weight_slider",
+            help="0.0 = pure simulation, 1.0 = pure AI model",
+        )
+    else:
+        ai_weight = 0.5   # default, unused unless ensemble selected
 
-    ai_ad_text = st.text_area("Ad Creative Text", "Save 50% on your first purchase today!",
-                              height=120, key="ai_ad_text")
+    # ── Input Method Toggle ──────────────────────────────────────────────────
+    st.divider()
+    ai_input_method = st.radio(
+        "Ad Input Method",
+        ["✍️ Text", "📸 Image Upload"],
+        horizontal=True,
+        key="ai_input_method",
+        help="Type your ad copy, or upload a screenshot and let OCR extract the text.",
+    )
 
+    # Initialise session state keys
+    if "ai_extracted_text" not in st.session_state:
+        st.session_state["ai_extracted_text"] = ""
+    if "ai_last_uploaded_name" not in st.session_state:
+        st.session_state["ai_last_uploaded_name"] = None
+
+    # ── TEXT input branch (original behaviour, unchanged) ────────────────────
+    if ai_input_method == "✍️ Text":
+        ai_ad_text = st.text_area(
+            "Ad Creative Text",
+            value=st.session_state.get("ai_extracted_text") or "Save 50% on your first purchase today!",
+            height=130,
+            key="ai_ad_text",
+            placeholder="Type your ad copy here…",
+        )
+        # Keep session state in sync so switching to image mode retains text
+        st.session_state["ai_extracted_text"] = ai_ad_text
+
+    # ── IMAGE UPLOAD branch (new) ────────────────────────────────────────────
+    else:
+        col_up, col_prev = st.columns([1, 1], gap="large")
+
+        with col_up:
+            st.markdown("**Upload an ad screenshot** (JPG, PNG, WEBP)")
+            uploaded_ai_img = st.file_uploader(
+                "Upload Ad Image",
+                type=["jpg", "jpeg", "png", "webp"],
+                key="ai_image_upload",
+                label_visibility="collapsed",
+            )
+
+        with col_prev:
+            if uploaded_ai_img is not None:
+                st.image(uploaded_ai_img, caption="Ad Preview", use_container_width=True)
+
+        # ── OCR extraction ───────────────────────────────────────────────
+        if uploaded_ai_img is not None:
+            new_upload = uploaded_ai_img.name != st.session_state.get("ai_last_uploaded_name")
+
+            if new_upload:
+                # Fresh image — run OCR
+                try:
+                    from src.utils.ocr_engine import extract_text_from_image
+                    with st.spinner("📸 Extracting text from image via OCR…"):
+                        raw_bytes = uploaded_ai_img.getvalue()
+                        ocr_text  = extract_text_from_image(raw_bytes)
+                    st.session_state["ai_extracted_text"]    = ocr_text
+                    st.session_state["ai_last_uploaded_name"] = uploaded_ai_img.name
+
+                    if ocr_text.strip():
+                        st.success(f"✅ OCR extracted **{len(ocr_text.split())} words** from the image.")
+                    else:
+                        st.warning("⚠️ OCR returned empty text. Please enter the ad copy manually below.")
+
+                except Exception as _ocr_err:
+                    import traceback as _tb
+                    st.error(f"❌ OCR failed: `{_ocr_err}`")
+                    with st.expander("🔍 OCR error details", expanded=False):
+                        st.code(_tb.format_exc())
+                    st.session_state["ai_extracted_text"]    = ""
+                    st.session_state["ai_last_uploaded_name"] = uploaded_ai_img.name
+
+            # ── Editable confirmation text area ─────────────────────────
+            st.markdown("**Extracted text** *(edit if needed before predicting)*")
+            ai_ad_text = st.text_area(
+                "Extracted ad text",
+                value=st.session_state.get("ai_extracted_text", ""),
+                height=120,
+                key="ai_ad_text_ocr",
+                label_visibility="collapsed",
+                placeholder="OCR result will appear here — you can edit before predicting.",
+            )
+            st.session_state["ai_extracted_text"] = ai_ad_text
+
+        else:
+            # No image uploaded yet
+            st.info("📸 Upload an ad screenshot above to automatically extract text via OCR.")
+            # Fallback: let user type while waiting
+            ai_ad_text = st.text_area(
+                "Or enter ad text manually",
+                value=st.session_state.get("ai_extracted_text", ""),
+                height=100,
+                key="ai_ad_text_ocr_fallback",
+                placeholder="Enter ad copy here while you find the image…",
+            )
+            st.session_state["ai_extracted_text"] = ai_ad_text
+
+    # ── Action Buttons ───────────────────────────────────────────────────────
+    st.divider()
     col_predict, col_explain = st.columns(2)
     with col_predict:
-        run_ai_pred = st.button("Predict CTR", type="primary", key="run_ai_pred")
+        run_ai_pred = st.button(
+            "🔮 Predict CTR", type="primary",
+            key="run_ai_pred", use_container_width=True,
+        )
     with col_explain:
-        run_explain = st.button("Explain Prediction", key="run_explain")
+        run_explain = st.button(
+            "📖 Explain Prediction",
+            key="run_explain", use_container_width=True,
+        )
 
-    if run_ai_pred and ai_ad_text.strip():
-        from src.ai.predictor import get_predictor
-        predictor = get_predictor()
+    # Guard: require non-empty text for both actions
+    def _require_text(text: str) -> bool:
+        if not text or not text.strip():
+            st.error("❌ Please enter ad text or upload an image with readable text.")
+            return False
+        return True
 
-        kwargs = {}
-        if selected_mode == "ensemble":
-            kwargs["ai_weight"] = ai_weight
+    # ── PREDICT ─────────────────────────────────────────────────────────────
+    if run_ai_pred:
+        if _require_text(ai_ad_text):
+            from src.ai.predictor import get_predictor
+            predictor = get_predictor()
 
-        with st.spinner("Running prediction..."):
-            result = predictor.predict(ai_ad_text, mode=selected_mode, **kwargs)
+            kwargs = {}
+            if selected_mode == "ensemble":
+                kwargs["ai_weight"] = ai_weight
 
-        st.success(f"Predicted CTR: **{result['predicted_ctr']:.4%}** (mode: {result['mode']})")
+            with st.spinner("Running prediction…"):
+                result = predictor.predict(ai_ad_text, mode=selected_mode, **kwargs)
 
-        if "scores" in result:
-            sc1, sc2, sc3 = st.columns(3)
-            with sc1:
-                render_metric_card("Price Score", f"{result['scores']['price_score']:.2f}", "💰")
-            with sc2:
-                render_metric_card("Trust Score", f"{result['scores']['trust_score']:.2f}", "🛡️")
-            with sc3:
-                render_metric_card("Urgency Score", f"{result['scores']['urgency_score']:.2f}", "⏰")
+            # ── Results banner ───────────────────────────────────────────
+            ctr_pct = result["predicted_ctr"] * 100
+            ctr_color = "#10B981" if ctr_pct >= 2.5 else "#F59E0B" if ctr_pct >= 1.0 else "#EF4444"
+            st.markdown(
+                f"""
+                <div style="
+                    background: linear-gradient(135deg, {ctr_color}22 0%, {ctr_color}11 100%);
+                    border-left: 4px solid {ctr_color};
+                    border-radius: 8px;
+                    padding: 14px 20px;
+                    margin: 12px 0;
+                ">
+                    <span style="font-size:1.4rem; font-weight:700; color:{ctr_color};">
+                        📊 Predicted CTR: {ctr_pct:.2f}%
+                    </span><br/>
+                    <span style="color:#D1D5DB; font-size:0.9rem;">
+                        Mode: <strong>{result["mode"]}</strong>
+                        {"&nbsp;•&nbsp;AI weight: " + str(ai_weight) if result["mode"] == "ensemble" else ""}
+                    </span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        if result['mode'] == 'ensemble':
-            e1, e2 = st.columns(2)
-            with e1:
-                st.metric("Classic CTR", f"{result['classic_ctr']:.4%}")
-            with e2:
-                st.metric("AI CTR", f"{result['ai_ctr']:.4%}")
+            if "scores" in result:
+                sc1, sc2, sc3 = st.columns(3)
+                with sc1:
+                    render_metric_card("Price Score",   f"{result['scores']['price_score']:.2f}",   "💰")
+                with sc2:
+                    render_metric_card("Trust Score",   f"{result['scores']['trust_score']:.2f}",   "🛡️")
+                with sc3:
+                    render_metric_card("Urgency Score", f"{result['scores']['urgency_score']:.2f}", "⏰")
 
-        if "engagement" in result:
-            st.subheader("Engagement Breakdown")
-            eng = result["engagement"]
-            eng_cols = st.columns(3)
-            with eng_cols[0]:
-                st.metric("Likes", f"{eng['likes']:,}")
-            with eng_cols[1]:
-                st.metric("Shares", f"{eng['shares']:,}")
-            with eng_cols[2]:
-                st.metric("Conversions", f"{eng['conversions']:,}")
+            if result["mode"] == "ensemble":
+                e1, e2 = st.columns(2)
+                with e1:
+                    st.metric("Classic CTR", f"{result['classic_ctr']:.4%}")
+                with e2:
+                    st.metric("AI CTR",      f"{result['ai_ctr']:.4%}")
 
-        with st.expander("Raw Prediction Data"):
-            st.json(result)
+            if "engagement" in result:
+                st.subheader("Engagement Breakdown")
+                eng = result["engagement"]
+                eng_cols = st.columns(3)
+                with eng_cols[0]:
+                    st.metric("Likes",       f"{eng['likes']:,}")
+                with eng_cols[1]:
+                    st.metric("Shares",      f"{eng['shares']:,}")
+                with eng_cols[2]:
+                    st.metric("Conversions", f"{eng['conversions']:,}")
 
-    if run_explain and ai_ad_text.strip():
-        from src.ai.predictor import get_predictor
-        predictor = get_predictor()
+            with st.expander("Raw Prediction Data"):
+                st.json(result)
 
-        with st.spinner("Generating explanation..."):
-            explanation = predictor.explain(ai_ad_text)
+    # ── EXPLAIN ─────────────────────────────────────────────────────────────
+    if run_explain:
+        if _require_text(ai_ad_text):
+            from src.ai.predictor import get_predictor
+            predictor = get_predictor()
 
-        st.subheader("Feature Explanations")
-        for exp in explanation['explanations']:
-            direction_icon = "✅" if exp['direction'] == 'positive' else "⚠️" if exp['direction'] == 'negative' else "➖"
-            with st.expander(f"{direction_icon} {exp['factor']}", expanded=True):
-                st.write(f"**Impact:** {exp['impact']}")
-                st.write(f"**Explanation:** {exp['explanation']}")
-                if exp['keywords']:
-                    st.write(f"**Keywords matched:** {', '.join(exp['keywords'])}")
+            with st.spinner("Generating explanation…"):
+                explanation = predictor.explain(ai_ad_text)
 
-        st.info(f"**Recommendation:** {explanation['recommendation']}")
+            st.subheader("Feature Explanations")
+            for exp in explanation["explanations"]:
+                icon = "✅" if exp["direction"] == "positive" else "⚠️" if exp["direction"] == "negative" else "➖"
+                with st.expander(f"{icon} {exp['factor']}", expanded=True):
+                    st.write(f"**Impact:** {exp['impact']}")
+                    st.write(f"**Explanation:** {exp['explanation']}")
+                    if exp["keywords"]:
+                        st.write(f"**Keywords matched:** {', '.join(exp['keywords'])}")
+
+            st.info(f"**Recommendation:** {explanation['recommendation']}")
+
+
 
