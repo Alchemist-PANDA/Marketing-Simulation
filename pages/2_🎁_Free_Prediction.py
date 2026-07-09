@@ -54,3 +54,9 @@ if st.button("🔮 Predict My Ad's Performance", type="primary", use_container_w
         Contact sales or sign up for an enterprise account to access our complete psychographic breakdown and generative improvements.
         """)
         st.button("Request Full Access")
+
+# Copilot overlay (only for logged-in users)
+if st.session_state.get("user"):
+    from src.ui.copilot_ui import render_copilot, render_copilot_toggle
+    render_copilot_toggle()
+    render_copilot()

@@ -78,3 +78,8 @@ with col2:
                 st.divider()
     else:
         st.info("You don't have any active API keys.")
+
+# Copilot overlay
+from src.ui.copilot_ui import render_copilot, render_copilot_toggle
+render_copilot_toggle()
+render_copilot()
