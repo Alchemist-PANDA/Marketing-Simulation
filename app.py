@@ -33,6 +33,7 @@ from src.ui.history_ui import render_history_tab
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.export_ui import render_export_buttons
 from src.ui.dashboard_ui import render_full_dashboard
+from src.ui.copilot_ui import render_copilot_fab, render_copilot_panel
 
 def apply_theme():
     """Apply custom Streamlit theme and CSS styling."""
@@ -804,6 +805,20 @@ with tab1:
 
 with tab2:
     render_history_tab()
+
+# ── AI Copilot FAB (floating button on every tab) ───────────────────────────
+_sim_context = None
+if st.session_state.get("sim_results") is not None:
+    import json as _json
+    try:
+        _sim_context = "Latest simulation results:\n" + _json.dumps(
+            st.session_state["sim_results"], indent=2, default=str
+        )[:3000]
+    except Exception:
+        _sim_context = None
+
+render_copilot_fab()
+render_copilot_panel(sim_context=_sim_context)
 
 with tab3:
     # ── Header ──────────────────────────────────────────────────────────────
