@@ -85,3 +85,9 @@ with col_dl1:
 with col_dl2:
     # Just a placeholder for the technical report
     st.download_button("📥 Download Technical Validation Report", "# Technical Report\nAccuracy: 52.50%", file_name="Technical_Report.md", mime="text/markdown")
+
+# Copilot overlay (only for logged-in users)
+if st.session_state.get("user"):
+    from src.ui.copilot_ui import render_copilot, render_copilot_toggle
+    render_copilot_toggle()
+    render_copilot()
