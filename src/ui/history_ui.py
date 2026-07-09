@@ -73,9 +73,12 @@ def render_history_tab():
 
     st.caption(f"Showing {len(reports)} report{'s' if len(reports) != 1 else ''}")
 
-    # Render each report
+    # Render each report — isolate failures so one bad report can't blank the tab
     for report in reports:
-        _render_report_entry(report, user_id, service)
+        try:
+            _render_report_entry(report, user_id, service)
+        except Exception as e:
+            st.error(f"⚠️ Could not display report #{report.get('report_number', '?')}: {e}")
 
 
 def _render_report_entry(report: Dict[str, Any], user_id: str, service: PersistenceService):
@@ -160,9 +163,15 @@ def _render_report_entry(report: Dict[str, Any], user_id: str, service: Persiste
             st.download_button("📥 JSON", data=json_data, file_name=f"report_{report_num}.json",
                                mime="application/json", key=f"json_{report_id}")
         with btn_cols[2]:
-            pdf_bytes = _report_to_pdf(report)
-            st.download_button("📥 PDF", data=pdf_bytes, file_name=f"report_{report_num}.pdf",
-                               mime="application/pdf", key=f"pdf_{report_id}")
+            try:
+                pdf_bytes = _report_to_pdf(report)
+                st.download_button("📥 PDF", data=pdf_bytes, file_name=f"report_{report_num}.pdf",
+                                   mime="application/pdf", key=f"pdf_{report_id}")
+            except Exception:
+                # Never let PDF generation break the row; offer a text fallback instead
+                st.download_button("📥 TXT", data=_report_to_pdf_fallback(report),
+                                   file_name=f"report_{report_num}.txt",
+                                   mime="text/plain", key=f"pdf_{report_id}")
         with btn_cols[3]:
             if st.button("🗑️ Delete", key=f"del_{report_id}", type="secondary"):
                 st.session_state[f"confirm_delete_{report_id}"] = True
@@ -217,12 +226,44 @@ def _report_to_csv(report: Dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def _latin1_safe(value: Any) -> Any:
+    """Coerce a value to a Latin-1-encodable string.
+
+    fpdf2's built-in core fonts (Helvetica) only support Latin-1. Ad copy often
+    contains emoji, curly quotes, or symbols like ₹ — without this, fpdf raises
+    and previously crashed the whole History tab. We transliterate unsupported
+    characters to '?' so the PDF always renders.
+    """
+    if not isinstance(value, str):
+        return value
+    return value.encode("latin-1", "replace").decode("latin-1")
+
+
+def _sanitize_report(report: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a shallow copy of the report with all strings made Latin-1 safe."""
+    clean = {k: _latin1_safe(v) for k, v in report.items()}
+    rj = report.get("result_json", {})
+    if isinstance(rj, dict):
+        clean_rj = {}
+        for ad_key in ("ad_a", "ad_b"):
+            ad = rj.get(ad_key, {})
+            if isinstance(ad, dict):
+                clean_rj[ad_key] = {k: _latin1_safe(v) for k, v in ad.items()}
+        # keep any other keys as-is
+        for k, v in rj.items():
+            clean_rj.setdefault(k, v)
+        clean["result_json"] = clean_rj
+    return clean
+
+
 def _report_to_pdf(report: Dict[str, Any]) -> bytes:
     """Generate a PDF summary of the report."""
     try:
         from fpdf import FPDF
     except ImportError:
         return _report_to_pdf_fallback(report)
+
+    report = _sanitize_report(report)
 
     pdf = FPDF()
     pdf.add_page()
