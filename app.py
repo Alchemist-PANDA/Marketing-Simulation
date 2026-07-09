@@ -23,10 +23,15 @@ import plotly.express as px
 from dotenv import load_dotenv
 load_dotenv()
 from src.simulation.ab_test_runner import ABTestRunner
+from src.simulation.max_engine import MaxSimulation
+from src.ad_processing.ad import Ad
 from src.ad_processing.neural_scorer import predict_scores
+from src.agents.agent_generator import generate_population_arrays, population_memory_bytes
 from src.utils.ai_reasoning import get_ai_insights
-from src.ui.theme import render_app_header, render_metric_card
+from src.ui.theme import render_app_header, render_metric_card, render_section_header
 from src.ui.history_ui import render_history_tab
+from src.ui.save_results_ui import render_save_results_section
+from src.ui.export_ui import render_export_buttons
 
 def apply_theme():
     """Apply custom Streamlit theme and CSS styling."""
@@ -56,6 +61,12 @@ def get_benchmarks():
         "seasonality_factor": "June is peak for e-commerce"
     }
 benchmarks = get_benchmarks()
+
+
+@st.cache_data(ttl=3600, max_entries=5, show_spinner=False)
+def cached_population(num_agents: int, seed):
+    """Cache generated agent population arrays by (num_agents, seed)."""
+    return generate_population_arrays(num_agents, seed=seed)
 
 try:
     import psutil
@@ -489,12 +500,6 @@ with tab1:
                 st.session_state["ad2_manual"] = ad2_text
 
     if run_sim:
-        st.write("🔍 DEBUG: Button clicked!")          # Confirm the button works
-        st.write(f"🔍 DEBUG: num_agents = {num_agents}")
-        st.write(f"🔍 DEBUG: ad1_text = '{ad1_text[:50]}...' (len={len(ad1_text)})")
-        st.write(f"🔍 DEBUG: ad2_text = '{ad2_text[:50]}...' (len={len(ad2_text)})")
-        st.write(f"🔍 DEBUG: channel = {channel}")
-
         if input_method == "Text":
             if not ad1_text or not ad2_text:
                 st.error("⚠️ Please enter ad copy for both Ad A and Ad B.")
@@ -511,21 +516,15 @@ with tab1:
                 if st.session_state.get("show_manual_fallback", False):
                     ad1_text = st.session_state.get("ad1_manual", "")
                     ad2_text = st.session_state.get("ad2_manual", "")
-                    st.write("📝 Fallback active: Using manual text input.")
                 else:
                     # Attempt OCR with error handling
                     import traceback
                     try:
                         from src.utils.ocr_engine import extract_text_from_image
 
-                        st.write("📸 Attempting OCR on uploaded images...")
                         with st.spinner("📸 Extracting text from images via OCR..."):
                             ad1_text = extract_text_from_image(uploaded_img_a.getvalue())
                             ad2_text = extract_text_from_image(uploaded_img_b.getvalue())
-
-                        # Debug output
-                        st.write(f"🔍 Ad A extracted: '{ad1_text[:100]}...' (len={len(ad1_text)})")
-                        st.write(f"🔍 Ad B extracted: '{ad2_text[:100]}...' (len={len(ad2_text)})")
 
                         # If text is empty, show fallback
                         if not ad1_text.strip() or not ad2_text.strip():
