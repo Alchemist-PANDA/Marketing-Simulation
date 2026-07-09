@@ -32,6 +32,7 @@ from src.ui.theme import render_app_header, render_metric_card, render_section_h
 from src.ui.history_ui import render_history_tab
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.export_ui import render_export_buttons
+from src.ui.dashboard_ui import render_full_dashboard
 
 def apply_theme():
     """Apply custom Streamlit theme and CSS styling."""
@@ -665,6 +666,26 @@ with tab1:
                      title="Engagement Comparison",
                      color_discrete_map={"Ad A": "#4F46E5", "Ad B": "#10B981"})
         st.plotly_chart(fig, use_container_width=True)
+
+        # ── Full Marketing Intelligence Dashboard ──────────────────────
+        # Rendered immediately after basic metrics so users see rich insights
+        # without having to scroll past saves/exports. Every section is
+        # independently guarded so a single bad value can never crash the page.
+        try:
+            render_full_dashboard(
+                result,
+                ad1_text=ad1_text_display,
+                ad2_text=ad2_text_display,
+                price=price,
+            )
+        except Exception as _dash_err:
+            import traceback as _tb
+            st.warning(
+                f"⚠️ Marketing Intelligence Dashboard could not fully render. "
+                f"Error: `{_dash_err}`"
+            )
+            with st.expander("🔍 Show error details (for debugging)", expanded=False):
+                st.code(_tb.format_exc())
 
         render_section_header("Forensic Feedback", "🕵️")
         fa1, fa2 = st.columns(2)
