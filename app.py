@@ -424,6 +424,13 @@ with tab1:
     uploaded_img_a = None
     uploaded_img_b = None
 
+    if "show_manual_fallback" not in st.session_state:
+        st.session_state["show_manual_fallback"] = False
+    if "ad1_manual" not in st.session_state:
+        st.session_state["ad1_manual"] = ""
+    if "ad2_manual" not in st.session_state:
+        st.session_state["ad2_manual"] = ""
+
     if input_method == "Text":
         col1, col2 = st.columns(2)
         with col1:
@@ -449,40 +456,141 @@ with tab1:
             if uploaded_img_b:
                 st.image(uploaded_img_b, caption="Ad B Preview", use_container_width=True)
 
+        # Track image changes to reset manual fallback
+        img_a_name = uploaded_img_a.name if uploaded_img_a else None
+        img_b_name = uploaded_img_b.name if uploaded_img_b else None
+        if (st.session_state.get("last_img_a_name") != img_a_name or
+            st.session_state.get("last_img_b_name") != img_b_name):
+            st.session_state["show_manual_fallback"] = False
+            st.session_state["ad1_manual"] = ""
+            st.session_state["ad2_manual"] = ""
+            st.session_state["last_img_a_name"] = img_a_name
+            st.session_state["last_img_b_name"] = img_b_name
+
+        # If manual fallback is active, render text inputs outside run_sim so they don't disappear on interaction
+        if st.session_state.get("show_manual_fallback", False):
+            st.warning("⚠️ OCR could not extract text from one or both images. Please enter the ad copy manually below.")
+            col1, col2 = st.columns(2)
+            with col1:
+                ad1_text = st.text_area(
+                    "Ad A Text (Manual)",
+                    value=st.session_state.get("ad1_manual", ""),
+                    key="ad1_manual_input",
+                    height=100
+                )
+                st.session_state["ad1_manual"] = ad1_text
+            with col2:
+                ad2_text = st.text_area(
+                    "Ad B Text (Manual)",
+                    value=st.session_state.get("ad2_manual", ""),
+                    key="ad2_manual_input",
+                    height=100
+                )
+                st.session_state["ad2_manual"] = ad2_text
+
     if run_sim:
         st.write("🔍 DEBUG: Button clicked!")          # Confirm the button works
         st.write(f"🔍 DEBUG: num_agents = {num_agents}")
-        st.write(f"🔍 DEBUG: ad1_text = '{ad1_text[:50]}...'")
-        st.write(f"🔍 DEBUG: ad2_text = '{ad2_text[:50]}...'")
+        st.write(f"🔍 DEBUG: ad1_text = '{ad1_text[:50]}...' (len={len(ad1_text)})")
+        st.write(f"🔍 DEBUG: ad2_text = '{ad2_text[:50]}...' (len={len(ad2_text)})")
         st.write(f"🔍 DEBUG: channel = {channel}")
 
-        if not ad1_text or not ad2_text:
-            st.error("⚠️ Please enter ad copy for both Ad A and Ad B (or upload images).")
-            st.stop()
+        if input_method == "Text":
+            if not ad1_text or not ad2_text:
+                st.error("⚠️ Please enter ad copy for both Ad A and Ad B.")
+                st.stop()
 
         try:
             if input_method == "Image Upload":
+                # Check if both images are uploaded
                 if not uploaded_img_a or not uploaded_img_b:
                     st.error("Please upload images for both Ad A and Ad B.")
                     st.stop()
 
-                # Lazy import: OCR model only loads when image mode is actually used.
-                from src.utils.ocr_engine import extract_text_from_image
+                # If manual fallback is already active, use manual inputs from session state
+                if st.session_state.get("show_manual_fallback", False):
+                    ad1_text = st.session_state.get("ad1_manual", "")
+                    ad2_text = st.session_state.get("ad2_manual", "")
+                    st.write("📝 Fallback active: Using manual text input.")
+                else:
+                    # Attempt OCR with error handling
+                    import traceback
+                    try:
+                        from src.utils.ocr_engine import extract_text_from_image
 
-                with st.spinner("Extracting text from Ad A image..."):
-                    ad1_text = extract_text_from_image(uploaded_img_a.getvalue())
-                if not ad1_text:
-                    st.error("No readable text found in Ad A image. Please upload a clearer image.")
-                    st.stop()
+                        st.write("📸 Attempting OCR on uploaded images...")
+                        with st.spinner("📸 Extracting text from images via OCR..."):
+                            ad1_text = extract_text_from_image(uploaded_img_a.getvalue())
+                            ad2_text = extract_text_from_image(uploaded_img_b.getvalue())
 
-                with st.spinner("Extracting text from Ad B image..."):
-                    ad2_text = extract_text_from_image(uploaded_img_b.getvalue())
-                if not ad2_text:
-                    st.error("No readable text found in Ad B image. Please upload a clearer image.")
-                    st.stop()
+                        # Debug output
+                        st.write(f"🔍 Ad A extracted: '{ad1_text[:100]}...' (len={len(ad1_text)})")
+                        st.write(f"🔍 Ad B extracted: '{ad2_text[:100]}...' (len={len(ad2_text)})")
 
-                st.info(f"**Extracted Ad A text:** {ad1_text}")
-                st.info(f"**Extracted Ad B text:** {ad2_text}")
+                        # If text is empty, show fallback
+                        if not ad1_text.strip() or not ad2_text.strip():
+                            st.warning("⚠️ OCR could not extract text from one or both images. Please enter the ad copy manually below.")
+                            st.session_state["show_manual_fallback"] = True
+
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                ad1_text = st.text_area(
+                                    "Ad A Text (Manual)",
+                                    value=st.session_state.get("ad1_manual", ""),
+                                    key="ad1_manual_input_sim",
+                                    height=100
+                                )
+                            with col2:
+                                ad2_text = st.text_area(
+                                    "Ad B Text (Manual)",
+                                    value=st.session_state.get("ad2_manual", ""),
+                                    key="ad2_manual_input_sim",
+                                    height=100
+                                )
+
+                            st.session_state["ad1_manual"] = ad1_text
+                            st.session_state["ad2_manual"] = ad2_text
+
+                            # If still empty, stop with error
+                            if not ad1_text.strip() or not ad2_text.strip():
+                                st.error("❌ Ad text is required for both ads. Please enter text or upload clear images.")
+                                st.stop()
+
+                    except Exception as e:
+                        st.error(f"❌ OCR failed: {e}")
+                        st.code(traceback.format_exc())
+
+                        # Fallback to manual entry
+                        st.warning("📝 OCR failed. Please enter the ad copy manually below.")
+                        st.session_state["show_manual_fallback"] = True
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            ad1_text = st.text_area(
+                                "Ad A Text (Manual)",
+                                value=st.session_state.get("ad1_manual", ""),
+                                key="ad1_manual_input_sim_err",
+                                height=100
+                            )
+                        with col2:
+                            ad2_text = st.text_area(
+                                "Ad B Text (Manual)",
+                                value=st.session_state.get("ad2_manual", ""),
+                                key="ad2_manual_input_sim_err",
+                                height=100
+                            )
+
+                        st.session_state["ad1_manual"] = ad1_text
+                        st.session_state["ad2_manual"] = ad2_text
+
+                        if not ad1_text.strip() or not ad2_text.strip():
+                            st.error("❌ Ad text is required. Please enter text for both ads.")
+                            st.stop()
+
+                # Show info on extracted text if OCR was successful and fallback is not active
+                if not st.session_state.get("show_manual_fallback", False):
+                    st.info(f"**Extracted Ad A text:** {ad1_text}")
+                    st.info(f"**Extracted Ad B text:** {ad2_text}")
 
             if not ad1_text or not ad1_text.strip():
                 st.error("Ad Creative A text cannot be empty. Please enter ad copy or upload an image.")
