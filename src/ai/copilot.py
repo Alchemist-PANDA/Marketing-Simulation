@@ -257,7 +257,8 @@ def call_gemini(
             return {"status": "error", "message": f"Unexpected error: {str(e)[:300]}"}
 
 
-# Keep the old name as an alias so any external callers don't break
+# Legacy alias — kept so any external callers of call_deepseek() don't break.
+# New code should call call_gemini() directly.
 call_deepseek = call_gemini
 
 

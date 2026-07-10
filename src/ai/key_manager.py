@@ -3,12 +3,14 @@ src/ai/key_manager.py
 ─────────────────────
 Multi-API-key rotation manager for the AI Marketing Copilot.
 
+Currently configured for Google Gemini, but fully provider-agnostic —
+the prefix can be overridden to support any API key naming convention.
+
 Supports:
-  • Numbered env vars:       DEEPSEEK_API_KEY_1, DEEPSEEK_API_KEY_2, …
-  • Comma-separated list:    DEEPSEEK_API_KEYS=sk-aaa,sk-bbb
-  • Streamlit secrets:       [deepseek_keys] section  (TOML array) or
-                             DEEPSEEK_API_KEY_1 / DEEPSEEK_API_KEYS flat keys
-  • Legacy single key:       DEEPSEEK_API_KEY  (backward-compatible)
+  • Numbered env vars:       GEMINI_API_KEY_1, GEMINI_API_KEY_2, …
+  • Comma-separated list:    GEMINI_API_KEYS=key-aaa,key-bbb
+  • Streamlit secrets:       GEMINI_API_KEY_1 / GEMINI_API_KEYS flat keys
+  • Legacy single key:       GEMINI_API_KEY  (backward-compatible)
 
 Each key entry tracks:
   • exhausted  – permanent quota exceeded (won't be retried until reset)
@@ -16,10 +18,10 @@ Each key entry tracks:
   • failure_count – consecutive failures on this key
   • last_failure – epoch timestamp of the most recent failure
 
-Quota-signal detection (HTTP 429, 402, or body containing
-"quota", "rate_limit", "insufficient_quota", "billing") marks the key
-exhausted.  Other transient HTTP errors (5xx, timeout) mark it
-rate_limited and allow it to recover after COOLDOWN_SECONDS.
+Quota-signal detection (HTTP 429, 402, 403 or body containing
+"quota", "RESOURCE_EXHAUSTED", "billing" etc.) marks the key exhausted.
+Other transient errors mark it rate_limited and allow recovery after
+COOLDOWN_SECONDS.
 """
 
 from __future__ import annotations
@@ -66,11 +68,11 @@ def _blank_entry(key: str, label: str = "") -> Dict:
     }
 
 
-def _load_from_env(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
+def _load_from_env(prefix: str = "GEMINI_API_KEY") -> List[Dict]:
     """Load keys from environment variables (numbered or comma-separated)."""
     entries: List[Dict] = []
 
-    # 1) Numbered: DEEPSEEK_API_KEY_1, DEEPSEEK_API_KEY_2, …
+    # 1) Numbered: GEMINI_API_KEY_1, GEMINI_API_KEY_2, …
     i = 1
     while True:
         k = os.getenv(f"{prefix}_{i}", "").strip()
@@ -79,16 +81,16 @@ def _load_from_env(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
         entries.append(_blank_entry(k, label=f"env-{i}"))
         i += 1
 
-    # 2) Comma-separated: DEEPSEEK_API_KEYS=sk-aaa,sk-bbb
+    # 2) Comma-separated: GEMINI_API_KEYS=key-aaa,key-bbb
     if not entries:
-        combined = os.getenv(f"{prefix}S", "").strip()  # e.g. DEEPSEEK_API_KEYS
+        combined = os.getenv(f"{prefix}S", "").strip()  # e.g. GEMINI_API_KEYS
         if combined:
             for idx, k in enumerate(combined.split(","), 1):
                 k = k.strip()
                 if k:
                     entries.append(_blank_entry(k, label=f"env-csv-{idx}"))
 
-    # 3) Legacy single key: DEEPSEEK_API_KEY
+    # 3) Legacy single key: GEMINI_API_KEY
     if not entries:
         k = os.getenv(prefix, "").strip()
         if k:
@@ -97,7 +99,7 @@ def _load_from_env(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
     return entries
 
 
-def _load_from_secrets(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
+def _load_from_secrets(prefix: str = "GEMINI_API_KEY") -> List[Dict]:
     """Load keys from Streamlit secrets (various layouts)."""
     entries: List[Dict] = []
     try:
@@ -105,10 +107,10 @@ def _load_from_secrets(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
     except Exception:
         return entries
 
-    # Layout A: [deepseek_keys] section with list  → secrets["deepseek_keys"] = ["sk-a", …]
-    section_name = prefix.lower().rstrip("_") + "s"   # e.g. "deepseek_api_keys"
+    # Layout A: section with a list value → secrets["gemini_api_keys"] = ["key-a", …]
+    section_name = prefix.lower().rstrip("_") + "s"   # e.g. "gemini_api_keys"
     # also try simpler aliases
-    for sec in [section_name, "deepseek_keys", "api_keys"]:
+    for sec in [section_name, "gemini_keys", "api_keys"]:
         try:
             val = secrets[sec]
             if isinstance(val, (list, tuple)):
@@ -121,7 +123,7 @@ def _load_from_secrets(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
         except (KeyError, Exception):
             pass
 
-    # Layout B: DEEPSEEK_API_KEY_1, DEEPSEEK_API_KEY_2, … as flat secret keys
+    # Layout B: GEMINI_API_KEY_1, GEMINI_API_KEY_2, … as flat secret keys
     i = 1
     while True:
         try:
@@ -133,7 +135,7 @@ def _load_from_secrets(prefix: str = "DEEPSEEK_API_KEY") -> List[Dict]:
         entries.append(_blank_entry(k, label=f"secret-{i}"))
         i += 1
 
-    # Layout C: DEEPSEEK_API_KEYS comma-separated flat secret
+    # Layout C: GEMINI_API_KEYS comma-separated flat secret
     if not entries:
         try:
             combined = str(secrets.get(f"{prefix}S", "")).strip()
@@ -167,7 +169,7 @@ class APIKeyManager:
     the Streamlit session will initialise it on first use.
     """
 
-    def __init__(self, env_var_prefix: str = "DEEPSEEK_API_KEY"):
+    def __init__(self, env_var_prefix: str = "GEMINI_API_KEY"):
         self._prefix = env_var_prefix
         # Ensure session state is initialised
         if _SS_KEY not in st.session_state:

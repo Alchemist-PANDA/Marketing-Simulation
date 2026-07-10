@@ -277,7 +277,7 @@ def _render_chat_interface():
         if response.get("status") == "success":
             content = response["content"]
             if response.get("fallback"):
-                content = "*[Offline mode — add a DEEPSEEK_API_KEY for full AI responses]*\n\n" + content
+                content = "*[Offline mode — add your Gemini API keys for full AI responses]*\n\n" + content
             st.session_state["copilot_messages"].append({"role": "assistant", "content": content})
         else:
             st.session_state["copilot_messages"].append({

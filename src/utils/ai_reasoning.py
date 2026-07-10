@@ -1,33 +1,67 @@
+"""
+src/utils/ai_reasoning.py
+─────────────────────────
+Generates narrative AI insights from A/B simulation results using the
+Gemini API (via the shared APIKeyManager for multi-key rotation).
+
+Was previously pointing at DeepSeek via the openai SDK.  Now uses
+httpx + Gemini directly, consistent with the rest of the copilot.
+"""
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-def get_ai_insights(result: Dict[str, Any], ad_a_text: str, ad_b_text: str, benchmarks: Optional[Dict[str, Any]] = None) -> Optional[str]:
+import httpx
+
+
+def get_ai_insights(
+    result: Dict[str, Any],
+    ad_a_text: str,
+    ad_b_text: str,
+    benchmarks: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
     """
-    Calls an LLM (e.g., OpenAI GPT-4o-mini) to generate a rich narrative based on the simulation data.
-    Returns the generated insights as a string, or None if the call fails.
+    Call Gemini to generate a rich narrative based on simulation data.
+    Returns the insights string, or a friendly fallback message on failure.
     """
-    # Check if OpenAI is available
-    try:
-        from openai import OpenAI
-    except ImportError:
-        return "AI insights temporarily unavailable. Please install the `openai` package."
-        
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    # ── Resolve an API key (try the same numbered pattern as the copilot) ──
+    api_key = ""
+    for env_var in ("GEMINI_API_KEY_1", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3",
+                    "GEMINI_API_KEY"):
+        api_key = os.environ.get(env_var, "").strip()
+        if api_key:
+            break
+
+    # Also try Streamlit secrets if running on Cloud
     if not api_key:
-        return "AI insights temporarily unavailable. DEEPSEEK_API_KEY environment variable is not set."
+        try:
+            import streamlit as st
+            for key_name in ("GEMINI_API_KEY_1", "GEMINI_API_KEY_2",
+                             "GEMINI_API_KEY_3", "GEMINI_API_KEY"):
+                api_key = str(st.secrets.get(key_name, "")).strip()
+                if api_key:
+                    break
+        except Exception:
+            pass
 
-    # Extract relevant data
-    total_agents = result['ad_a'].get('total_agents', 0)
-    ad_a = result['ad_a']
-    ad_b = result['ad_b']
-    
-    # Safely get deeply nested properties
+    if not api_key:
+        return (
+            "AI insights temporarily unavailable. "
+            "Add your GEMINI_API_KEY (or GEMINI_API_KEY_1 / _2 / _3) "
+            "to your .env or Streamlit secrets."
+        )
+
+    # ── Build the prompt ────────────────────────────────────────────────────
+    total_agents = result["ad_a"].get("total_agents", 0)
+    ad_a = result["ad_a"]
+    ad_b = result["ad_b"]
+
     def safe_get(d, *keys, default=0):
         for k in keys:
-            if not isinstance(d, dict): return default
+            if not isinstance(d, dict):
+                return default
             d = d.get(k, default)
         return d
-    
+
     prompt = f"""You are a senior marketing analyst. Below is the output of an A/B test simulation on {total_agents} agents. The simulation models consumer psychology using OCEAN personality traits and Prospect Theory.
 
 **Ad A:** {ad_a_text}
@@ -58,18 +92,30 @@ Please provide:
 
 Be concise, data-driven, and avoid generic advice. Use bullet points and bold text for emphasis."""
 
+    # ── Call Gemini ─────────────────────────────────────────────────────────
+    model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": "You are a senior data-driven marketing analyst."}]
+        },
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800},
+    }
+
     try:
-        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": "You are a senior data-driven marketing analyst."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.2,
-            max_tokens=800
-        )
-        return response.choices[0].message.content
+        with httpx.Client(timeout=60) as client:
+            resp = client.post(url, headers={"Content-Type": "application/json"},
+                               json=payload)
+        if resp.status_code != 200:
+            return (
+                f"AI insights temporarily unavailable "
+                f"(Gemini API error {resp.status_code}). Please try again later."
+            )
+        data = resp.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
-        # Graceful fallback on API failure
-        return f"AI insights temporarily unavailable. Please try again later. (Error: {str(e)})"
+        return f"AI insights temporarily unavailable. Please try again later. (Error: {str(e)[:200]})"

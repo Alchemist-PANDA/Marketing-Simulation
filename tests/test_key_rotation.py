@@ -163,7 +163,7 @@ class TestRotationLogic(unittest.TestCase):
 
 
 class TestSimulatedRotation(unittest.TestCase):
-    """Simulate the exact sequence call_deepseek uses."""
+    """Simulate the exact sequence call_gemini() uses."""
 
     def test_rotation_on_quota(self):
         _fake_ss.clear()
