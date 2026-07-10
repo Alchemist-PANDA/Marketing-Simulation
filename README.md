@@ -171,6 +171,28 @@ The model was trained on a dataset of 358 unique English ad texts (v2) covering 
 
 **Methodology:** `scripts/train_ai_model.py --suffix _v2` with 358 unique ads, 70/15/15 train/val/holdout split by unique ad (no leakage), fixed seed=42. Results are fully reproducible.
 
+### Upgraded Ensemble (Synthetic Development Benchmark)
+
+> ⚠️ **These numbers are on a synthetic benchmark, not real campaign data.** No
+> public dataset pairs English ad *creative text* with real CTR at scale (see
+> [`data/dataset_card.md`](data/dataset_card.md)). They measure how well the
+> upgraded pipeline recovers a known text→CTR signal — a software benchmark,
+> **not** a real-world accuracy claim.
+
+A 4-model ensemble (Ridge + HistGradientBoosting + Random Forest + MLP) over
+MiniLM sentence embeddings + 17 text-statistic/sentiment features, on a 2,600-ad
+synthetic dataset with an untouched holdout:
+
+| Metric (holdout, n=391) | Ensemble |
+|---|---|
+| Directional accuracy — decisive pairs (≥10% CTR gap) | **96.2%** |
+| Directional accuracy — all pairs | 92.3% |
+| Pearson / Spearman | 0.966 / 0.970 |
+
+Full reports: [docs/ACCURACY_UPGRADE_REPORT.md](docs/ACCURACY_UPGRADE_REPORT.md),
+[docs/ACCURACY_UPGRADE_VALIDATION_REPORT.md](docs/ACCURACY_UPGRADE_VALIDATION_REPORT.md).
+**Reproduce:** `python -m src.ai.synth_data && python -m src.ai.train_models`.
+
 ---
 
 <div align="center">

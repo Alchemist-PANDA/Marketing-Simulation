@@ -25,6 +25,7 @@ class AIPredictor:
         self.model = None
         self.model_info = None
         self._embedder = None
+        self._ensemble = None  # lazy-loaded EnsemblePredictor (preferred if present)
 
         if os.path.exists(model_path):
             with open(model_path, 'rb') as f:
@@ -99,8 +100,45 @@ class AIPredictor:
             }
         }
 
+    def _get_ensemble(self):
+        """Lazily load the upgraded ensemble model, if it was trained/saved."""
+        if self._ensemble is None:
+            try:
+                from src.ai.ensemble_predictor import get_ensemble_predictor
+                self._ensemble = get_ensemble_predictor()
+            except Exception:
+                self._ensemble = False
+        return self._ensemble if self._ensemble not in (False, None) else None
+
     def predict_ai(self, text: str) -> Dict:
-        """Predict using the trained ML model."""
+        """Predict using the trained ML model.
+
+        Prefers the upgraded ensemble (models/ensemble_model.pkl) when present,
+        and falls back to the legacy single model, then to the classic engine —
+        so the app never breaks if an artifact is missing.
+        """
+        # Preferred path: upgraded ensemble
+        ens = self._get_ensemble()
+        if ens is not None and getattr(ens, "available", False):
+            try:
+                from src.ad_processing.scorer import extract_text_scores
+                out = ens.predict(text)
+                scores = extract_text_scores(text)
+                return {
+                    'predicted_ctr': out['predicted_ctr'],
+                    'mode': 'ai',
+                    'model': out['model_version'],
+                    'model_version': out['model_version'],
+                    'confidence': out['confidence'],
+                    'scores': {
+                        'price_score': scores['price_score'],
+                        'trust_score': scores['trust_score'],
+                        'urgency_score': scores['urgency_score'],
+                    },
+                }
+            except Exception:
+                pass  # fall through to legacy model / classic
+
         if self.model is None:
             return self.predict_classic(text)
 
@@ -128,6 +166,7 @@ class AIPredictor:
             'predicted_ctr': pred,
             'mode': 'ai',
             'model': model_name,
+            'model_version': f'legacy-{model_name}',
             'scores': {
                 'price_score': scores['price_score'],
                 'trust_score': scores['trust_score'],
