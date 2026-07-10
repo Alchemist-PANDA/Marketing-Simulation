@@ -1,21 +1,25 @@
 """
-AI Marketing Copilot — DeepSeek-powered expert advisor.
+AI Marketing Copilot — Gemini-powered expert advisor.
 
-Key changes vs. original:
-  • Uses APIKeyManager (src/ai/key_manager.py) for automatic multi-key
-    rotation.  When a key hits its quota the manager marks it exhausted
-    and the next call retries with the next available key — transparently.
-  • call_deepseek() now loops over all available keys before giving up,
-    returning a user-friendly error if every key is exhausted.
-  • Fully backward-compatible: a single DEEPSEEK_API_KEY still works.
+Uses Google's Gemini API (generativelanguage.googleapis.com) with the
+same multi-key rotation system (APIKeyManager) built in key_manager.py.
+
+Authentication differs from OpenAI-compatible APIs:
+  • Gemini uses a query-parameter key (?key=…) not a Bearer header.
+  • Request body uses "contents" / "parts" format instead of "messages".
+  • System instructions go in a separate "system_instruction" field.
+  • Role names are "user" and "model" (not "assistant").
 
 Environment variables (add to .env or Streamlit secrets):
-  DEEPSEEK_API_KEY_1=sk-...     # preferred: numbered keys
-  DEEPSEEK_API_KEY_2=sk-...
-  DEEPSEEK_API_KEYS=sk-a,sk-b   # alt: comma-separated
-  DEEPSEEK_API_KEY=sk-...        # legacy: single key
-  DEEPSEEK_BASE_URL=https://api.deepseek.com/v1  # optional override
+  GEMINI_API_KEY_1=AIza...    # preferred: numbered keys
+  GEMINI_API_KEY_2=AIza...
+  GEMINI_API_KEY_3=AIza...
+  GEMINI_API_KEYS=AIza...,AIza...   # alt: comma-separated
+  GEMINI_API_KEY=AIza...             # legacy: single key (backward-compat)
+  GEMINI_MODEL=gemini-1.5-flash      # optional model override
 """
+from __future__ import annotations
+
 import logging
 import os
 from typing import Any, Dict, List, Optional
@@ -44,48 +48,79 @@ certain patterns emerged based on the underlying consumer psychology model.
 Keep responses concise but insightful. Use bullet points for actionable items.
 Never fabricate statistics — only reference data the user has shared."""
 
+# ── Gemini API settings ───────────────────────────────────────────────────────
+_GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+_DEFAULT_MODEL = "gemini-1.5-flash"   # free-tier friendly, fast
+
+
+def _get_gemini_model() -> str:
+    """Return the Gemini model name from env / secrets."""
+    model = os.getenv("GEMINI_MODEL", _DEFAULT_MODEL)
+    try:
+        if "GEMINI_MODEL" in st.secrets:
+            model = st.secrets["GEMINI_MODEL"]
+    except Exception:
+        pass
+    return model
+
+
+def _gemini_endpoint(api_key: str) -> str:
+    """Build the full Gemini generateContent URL with key query param."""
+    model = _get_gemini_model()
+    return f"{_GEMINI_BASE}/{model}:generateContent?key={api_key}"
+
+
 # ── Module-level key manager (singleton per Streamlit session) ────────────────
-# Instantiated here so it is shared across all copilot calls within a session.
 _key_manager: Optional[APIKeyManager] = None
 
 
 def _get_key_manager() -> APIKeyManager:
     global _key_manager
     if _key_manager is None:
-        _key_manager = APIKeyManager(env_var_prefix="DEEPSEEK_API_KEY")
+        _key_manager = APIKeyManager(env_var_prefix="GEMINI_API_KEY")
     return _key_manager
 
 
-def _get_base_url() -> str:
-    """Return the DeepSeek base URL from env / secrets."""
-    url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-    try:
-        if "DEEPSEEK_BASE_URL" in st.secrets:
-            url = st.secrets["DEEPSEEK_BASE_URL"]
-    except Exception:
-        pass
-    return url
+# ── Message format conversion ─────────────────────────────────────────────────
+
+def _to_gemini_contents(
+    messages: List[Dict[str, str]],
+) -> List[Dict]:
+    """
+    Convert OpenAI-style messages to Gemini 'contents' format.
+
+    OpenAI:  [{"role": "user"|"assistant", "content": "..."}]
+    Gemini:  [{"role": "user"|"model",     "parts": [{"text": "..."}]}]
+    """
+    contents = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        # Gemini uses "model" for assistant turns
+        gemini_role = "model" if role == "assistant" else "user"
+        contents.append({
+            "role": gemini_role,
+            "parts": [{"text": msg.get("content", "")}],
+        })
+    return contents
 
 
 # ── Core API call with key rotation ──────────────────────────────────────────
 
-def call_deepseek(
+def call_gemini(
     messages: List[Dict[str, str]],
     system_prompt: str = SYSTEM_PROMPT,
     temperature: float = 0.7,
     max_tokens: int = 1200,
 ) -> Dict[str, Any]:
     """
-    Send a chat completion request to DeepSeek's API with automatic key rotation.
+    Send a chat completion request to Gemini with automatic key rotation.
 
     Rotation behaviour:
       1. Get the next available key from the manager.
-      2. Make the request.
-      3. If the response signals quota exhaustion (HTTP 402, 429 + quota body),
-         mark the key exhausted and retry with the next key.
-      4. If the response signals a transient rate-limit (429 without quota body),
-         mark the key rate-limited (recovers after COOLDOWN_SECONDS) and retry.
-      5. If all keys fail, return a friendly error dict — never raises.
+      2. POST to generateContent with the key as a query parameter.
+      3. HTTP 429 with RESOURCE_EXHAUSTED / quota body → mark exhausted, retry.
+      4. HTTP 429 (plain rate-limit) → mark rate-limited (recovers after cooldown), retry.
+      5. All keys tried → return friendly error dict, never raises.
 
     Returns:
         {"status": "success", "content": "...", "key_label": "..."}
@@ -93,90 +128,115 @@ def call_deepseek(
         {"status": "error", "message": "...", "all_exhausted": bool}
     """
     km = _get_key_manager()
-    base_url = _get_base_url()
 
     if km.key_count == 0:
         return {
             "status": "error",
             "message": (
-                "No API key configured. Add DEEPSEEK_API_KEY (or numbered variants) "
-                "to your .env or Streamlit secrets."
+                "No Gemini API key configured. Add GEMINI_API_KEY (or numbered "
+                "variants GEMINI_API_KEY_1 / GEMINI_API_KEY_2 …) to your .env "
+                "or Streamlit secrets."
             ),
         }
 
-    full_messages = [{"role": "system", "content": system_prompt}] + messages
+    # Build Gemini payload
+    contents = _to_gemini_contents(messages)
+    payload: Dict[str, Any] = {
+        "system_instruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": contents,
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_tokens,
+            "candidateCount": 1,
+        },
+    }
 
-    # We loop over all available keys, not a fixed retry count, so that every
-    # key gets exactly one chance per call.
     attempted_keys: set = set()
 
     while True:
         key = km.get_next_key()
 
-        # No more keys to try
         if key is None or key in attempted_keys:
-            logger.error("KeyManager: all %d key(s) exhausted or unavailable", km.key_count)
+            logger.error("Gemini KeyManager: all %d key(s) exhausted", km.key_count)
             return {
                 "status": "error",
                 "all_exhausted": True,
                 "message": (
-                    "⚠️ All AI service quotas are currently exhausted. "
+                    "⚠️ All Gemini API quotas are currently exhausted. "
                     "Please try again later, add more API keys, or upgrade your plan."
                 ),
             }
 
         attempted_keys.add(key)
         label = km.get_key_label(key)
-        logger.info("Copilot: attempting request with key %s", label)
+        url = _gemini_endpoint(key)
+        logger.info("Copilot: attempting Gemini request with key %s", label)
 
         try:
             with httpx.Client(timeout=60) as client:
                 resp = client.post(
-                    f"{base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": full_messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
-                    },
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json=payload,
                 )
 
-            # ── Quota / billing error ─────────────────────────────────────
-            if resp.status_code in (402, 429):
+            # ── Quota / billing error ────────────────────────────────────
+            if resp.status_code in (429, 402, 403):
                 body = resp.text
                 if is_quota_error(resp.status_code, body):
                     logger.warning(
                         "Copilot: key %s quota EXHAUSTED (HTTP %d) — rotating",
-                        label, resp.status_code
+                        label, resp.status_code,
                     )
                     km.mark_quota_exhausted(key)
-                    continue  # try next key
+                    continue
                 else:
-                    # Temporary rate-limit (429 without quota signal)
                     logger.warning(
                         "Copilot: key %s rate-limited (HTTP %d) — rotating",
-                        label, resp.status_code
+                        label, resp.status_code,
                     )
                     km.mark_rate_limited(key)
-                    continue  # try next key
+                    continue
 
-            # ── Other HTTP error ──────────────────────────────────────────
+            # ── Other HTTP error ─────────────────────────────────────────
             try:
                 resp.raise_for_status()
             except httpx.HTTPStatusError as e:
                 return {
                     "status": "error",
-                    "message": f"API error ({e.response.status_code}): {e.response.text[:300]}",
+                    "message": (
+                        f"Gemini API error ({e.response.status_code}): "
+                        f"{e.response.text[:300]}"
+                    ),
                 }
 
-            # ── Success ───────────────────────────────────────────────────
+            # ── Parse Gemini response ────────────────────────────────────
             data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-            logger.info("Copilot: success with key %s", label)
+            try:
+                content = (
+                    data["candidates"][0]["content"]["parts"][0]["text"]
+                )
+            except (KeyError, IndexError) as parse_err:
+                # Gemini occasionally returns finishReason=SAFETY with no text
+                finish = (
+                    data.get("candidates", [{}])[0]
+                    .get("finishReason", "UNKNOWN")
+                )
+                logger.warning(
+                    "Copilot: key %s response parse error (%s), finishReason=%s",
+                    label, parse_err, finish,
+                )
+                return {
+                    "status": "error",
+                    "message": (
+                        f"Gemini returned an empty response (finishReason={finish}). "
+                        "The prompt may have triggered a safety filter."
+                    ),
+                }
+
+            logger.info("Copilot: Gemini success with key %s", label)
             return {
                 "status": "success",
                 "content": content,
@@ -186,15 +246,19 @@ def call_deepseek(
         except httpx.ConnectError:
             return {
                 "status": "error",
-                "message": "Cannot connect to DeepSeek API. Check your network and API URL.",
+                "message": "Cannot connect to Gemini API. Check your network connection.",
             }
         except httpx.TimeoutException:
             return {
                 "status": "error",
-                "message": "Request timed out. The AI service may be overloaded — please retry.",
+                "message": "Request timed out. The Gemini service may be overloaded — please retry.",
             }
         except Exception as e:
             return {"status": "error", "message": f"Unexpected error: {str(e)[:300]}"}
+
+
+# Keep the old name as an alias so any external callers don't break
+call_deepseek = call_gemini
 
 
 # ── File content extraction ───────────────────────────────────────────────────
@@ -307,7 +371,7 @@ def get_copilot_response(
     report_context: Optional[Dict[str, Any]] = None,
     file_context: str = "",
 ) -> Dict[str, Any]:
-    """High-level copilot entry point. Builds context and calls DeepSeek with key rotation."""
+    """High-level copilot entry point. Builds context and calls Gemini with key rotation."""
     system = SYSTEM_PROMPT
 
     ctx = build_context_message(report_context)
@@ -319,21 +383,19 @@ def get_copilot_response(
 
     messages = chat_history + [{"role": "user", "content": user_message}]
 
-    result = call_deepseek(messages, system_prompt=system)
+    result = call_gemini(messages, system_prompt=system)
 
     if result["status"] == "error":
-        # If all keys are exhausted show a clear message without falling back to
-        # the rule-based stub — the user needs to know about the quota state.
         if result.get("all_exhausted"):
             return {
-                "status": "success",   # surface as a message, not a hard error
+                "status": "success",   # surface as a message, not a hard crash
                 "content": (
-                    "🔑 **All AI service quotas are currently exhausted.**\n\n"
+                    "🔑 **All Gemini API quotas are currently exhausted.**\n\n"
                     "The copilot tried all configured API keys and none had remaining quota. "
                     "Options:\n"
                     "- ⏳ Wait a few minutes and try again (rate-limits reset automatically)\n"
-                    "- ➕ Add more API keys via `DEEPSEEK_API_KEY_2`, `DEEPSEEK_API_KEY_3` etc.\n"
-                    "- 💳 Upgrade your DeepSeek account for higher quotas"
+                    "- ➕ Add more keys via `GEMINI_API_KEY_2`, `GEMINI_API_KEY_3` etc.\n"
+                    "- 💳 Upgrade your Google AI Studio account for higher quotas"
                 ),
                 "quota_exhausted": True,
             }
@@ -343,7 +405,7 @@ def get_copilot_response(
 
 
 def get_key_status() -> List[Dict]:
-    """Return the current key rotation status (safe for UI display — keys are masked)."""
+    """Return the current key rotation status (safe for UI — keys are masked)."""
     return _get_key_manager().status_summary()
 
 
@@ -372,7 +434,7 @@ def _fallback_response(
             "content": (
                 f"Based on your simulation results, **Ad {winner}** outperformed with a "
                 f"**{lift:.2f}%** lift. To get deeper AI-powered analysis, please configure "
-                f"your DeepSeek API key in the environment settings.\n\n"
+                f"your Gemini API key in the environment settings.\n\n"
                 f"💡 **Quick tips:**\n"
                 f"- Review the failure reasons for the losing ad\n"
                 f"- Test variations of the winning ad's key phrases\n"
@@ -389,7 +451,7 @@ def _fallback_response(
                 "- **Hook in 3 seconds** — lead with value or curiosity\n"
                 "- **Social proof** — numbers, testimonials, trust badges\n"
                 "- **Clear CTA** — one action per ad\n\n"
-                "Configure your DeepSeek API key for personalized AI advice."
+                "Configure your Gemini API key for personalized AI advice."
             ),
             "fallback": True,
         }
@@ -402,7 +464,7 @@ def _fallback_response(
             "- 💡 Ad copy optimization strategies\n"
             "- 🎯 Channel-specific recommendations\n"
             "- 📁 Analyzing uploaded marketing data\n\n"
-            "⚠️ For full AI-powered responses, add your DeepSeek API key "
+            "⚠️ For full AI-powered responses, add your Gemini API key "
             "to `.env` or Streamlit secrets."
         ),
         "fallback": True,

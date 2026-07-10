@@ -37,10 +37,13 @@ logger = logging.getLogger(__name__)
 COOLDOWN_SECONDS: int = 60          # rate-limited keys recover after this
 MAX_FAILURES_BEFORE_EXHAUST: int = 3  # consecutive non-quota failures → exhaust
 
-# Keywords in an API response body that signal permanent quota exhaustion
+# Keywords in an API response body that signal permanent quota exhaustion.
+# Covers both DeepSeek/OpenAI style and Gemini style (RESOURCE_EXHAUSTED).
 QUOTA_SIGNALS = frozenset(
     ["insufficient_quota", "quota_exceeded", "quota", "billing",
-     "payment", "out of tokens", "exceeded your current quota"]
+     "payment", "out of tokens", "exceeded your current quota",
+     "resource_exhausted", "rateLimitExceeded", "dailylimitexceeded",
+     "userRateLimitExceeded"]
 )
 
 # HTTP status codes that always mean "quota / billing" rather than transient error

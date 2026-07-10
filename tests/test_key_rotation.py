@@ -64,30 +64,30 @@ class TestKeyManagerLoading(unittest.TestCase):
 
     def test_numbered_keys(self):
         with patch.dict(os.environ, {
-            "DEEPSEEK_API_KEY_1": "sk-one",
-            "DEEPSEEK_API_KEY_2": "sk-two",
-            "DEEPSEEK_API_KEY_3": "sk-three",
+            "GEMINI_API_KEY_1": "sk-one",
+            "GEMINI_API_KEY_2": "sk-two",
+            "GEMINI_API_KEY_3": "sk-three",
         }, clear=False):
-            km = APIKeyManager()
+            km = APIKeyManager(env_var_prefix="GEMINI_API_KEY")
             self.assertEqual(km.key_count, 3)
             self.assertEqual(km.available_count, 3)
 
     def test_csv_keys(self):
         _fake_ss.clear()
-        with patch.dict(os.environ, {"DEEPSEEK_API_KEYS": "sk-a,sk-b"}, clear=False):
+        with patch.dict(os.environ, {"GEMINI_API_KEYS": "sk-a,sk-b"}, clear=False):
             # Remove numbered keys that might leak in
             env = {k: v for k, v in os.environ.items()
-                   if not k.startswith("DEEPSEEK_API_KEY_")}
-            env["DEEPSEEK_API_KEYS"] = "sk-a,sk-b"
+                   if not k.startswith("GEMINI_API_KEY_")}
+            env["GEMINI_API_KEYS"] = "sk-a,sk-b"
             # Patch env entirely
             with patch.dict(os.environ, env, clear=True):
-                km = APIKeyManager()
+                km = APIKeyManager(env_var_prefix="GEMINI_API_KEY")
                 self.assertGreaterEqual(km.key_count, 2)
 
     def test_legacy_single_key(self):
         _fake_ss.clear()
-        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "sk-legacy"}, clear=True):
-            km = APIKeyManager()
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "sk-legacy"}, clear=True):
+            km = APIKeyManager(env_var_prefix="GEMINI_API_KEY")
             self.assertEqual(km.key_count, 1)
             self.assertEqual(km.get_next_key(), "sk-legacy")
 
@@ -193,6 +193,43 @@ class TestSimulatedRotation(unittest.TestCase):
 
         self.assertEqual(used_keys, ["sk-bad", "sk-good"])
         self.assertEqual(km.get_next_key(), "sk-good")  # sk-good still active
+
+
+class TestGeminiMessageFormat(unittest.TestCase):
+    """Verify the OpenAI→Gemini message format conversion."""
+
+    def setUp(self):
+        # Import the conversion helper (mocked streamlit already in place)
+        from src.ai.copilot import _to_gemini_contents
+        self._convert = _to_gemini_contents
+
+    def test_user_role_preserved(self):
+        result = self._convert([{"role": "user", "content": "Hello"}])
+        self.assertEqual(result[0]["role"], "user")
+        self.assertEqual(result[0]["parts"][0]["text"], "Hello")
+
+    def test_assistant_mapped_to_model(self):
+        result = self._convert([{"role": "assistant", "content": "Hi there"}])
+        self.assertEqual(result[0]["role"], "model")
+
+    def test_multi_turn_order_preserved(self):
+        msgs = [
+            {"role": "user",      "content": "Q1"},
+            {"role": "assistant", "content": "A1"},
+            {"role": "user",      "content": "Q2"},
+        ]
+        result = self._convert(msgs)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0]["role"], "user")
+        self.assertEqual(result[1]["role"], "model")
+        self.assertEqual(result[2]["role"], "user")
+        self.assertEqual(result[2]["parts"][0]["text"], "Q2")
+
+    def test_parts_structure(self):
+        result = self._convert([{"role": "user", "content": "test"}])
+        self.assertIn("parts", result[0])
+        self.assertIsInstance(result[0]["parts"], list)
+        self.assertIn("text", result[0]["parts"][0])
 
 
 if __name__ == "__main__":
