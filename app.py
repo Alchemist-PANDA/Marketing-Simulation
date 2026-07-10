@@ -33,6 +33,7 @@ from src.ui.history_ui import render_history_tab
 from src.ui.save_results_ui import render_save_results_section
 from src.ui.export_ui import render_export_buttons
 from src.ui.copilot_ui import render_copilot, render_copilot_toggle
+from src.ui.dashboard_ui import render_full_dashboard
 
 def apply_theme():
     """Apply custom Streamlit theme and CSS styling."""
@@ -687,6 +688,24 @@ with tab1:
                      title="Engagement Comparison",
                      color_discrete_map={"Ad A": "#4F46E5", "Ad B": "#10B981"})
         st.plotly_chart(fig, use_container_width=True)
+
+        # ── Full Marketing Intelligence Dashboard ──────────────────────
+        # NOTE: This call has been silently dropped by multiple merges (PR #6, PR #7).
+        # The try/except is intentionally loud: st.error + expanded traceback so
+        # any future regression is immediately visible in the UI, never silent.
+        try:
+            render_full_dashboard(
+                result,
+                ad1_text=ad1_text_display,
+                ad2_text=ad2_text_display,
+                price=price,
+            )
+        except Exception as _dash_err:
+            import traceback as _tb
+            st.error(f"❌ Marketing Intelligence Dashboard failed to render: {_dash_err}")
+            with st.expander("🔍 Error details (for debugging)", expanded=True):
+                st.code(_tb.format_exc())
+                st.write("Available result keys:", list(result.keys()))
 
         render_section_header("Forensic Feedback", "🕵️")
         fa1, fa2 = st.columns(2)
