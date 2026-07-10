@@ -1,9 +1,20 @@
 """
-Modern SaaS theme for Marketing Simulation Dashboard.
-Provides WordPress-inspired styling with clean cards, shadows, and professional layout.
+Deep-space design system for the Marketing Simulation Dashboard.
+
+3D galactic background + glass-morphism surfaces, applied on every page via
+apply_theme() (dashboard pages) or inject_auth_css() -> inject_galaxy_background()
+(auth pages).
+
+IMPORTANT: the background is pure CSS injected into the MAIN document with
+st.markdown. Earlier versions drew a canvas into window.parent.document from a
+components.html iframe — Streamlit Cloud sandboxes those iframes cross-origin,
+so the canvas never rendered and every page showed a flat background. CSS in
+the main document is not sandboxed, so this approach renders everywhere.
+The "3D" feel comes from parallax: star layers drifting at different speeds
+over fixed nebula gradients.
 """
+import random
 import streamlit as st
-import streamlit.components.v1 as components
 from typing import Optional
 
 
@@ -19,179 +30,106 @@ BORDER = "rgba(255, 255, 255, 0.08)" # Translucent border
 SHADOW = "0 4px 30px rgba(0, 0, 0, 0.4)"
 SHADOW_LG = "0 10px 30px rgba(0, 0, 0, 0.6)"
 
+# Star tints for the CSS starfield (white, ice-blue, violet, sky-blue, lilac)
+_STAR_COLORS = ["#ffffff", "#dbe4ff", "#a78bfa", "#60a5fa", "#c7d2fe"]
+
+
+def _star_shadows(count: int, seed: int, max_y_vh: int = 200) -> str:
+    """Build a CSS box-shadow list that paints `count` stars.
+
+    Positions use vw/vh units so the field scales with the viewport. The field
+    is `max_y_vh` tall (default 2x viewport) so a translateY(-50%) loop drifts
+    seamlessly. Seeded so the sky is stable across Streamlit reruns.
+    """
+    rng = random.Random(seed)
+    shadows = []
+    for _ in range(count):
+        x = round(rng.uniform(0, 100), 2)
+        y = round(rng.uniform(0, max_y_vh), 2)
+        color = rng.choice(_STAR_COLORS)
+        shadows.append(f"{x}vw {y}vh {color}")
+    return ", ".join(shadows)
+
 
 def inject_galaxy_background():
-    """Inject a dynamic, interactive 3D particle galaxy into the parent window's background."""
-    js_code = """
-    <script>
-    (function() {
-        const parentDoc = window.parent.document;
-        if (parentDoc.getElementById('galaxy-bg-canvas')) return;
+    """Paint the fixed deep-space background: nebulae + two parallax star layers.
 
-        const canvas = parentDoc.createElement('canvas');
-        canvas.id = 'galaxy-bg-canvas';
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100vw';
-        canvas.style.height = '100vh';
-        canvas.style.zIndex = '-1';
-        canvas.style.pointerEvents = 'none';
-        
-        parentDoc.body.insertBefore(canvas, parentDoc.body.firstChild);
-        
-        const ctx = canvas.getContext('2d');
-        
-        function resize() {
-            canvas.width = parentDoc.documentElement.clientWidth;
-            canvas.height = parentDoc.documentElement.clientHeight;
-        }
-        window.parent.addEventListener('resize', resize);
-        resize();
-        
-        class Particle {
-            constructor(angle, distance, speed, y) {
-                this.angle = angle;
-                this.distance = distance;
-                this.speed = speed;
-                this.y = y;
-                this.color = Math.random() > 0.4 ? 'rgba(79, 70, 229, ' : 'rgba(16, 185, 129, ';
-                this.size = Math.random() * 2.5 + 0.8;
-            }
-            update() {
-                this.angle += this.speed;
-            }
-            get3DPosition() {
-                const x = Math.cos(this.angle) * this.distance;
-                const z = Math.sin(this.angle) * this.distance;
-                return { x, y: this.y, z };
-            }
-        }
-        
-        const particles = [];
-        const particleCount = 300;
-        const numArms = 3;
-        const armAngle = (Math.PI * 2) / numArms;
-        
-        for (let i = 0; i < particleCount; i++) {
-            const arm = i % numArms;
-            const t = Math.random();
-            const dist = t * t * 450 + 20; 
-            const twist = dist * 0.015;
-            const angle = arm * armAngle + twist + (Math.random() - 0.5) * 0.35;
-            const speed = (0.0008 + Math.random() * 0.0012) * (150 / (dist + 50));
-            const yOffset = (Math.random() - 0.5) * 45 * (1 - (dist / 500));
-            
-            particles.push(new Particle(angle, dist, speed, yOffset));
-        }
-        
-        const fov = 350;
-        
-        function draw() {
-            if (!canvas.isConnected) return; // Stop loop if element removed
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Deep space gradient
-            const bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 10, canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height));
-            bgGrad.addColorStop(0, '#0d0f1d');
-            bgGrad.addColorStop(1, '#05060d');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            const currentCx = canvas.width / 2;
-            const currentCy = canvas.height / 2;
-            
-            const time = Date.now() * 0.0001;
-            const camAngle = time * 0.05;
-            const cosCam = Math.cos(camAngle);
-            const sinCam = Math.sin(camAngle);
-            
-            const rendered = particles.map(p => {
-                p.update();
-                const pos = p.get3DPosition();
-                
-                const rotX = pos.x * cosCam - pos.z * sinCam;
-                const rotZ = pos.x * sinCam + pos.z * cosCam;
-                
-                const zDistance = rotZ + 600;
-                const scale = fov / zDistance;
-                
-                const screenX = currentCx + rotX * scale;
-                const screenY = currentCy + pos.y * scale;
-                
-                return {
-                    x: screenX,
-                    y: screenY,
-                    size: p.size * scale,
-                    z: zDistance,
-                    color: p.color,
-                    raw: pos
-                };
-            });
-            
-            rendered.sort((a, b) => b.z - a.z);
-            
-            ctx.globalCompositeOperation = 'screen';
-            
-            // Render connection lines (agent networks)
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i < rendered.length; i++) {
-                const p1 = rendered[i];
-                let linksCount = 0;
-                for (let j = i + 1; j < rendered.length; j++) {
-                    const p2 = rendered[j];
-                    const dx = p1.x - p2.x;
-                    const dy = p1.y - p2.y;
-                    const distSq = dx*dx + dy*dy;
-                    
-                    if (distSq < 4800 && Math.abs(p1.z - p2.z) < 80 && linksCount < 2) {
-                        const alpha = (1 - Math.sqrt(distSq) / 70) * 0.12;
-                        ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                        linksCount++;
-                    }
-                }
-            }
-            
-            // Draw particles (representing consumer agents)
-            rendered.forEach(p => {
-                if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) return;
-                
-                const alpha = Math.min(1.0, Math.max(0.1, (800 - p.z) / 400));
-                ctx.fillStyle = p.color + alpha + ')';
-                
-                if (p.size > 2.2) {
-                    ctx.shadowBlur = p.size * 2.5;
-                    ctx.shadowColor = p.color.includes('79,') ? '#4F46E5' : '#10B981';
-                } else {
-                    ctx.shadowBlur = 0;
-                }
-                
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(0.6, p.size), 0, Math.PI * 2);
-                ctx.fill();
-            });
-            
-            ctx.shadowBlur = 0;
-            requestAnimationFrame(draw);
-        }
-        
-        requestAnimationFrame(draw);
-    })();
-    </script>
+    Pure CSS on the main document — no canvas, no parent-DOM access — so it
+    renders reliably on Streamlit Cloud. Pages keep .stApp transparent and the
+    cosmos shows through from `body`.
     """
-    components.html(js_code, height=0, width=0)
+    small_stars = _star_shadows(170, seed=42)
+    big_stars = _star_shadows(60, seed=7)
+
+    st.markdown(f"""
+    <style>
+    /* ── Deep-space base: nebulae live on <body>, beneath everything ── */
+    body {{
+        background:
+            radial-gradient(ellipse 55% 45% at 18% 22%, rgba(109, 74, 255, 0.16), transparent 60%),
+            radial-gradient(ellipse 50% 40% at 82% 68%, rgba(37, 99, 235, 0.13), transparent 60%),
+            radial-gradient(ellipse 45% 35% at 60% 8%, rgba(168, 85, 247, 0.10), transparent 55%),
+            radial-gradient(ellipse 70% 55% at 50% 115%, rgba(16, 185, 129, 0.05), transparent 60%),
+            linear-gradient(180deg, #0a0c1c 0%, #070818 40%, #04050e 100%) !important;
+        background-attachment: fixed !important;
+    }}
+
+    /* ── Star layer 1: dense small stars, slow drift (far away) ── */
+    [data-testid="stAppViewContainer"]::before {{
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 2px; height: 2px;
+        border-radius: 50%;
+        background: transparent;
+        box-shadow: {small_stars};
+        animation: starDriftFar 240s linear infinite, starTwinkle 7s ease-in-out infinite;
+        z-index: 0;
+        pointer-events: none;
+    }}
+
+    /* ── Star layer 2: sparse bigger stars, faster drift (close = 3D parallax) ── */
+    [data-testid="stAppViewContainer"]::after {{
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 3px; height: 3px;
+        border-radius: 50%;
+        background: transparent;
+        box-shadow: {big_stars};
+        filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.55));
+        animation: starDriftNear 130s linear infinite, starTwinkle 5s ease-in-out infinite reverse;
+        z-index: 0;
+        pointer-events: none;
+    }}
+
+    @keyframes starDriftFar {{
+        from {{ transform: translateY(0); }}
+        to   {{ transform: translateY(-100vh); }}
+    }}
+    @keyframes starDriftNear {{
+        from {{ transform: translateY(0) translateX(0); }}
+        to   {{ transform: translateY(-100vh) translateX(-3vw); }}
+    }}
+    @keyframes starTwinkle {{
+        0%, 100% {{ opacity: 0.85; }}
+        50%      {{ opacity: 0.45; }}
+    }}
+
+    /* Content always paints above the cosmos */
+    .block-container {{
+        position: relative;
+        z-index: 1;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 
 def apply_theme():
-    """Inject glassmorphism styles and 3D galaxy canvas."""
+    """Inject the full design system: galaxy background + glass-morphism UI."""
     css = f"""
     <style>
-    /* Reset Streamlit Backgrounds to display the background canvas */
+    /* Reset Streamlit surfaces so the cosmos on <body> shows through */
     .main, .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {{
         background-color: transparent !important;
         background: transparent !important;
@@ -217,9 +155,59 @@ def apply_theme():
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }}
 
+    /* ── Hero section ── */
+    .hero-badge {{
+        display: inline-block;
+        padding: 6px 18px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(129, 140, 248, 0.35);
+        box-shadow: 0 0 24px rgba(79, 70, 229, 0.25);
+        backdrop-filter: blur(10px);
+        margin-bottom: 1rem;
+    }}
+    .hero-title {{
+        font-size: 3.2rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin: 0.25rem 0 0.75rem 0;
+        background: linear-gradient(135deg, #e0e7ff 10%, #a78bfa 45%, #60a5fa 90%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: none;
+    }}
+    .hero-subtitle {{
+        font-size: 1.05rem;
+        color: rgba(209, 213, 219, 0.75);
+        line-height: 1.6;
+    }}
+
+    /* ── Section headers ── */
+    .section-header {{
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid rgba(129, 140, 248, 0.25);
+    }}
+    .section-header-icon {{
+        font-size: 1.5rem;
+        filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.5));
+    }}
+    .section-header-text {{
+        margin: 0 !important;
+        font-size: 1.4rem !important;
+    }}
+
     /* Sidebar Glassmorphism */
     [data-testid="stSidebar"] {{
-        background-color: rgba(13, 15, 29, 0.7) !important;
+        background-color: rgba(13, 15, 29, 0.72) !important;
         backdrop-filter: blur(20px) saturate(180%);
         border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }}
@@ -238,11 +226,25 @@ def apply_theme():
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }}
 
+    .metric-card {{
+        padding: 1.25rem 1.5rem !important;
+    }}
+
     .metric-card:hover {{
         background-color: rgba(30, 34, 52, 0.7) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         box-shadow: 0 12px 40px 0 rgba(79, 70, 229, 0.15) !important;
         transform: translateY(-2px) !important;
+    }}
+
+    /* Native st.metric gets the same glass treatment */
+    [data-testid="stMetric"] {{
+        background: rgba(30, 34, 52, 0.5);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }}
 
     .metric-label {{
@@ -287,6 +289,20 @@ def apply_theme():
 
     .stButton > button:active {{
         transform: translateY(0.5px) !important;
+    }}
+
+    /* Download buttons match regular buttons */
+    .stDownloadButton > button {{
+        background: rgba(30, 34, 52, 0.6) !important;
+        color: #e0e7ff !important;
+        border: 1px solid rgba(129, 140, 248, 0.35) !important;
+        border-radius: 8px !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
+    }}
+    .stDownloadButton > button:hover {{
+        border-color: rgba(167, 139, 250, 0.7) !important;
+        box-shadow: 0 0 18px rgba(99, 102, 241, 0.35) !important;
     }}
 
     /* Input controls styling */
@@ -349,9 +365,37 @@ def apply_theme():
     .stTabs [aria-selected="true"] p {{
         color: #FFFFFF !important;
     }}
+
+    /* Charts: let the cosmos show through Plotly */
+    .js-plotly-plot .main-svg {{
+        background: transparent !important;
+    }}
+    [data-testid="stDataFrame"] {{
+        background: rgba(20, 22, 37, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        backdrop-filter: blur(12px);
+    }}
+
+    /* Chat surfaces */
+    [data-testid="stChatInput"] {{
+        background: rgba(20, 22, 37, 0.7) !important;
+        border: 1px solid rgba(129, 140, 248, 0.3) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(12px) !important;
+    }}
+
+    /* Slim glassy scrollbar */
+    ::-webkit-scrollbar {{ width: 10px; height: 10px; }}
+    ::-webkit-scrollbar-track {{ background: rgba(10, 12, 28, 0.6); }}
+    ::-webkit-scrollbar-thumb {{
+        background: rgba(99, 102, 241, 0.45);
+        border-radius: 999px;
+        border: 2px solid rgba(10, 12, 28, 0.6);
+    }}
+    ::-webkit-scrollbar-thumb:hover {{ background: rgba(129, 140, 248, 0.7); }}
     </style>
     """
-    st.markdown(css, unsafe_allow_html=True)
     inject_galaxy_background()
     st.markdown(css, unsafe_allow_html=True)
 
