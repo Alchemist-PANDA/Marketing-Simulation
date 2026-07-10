@@ -32,3 +32,6 @@ outputs/*.txt
 
 # Streamlit secrets (contains API keys — never commit)
 .streamlit/secrets.toml
+
+# Regenerable feature caches
+models/feat_*.npy

@@ -1,0 +1,39 @@
+{
+  "per_model_holdout": {
+    "ridge": {
+      "directional_accuracy_all_pairs": 0.9172,
+      "directional_accuracy_decisive": 0.9565,
+      "pearson": 0.9608,
+      "spearman": 0.9653,
+      "rmse": 0.002346
+    },
+    "hist_gbr": {
+      "directional_accuracy_all_pairs": 0.9076,
+      "directional_accuracy_decisive": 0.9462,
+      "pearson": 0.9475,
+      "spearman": 0.9534,
+      "rmse": 0.002759
+    },
+    "mlp": {
+      "directional_accuracy_all_pairs": 0.8954,
+      "directional_accuracy_decisive": 0.9357,
+      "pearson": 0.9416,
+      "spearman": 0.9428,
+      "rmse": 0.002889
+    }
+  },
+  "ensemble_holdout": {
+    "directional_accuracy_all_pairs": 0.9233,
+    "directional_accuracy_decisive": 0.9618,
+    "pearson": 0.9658,
+    "spearman": 0.9697,
+    "rmse": 0.002204
+  },
+  "ensemble_validation": {
+    "directional_accuracy_all_pairs": 0.9254,
+    "directional_accuracy_decisive": 0.9647,
+    "pearson": 0.9638,
+    "spearman": 0.9706,
+    "rmse": 0.002359
+  }
+}

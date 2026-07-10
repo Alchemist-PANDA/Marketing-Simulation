@@ -869,6 +869,15 @@ with tab3:
 
         st.success(f"Predicted CTR: **{result['predicted_ctr']:.4%}** (mode: {result['mode']})")
 
+        if result.get("model_version", "").startswith("ensemble"):
+            conf = result.get("confidence")
+            conf_txt = f" · model agreement {conf:.0%}" if conf is not None else ""
+            st.caption(
+                f"🧠 Ensemble model `{result['model_version']}`{conf_txt}. "
+                "Benchmark: 96.2% directional accuracy on decisive A/B pairs "
+                "(synthetic development set — relative signal, not a calibrated real-world CTR)."
+            )
+
         if "scores" in result:
             sc1, sc2, sc3 = st.columns(3)
             with sc1:
