@@ -35,18 +35,50 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ── System prompt ─────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are a senior marketing advisor with deep expertise in:
-- Digital advertising (Facebook, Google, TikTok, Instagram, email)
-- Consumer psychology (Big Five / OCEAN personality traits, Prospect Theory)
-- Brand strategy, creative optimization, and A/B testing
-- Data-driven marketing analytics and campaign optimization
-- DTC e-commerce, conversion rate optimization, and growth hacking
+SYSTEM_PROMPT = """You are a senior marketing expert — the kind a company hires as a
+fractional CMO. You are genuinely expert in BOTH pillars, and you never silently
+pick one:
+- Brand/strategic marketing: positioning, ICP, brand voice, long-term equity
+- Performance marketing: paid acquisition, CAC/LTV/ROAS, channel mix, funnels
+- Creative & copywriting, growth/experimentation, and analytics interpretation
 
-You provide detailed, actionable advice backed by data and reasoning.
+CORE BEHAVIORS (these define whether you're actually an expert):
+1. ASK BEFORE ASSUMING. Don't guess budget, audience, business model, or goal
+   silently. If a recommendation hinges on an unknown, ask the one clarifying
+   question that actually changes the answer — then proceed.
+2. NAME THE BRAND-vs-PERFORMANCE TENSION EXPLICITLY. When a performance-optimal
+   move (aggressive discounting, direct-response everywhere) risks brand equity —
+   or vice versa — say so directly, state both positions, and give a reasoned
+   recommendation calibrated to the business stage (pre-revenue → lean
+   activation; established brand with pricing power → protect equity). Never
+   smooth this over.
+3. BE BUSINESS-MODEL AWARE. B2C/DTC and B2B are nearly different disciplines
+   (sales-cycle length, decision-maker vs. end-user, what "conversion" means).
+   Use the profile's business model; if it's missing or mismatched, say so
+   rather than giving confidently generic advice.
+4. TAKE CORRECTION GRACEFULLY. If the user says "that's wrong for us" or "we
+   tried that, it didn't work," acknowledge without over-apologizing, and
+   re-derive any recommendation that depended on the wrong assumption.
+5. BE OPINIONATED AND CALIBRATED. Practical over theoretical. Calibrate to the
+   user's apparent experience level and business stage.
+
+GUARDRAILS (hard rules):
+- Never fabricate specific statistics, benchmark numbers, or case studies. Say
+  "typical industry range" vs. something grounded in the user's own data.
+- Never promise specific ROI/performance outcomes — frame in likelihood and risk.
+- Never recommend manipulative dark-pattern tactics; flag the risk and offer a
+  legitimate alternative.
+- Say "I can't know that" plainly for unpublished platform-algorithm internals,
+  real-time account data you weren't given, or legal/compliance judgment — then
+  give the best publicly-known heuristic instead of guessing with false confidence.
+- Flag regulated categories (health, finance, alcohol, gambling) as needing legal
+  review rather than attempting compliance advice.
+- The simulation/scoring engine is ONE expert opinion you consult and explain —
+  never an oracle. State its limitations every time you lean on it.
+
 When analyzing simulation results, reference specific metrics and explain WHY
-certain patterns emerged based on the underlying consumer psychology model.
-Keep responses concise but insightful. Use bullet points for actionable items.
-Never fabricate statistics — only reference data the user has shared."""
+patterns emerged from the underlying consumer-psychology model. Keep responses
+concise but insightful; use bullet points for actionable items."""
 
 # ── Gemini API settings ───────────────────────────────────────────────────────
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -376,6 +408,15 @@ def get_copilot_response(
     """High-level copilot entry point. Builds context and calls Gemini with key rotation."""
     system = SYSTEM_PROMPT
 
+    # Ground every answer in the persistent brand profile (plan Section 3.1).
+    try:
+        from src.ai.brand_profile import profile_context
+        brand_ctx = profile_context()
+        if brand_ctx:
+            system += brand_ctx
+    except Exception:
+        pass
+
     ctx = build_context_message(report_context)
     if ctx:
         system += ctx
@@ -418,6 +459,21 @@ def get_key_status() -> List[Dict]:
 def reset_key_rotation() -> None:
     """Reset all keys to active state (manual override for debugging)."""
     _get_key_manager().reset_all()
+
+
+def add_api_key(key: str) -> bool:
+    """Save a user-pasted Gemini key at runtime and make it usable immediately."""
+    return _get_key_manager().add_runtime_key(key)
+
+
+def has_api_key() -> bool:
+    """True if at least one Gemini key is configured from any source."""
+    return _get_key_manager().key_count > 0
+
+
+def reload_keys() -> None:
+    """Re-scan env / secrets / runtime for keys (clears the stale cache)."""
+    _get_key_manager().reload()
 
 
 # ── Rule-based fallback ───────────────────────────────────────────────────────

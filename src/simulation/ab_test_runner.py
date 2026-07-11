@@ -21,17 +21,29 @@ class ABTestRunner:
         self.master_population = master_population
 
     def run_test(self, ad_a_text: str, ad_b_text: str,
+                 ad_c_text: str = None,
                  channel: str = 'facebook', price: float = 20.0,
                  objective: str = 'conversions',
                  progress_callback=None) -> Dict[str, Any]:
         """
-        Run an A/B test with strictly independent cohorts.
+        Run an A/B (or A/B/C) test with strictly independent cohorts.
 
-        Generates a single master population, splits it into two disjoint
-        cohorts via a random permutation + fancy indexing (a copy, not a
-        view, so mutating one cohort's money/purchase state can never leak
-        into the other), and runs each ad against its own pristine cohort.
+        Generates a single master population and splits it into N disjoint
+        cohorts (2 or 3) via a random permutation + fancy indexing (a copy, not
+        a view, so mutating one cohort's money/purchase state can never leak into
+        another). Each ad runs against its own pristine cohort.
+
+        ``ad_c_text`` is optional: when omitted the output is identical to the
+        classic two-variant A/B test (keys ``ad_a``/``ad_b``). When provided, a
+        third cohort is added and the result also carries ``ad_c`` plus a
+        ``variants`` list; ``winner`` is the best of all three.
         """
+        # Assemble variants (2 or 3). Labels stay A/B/C for the UI.
+        variant_texts = [('A', ad_a_text), ('B', ad_b_text)]
+        if ad_c_text and str(ad_c_text).strip():
+            variant_texts.append(('C', ad_c_text))
+        n = len(variant_texts)
+
         if self.master_population is not None:
             master = self.master_population
             self.num_agents = len(master['money'])
@@ -40,88 +52,70 @@ class ABTestRunner:
 
         rng = np.random.RandomState(self.seed)
         indices = rng.permutation(self.num_agents)
-        mid = self.num_agents // 2
+        # Split into n roughly-equal disjoint cohorts.
+        splits = np.array_split(indices, n)
 
-        idx_a = indices[:mid]
-        idx_b = indices[mid:]
+        results = {}          # label -> res dict
+        values = {}           # label -> objective value
+        for i, (label, text) in enumerate(variant_texts):
+            cohort = {k: v[splits[i]].copy() for k, v in master.items()}
+            seed_i = (self.seed + i) if self.seed is not None else None
+            sim = MaxSimulation(seed=seed_i, population=cohort)
+            ad = Ad(text=text, channel=channel, creative_type='text', price=price)
 
-        cohort_a = {k: v[idx_a].copy() for k, v in master.items()}
-        cohort_b = {k: v[idx_b].copy() for k, v in master.items()}
+            cb = None
+            if progress_callback:
+                lo = i / n
+                span = 1.0 / n
 
-        seed_a = self.seed if self.seed is not None else None
-        seed_b = (self.seed + 1) if self.seed is not None else None
+                def cb(pct, msg, _lo=lo, _span=span, _label=label):
+                    progress_callback(_lo + pct * _span, f"Ad {_label}: {msg}")
 
-        sim_a = MaxSimulation(seed=seed_a, population=cohort_a)
-        sim_b = MaxSimulation(seed=seed_b, population=cohort_b)
+            res = sim.simulate_exposure(ad, progress_callback=cb)
+            size = sim.num_agents
+            ctr = res['likes'] / size
+            cvr = res['conversions'] / max(1, res['likes'])
+            res['analysis'] = analyze_failure(
+                ad.price_score, ad.trust_score, ad.urgency_score, ctr=ctr, cvr=cvr
+            )
+            res['analysis']['predicted_ctr'] = round(ctr, 6)
+            res['analysis']['predicted_cvr'] = round(cvr, 6)
+            res['analysis']['confidence_score'] = min(1.0, size / 500)
+            res['cohort_size'] = size
 
-        ad_a = Ad(text=ad_a_text, channel=channel, creative_type='text', price=price)
-        ad_b = Ad(text=ad_b_text, channel=channel, creative_type='text', price=price)
+            if objective == 'conversion_rate':
+                val = res['conversions'] / size
+            elif objective == 'engagement':
+                val = (res['likes'] + res['shares']) / size
+            else:
+                val = res.get(objective, 0)
 
-        cb_a = None
-        cb_b = None
-        if progress_callback:
-            def cb_a(pct, msg):
-                progress_callback(pct * 0.45, f"Ad A: {msg}")
-            def cb_b(pct, msg):
-                progress_callback(0.5 + pct * 0.45, f"Ad B: {msg}")
+            results[label] = res
+            values[label] = val
 
-        res_a = sim_a.simulate_exposure(ad_a, progress_callback=cb_a)
-        if progress_callback:
-            progress_callback(0.5, "Ad A complete, starting Ad B...")
-        res_b = sim_b.simulate_exposure(ad_b, progress_callback=cb_b)
-
-        cohort_a_size = sim_a.num_agents
-        cohort_b_size = sim_b.num_agents
-
-        ctr_a = res_a['likes'] / cohort_a_size
-        cvr_a = res_a['conversions'] / max(1, res_a['likes'])
-        ctr_b = res_b['likes'] / cohort_b_size
-        cvr_b = res_b['conversions'] / max(1, res_b['likes'])
-
-        res_a['analysis'] = analyze_failure(
-            ad_a.price_score, ad_a.trust_score, ad_a.urgency_score,
-            ctr=ctr_a, cvr=cvr_a
-        )
-        res_a['analysis']['predicted_ctr'] = round(ctr_a, 6)
-        res_a['analysis']['predicted_cvr'] = round(cvr_a, 6)
-        res_a['analysis']['confidence_score'] = min(1.0, cohort_a_size / 500)
-        res_a['cohort_size'] = cohort_a_size
-
-        res_b['analysis'] = analyze_failure(
-            ad_b.price_score, ad_b.trust_score, ad_b.urgency_score,
-            ctr=ctr_b, cvr=cvr_b
-        )
-        res_b['analysis']['predicted_ctr'] = round(ctr_b, 6)
-        res_b['analysis']['predicted_cvr'] = round(cvr_b, 6)
-        res_b['analysis']['confidence_score'] = min(1.0, cohort_b_size / 500)
-        res_b['cohort_size'] = cohort_b_size
-
-        val_a = res_a.get(objective, 0)
-        val_b = res_b.get(objective, 0)
-
-        if objective == 'conversion_rate':
-            val_a = res_a['conversions'] / cohort_a_size
-            val_b = res_b['conversions'] / cohort_b_size
-        elif objective == 'engagement':
-            val_a = (res_a['likes'] + res_a['shares']) / cohort_a_size
-            val_b = (res_b['likes'] + res_b['shares']) / cohort_b_size
-
-        winner = 'A' if val_a >= val_b else 'B'
-
-        lift = 0.0
-        loser_val = min(val_a, val_b)
-        if loser_val > 0:
-            lift = (abs(val_a - val_b) / loser_val) * 100
-        elif max(val_a, val_b) > 0:
+        # Winner = highest objective value; lift = best vs runner-up.
+        ranked = sorted(values, key=lambda k: values[k], reverse=True)
+        winner = ranked[0]
+        best_val = values[ranked[0]]
+        second_val = values[ranked[1]]
+        if second_val > 0:
+            lift = (abs(best_val - second_val) / second_val) * 100
+        elif best_val > 0:
             lift = 100.0
+        else:
+            lift = 0.0
 
         if progress_callback:
             progress_callback(1.0, "Analysis complete")
 
-        return {
-            'ad_a': res_a,
-            'ad_b': res_b,
+        out = {
+            'ad_a': results['A'],
+            'ad_b': results['B'],
             'winner': winner,
             'lift_percentage': round(lift, 2),
-            'objective': objective
+            'objective': objective,
         }
+        if 'C' in results:
+            out['ad_c'] = results['C']
+            out['variants'] = [lbl for lbl, _ in variant_texts]
+        return out

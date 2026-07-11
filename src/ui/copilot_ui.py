@@ -12,7 +12,12 @@ sandboxed) for the chat itself. That combination renders reliably everywhere.
 """
 import streamlit as st
 import streamlit.components.v1 as components
-from src.ai.copilot import get_copilot_response, extract_file_content
+from src.ai.copilot import (
+    add_api_key,
+    extract_file_content,
+    get_copilot_response,
+    has_api_key,
+)
 
 
 def _init_copilot_state():
@@ -222,6 +227,64 @@ def _render_galaxy_header():
     components.html(galaxy_html, height=260)
 
 
+def _render_brand_profile():
+    """Brand intake + correction form (plan Section 3.1 / 3.6).
+
+    The copilot grounds every answer in this profile, so it's surfaced right in
+    the panel. Auto-expands until the load-bearing fields are set, then collapses.
+    """
+    from src.ai import brand_profile as bp
+
+    profile = bp.get_profile()
+    configured = bp.is_configured()
+    header = ("🏷️ Brand profile" if configured
+              else "🏷️ Set up your brand profile (the copilot uses this for every answer)")
+
+    with st.expander(header, expanded=not configured):
+        st.caption(
+            "The more the copilot knows, the more specific its advice. Business "
+            "model and stage do the most calibration work. You can correct any "
+            "field anytime — changes are logged."
+        )
+        with st.form("brand_profile_form"):
+            vals = {}
+            vals["business_name"] = st.text_input("Business / product name", profile.get("business_name", ""))
+            c1, c2 = st.columns(2)
+            with c1:
+                model_opts = ["", "B2C", "B2B", "Hybrid"]
+                cur_model = profile.get("business_model", "")
+                vals["business_model"] = st.selectbox(
+                    "Business model", model_opts,
+                    index=model_opts.index(cur_model) if cur_model in model_opts else 0,
+                )
+            with c2:
+                stage_opts = ["", "Pre-revenue", "Early growth", "Scaling", "Mature"]
+                cur_stage = profile.get("business_stage", "")
+                vals["business_stage"] = st.selectbox(
+                    "Business stage", stage_opts,
+                    index=stage_opts.index(cur_stage) if cur_stage in stage_opts else 0,
+                )
+            vals["monthly_budget"] = st.text_input("Monthly marketing budget", profile.get("monthly_budget", ""))
+            vals["brand_voice"] = st.text_input("Brand voice (3–5 adjectives)", profile.get("brand_voice", ""))
+            vals["icp"] = st.text_area("Ideal customer profile (ICP)", profile.get("icp", ""), height=70)
+            vals["competitors"] = st.text_input("Key competitors", profile.get("competitors", ""))
+            vals["active_channels"] = st.text_input("Active channels", profile.get("active_channels", ""))
+            vals["seasonality"] = st.text_input("Seasonality / high-low periods", profile.get("seasonality", ""))
+
+            if st.form_submit_button("Save profile", type="primary", use_container_width=True):
+                bp.save_profile(vals)
+                st.success("Brand profile saved — the copilot will use it from now on.")
+                st.rerun()
+
+        log = profile.get("change_log", [])
+        if log:
+            with st.expander(f"🕓 Change history ({len(log)})"):
+                for entry in reversed(log[-10:]):
+                    st.caption(f"**{entry['at'][:16].replace('T', ' ')}**")
+                    for change in entry["changes"]:
+                        st.caption(f"• {change}")
+
+
 def _render_chat_interface():
     """Native Streamlit chat with glass-morphism styling injected into the main doc."""
     st.markdown("""
@@ -235,6 +298,33 @@ def _render_chat_interface():
         }
     </style>
     """, unsafe_allow_html=True)
+
+    _render_brand_profile()
+
+    # Gemini key entry — shown only when no key is configured from any source.
+    # This is the fix for "I entered my key but it's still offline": there was
+    # previously no in-app place to enter a Gemini key that the copilot reads.
+    if not has_api_key():
+        with st.expander("🔑 Connect Gemini for full AI responses (no key detected)", expanded=True):
+            st.caption(
+                "The copilot works in offline mode without a key. To enable full "
+                "Gemini answers, paste a free API key from "
+                "[Google AI Studio](https://aistudio.google.com/app/apikey). "
+                "It's stored only in this browser session."
+            )
+            kc1, kc2 = st.columns([4, 1])
+            with kc1:
+                new_key = st.text_input(
+                    "Gemini API key", type="password", key="copilot_key_input",
+                    placeholder="AIza…", label_visibility="collapsed",
+                )
+            with kc2:
+                if st.button("Save", key="copilot_key_save", use_container_width=True):
+                    if add_api_key(new_key):
+                        st.success("Key saved — Gemini is now active.")
+                        st.rerun()
+                    else:
+                        st.error("Enter a valid key (or it's already saved).")
 
     # Chat history
     for msg in st.session_state["copilot_messages"]:

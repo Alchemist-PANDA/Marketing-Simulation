@@ -448,6 +448,7 @@ with tab1:
 
     ad1_text = ""
     ad2_text = ""
+    ad3_text = ""
     uploaded_img_a = None
     uploaded_img_b = None
 
@@ -459,11 +460,21 @@ with tab1:
         st.session_state["ad2_manual"] = ""
 
     if input_method == "Text":
-        col1, col2 = st.columns(2)
-        with col1:
-            ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!", height=150)
-        with col2:
-            ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.", height=150)
+        enable_c = st.checkbox("➕ Add a third variant (A/B/C test)", key="enable_variant_c")
+        if enable_c:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!", height=150)
+            with col2:
+                ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.", height=150)
+            with col3:
+                ad3_text = st.text_area("Ad Creative C", "Free trial — no credit card required.", height=150)
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!", height=150)
+            with col2:
+                ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.", height=150)
     elif input_method == "Video Upload":
         st.caption(
             "Upload each ad's video to preview it, then add the ad copy below. "
@@ -558,6 +569,9 @@ with tab1:
                     st.error("⚠️ Please add the ad copy for both Ad A and Ad B below their videos.")
                 else:
                     st.error("⚠️ Please enter ad copy for both Ad A and Ad B.")
+                st.stop()
+            if st.session_state.get("enable_variant_c") and not (ad3_text and ad3_text.strip()):
+                st.error("⚠️ Third variant is enabled — please enter ad copy for Ad C (or uncheck it).")
                 st.stop()
 
         try:
@@ -669,6 +683,7 @@ with tab1:
                 t0 = time.perf_counter()
                 result = runner.run_test(
                     ad1_text, ad2_text,
+                    ad_c_text=(ad3_text if st.session_state.get("enable_variant_c") else None),
                     channel=channel, price=price, objective=objective,
                     progress_callback=on_progress
                 )
@@ -713,36 +728,44 @@ with tab1:
         ad1_text_display = st.session_state.get("sim_ad1", "")
         ad2_text_display = st.session_state.get("sim_ad2", "")
 
-        st.success(f"Simulation Complete! Winner: **Ad {result['winner']}** (Objective: {result['objective']})")
+        # Variant set — 2 (A/B) or 3 (A/B/C). Keeps everything below C-aware.
+        variant_labels = result.get("variants", ["A", "B"])
+        variant_ads = [(lbl, result[f"ad_{lbl.lower()}"]) for lbl in variant_labels]
+        is_abc = len(variant_ads) == 3
 
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            render_metric_card("Lift", f"{result['lift_percentage']:.2f}%", "📈")
-        with m2:
-            render_metric_card("Ad A Conversions", str(result['ad_a']['conversions']), "🎯")
-        with m3:
-            render_metric_card("Ad B Conversions", str(result['ad_b']['conversions']), "🎯")
-        with m4:
-            render_metric_card("Objective", result['objective'].replace('_', ' ').title(), "⚡")
+        test_kind = "A/B/C" if is_abc else "A/B"
+        st.success(
+            f"{test_kind} Test Complete! Winner: **Ad {result['winner']}** "
+            f"(Objective: {result['objective']})"
+        )
 
-        df = pd.DataFrame({
-            "Ad": ["Ad A", "Ad B", "Ad A", "Ad B", "Ad A", "Ad B"],
-            "Metric": ["Likes", "Likes", "Conversions", "Conversions", "Shares", "Shares"],
-            "Count": [
-                result['ad_a']['likes'], result['ad_b']['likes'],
-                result['ad_a']['conversions'], result['ad_b']['conversions'],
-                result['ad_a']['shares'], result['ad_b']['shares']
-            ]
-        })
+        # Metrics: Lift + one conversion card per variant.
+        metric_cols = st.columns(1 + len(variant_ads))
+        with metric_cols[0]:
+            render_metric_card("Lift (vs runner-up)", f"{result['lift_percentage']:.2f}%", "📈")
+        for col, (lbl, ad) in zip(metric_cols[1:], variant_ads):
+            with col:
+                crown = " 👑" if lbl == result["winner"] else ""
+                render_metric_card(f"Ad {lbl} Conversions{crown}", str(ad["conversions"]), "🎯")
 
+        # Engagement comparison chart across all variants.
+        _colors = {"Ad A": "#4F46E5", "Ad B": "#10B981", "Ad C": "#F59E0B"}
+        rows = []
+        for lbl, ad in variant_ads:
+            for metric in ("Likes", "Conversions", "Shares"):
+                rows.append({"Ad": f"Ad {lbl}", "Metric": metric,
+                             "Count": ad[metric.lower()]})
+        df = pd.DataFrame(rows)
         fig = px.bar(df, x="Metric", y="Count", color="Ad", barmode="group",
-                     title="Engagement Comparison",
-                     color_discrete_map={"Ad A": "#4F46E5", "Ad B": "#10B981"})
+                     title="Engagement Comparison", color_discrete_map=_colors)
         st.plotly_chart(fig, use_container_width=True)
 
         # ── Full Marketing Intelligence Dashboard ──────────────────────
         # Isolated so a rendering error here can't take down the rest of the page;
         # the full traceback is logged server-side (never shown to the user).
+        if is_abc:
+            st.caption("ℹ️ The deep-dive dashboard below details Ad A vs Ad B. "
+                       "The A/B/C comparison and winner above cover all three variants.")
         with safe_block("Marketing Intelligence Dashboard", logger):
             render_full_dashboard(
                 result,
@@ -752,15 +775,16 @@ with tab1:
             )
 
         render_section_header("Forensic Feedback", "🕵️")
-        fa1, fa2 = st.columns(2)
-        with fa1:
-            st.subheader("Ad A Analysis")
-            for reason in result['ad_a']['analysis']['failure_reasons']:
-                st.warning(reason)
-        with fa2:
-            st.subheader("Ad B Analysis")
-            for reason in result['ad_b']['analysis']['failure_reasons']:
-                st.warning(reason)
+        fa_cols = st.columns(len(variant_ads))
+        for col, (lbl, ad) in zip(fa_cols, variant_ads):
+            with col:
+                st.subheader(f"Ad {lbl} Analysis")
+                reasons = ad.get('analysis', {}).get('failure_reasons', [])
+                if reasons:
+                    for reason in reasons:
+                        st.warning(reason)
+                else:
+                    st.success("No significant weaknesses flagged.")
 
         render_save_results_section(result, ad1_text_display, ad2_text_display, channel, num_agents)
         render_export_buttons(result)

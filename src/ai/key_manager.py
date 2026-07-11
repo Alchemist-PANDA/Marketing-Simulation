@@ -99,6 +99,28 @@ def _load_from_env(prefix: str = "GEMINI_API_KEY") -> List[Dict]:
     return entries
 
 
+_SS_RUNTIME_KEYS = "gemini_api_keys_runtime"
+
+
+def _load_from_session() -> List[Dict]:
+    """Load keys a user pasted into the app at runtime (stored in session_state).
+
+    This is the escape hatch for users who don't have shell/secrets access: the
+    copilot UI lets them paste a key, which is saved here and picked up on the
+    next request without needing a redeploy.
+    """
+    entries: List[Dict] = []
+    try:
+        runtime = st.session_state.get(_SS_RUNTIME_KEYS, [])
+    except Exception:
+        return entries
+    for idx, k in enumerate(runtime or [], 1):
+        k = str(k).strip()
+        if k:
+            entries.append(_blank_entry(k, label=f"session-{idx}"))
+    return entries
+
+
 def _load_from_secrets(prefix: str = "GEMINI_API_KEY") -> List[Dict]:
     """Load keys from Streamlit secrets (various layouts)."""
     entries: List[Dict] = []
@@ -181,19 +203,44 @@ class APIKeyManager:
         """Populate st.session_state with keys from env + secrets."""
         entries: List[Dict] = []
 
-        # secrets take priority over env vars (Streamlit Cloud deployment)
+        # Runtime keys (pasted in the UI) take priority, then secrets, then env.
+        session_entries = _load_from_session()
         secret_entries = _load_from_secrets(self._prefix)
         env_entries = _load_from_env(self._prefix)
 
-        # Deduplicate by key value (secrets may duplicate env)
+        # Deduplicate by key value (sources may overlap)
         seen: set = set()
-        for e in secret_entries + env_entries:
+        for e in session_entries + secret_entries + env_entries:
             if e["key"] not in seen:
                 seen.add(e["key"])
                 entries.append(e)
 
         st.session_state[_SS_KEY] = entries
         logger.info("KeyManager: loaded %d key(s)", len(entries))
+
+    def reload(self) -> None:
+        """Force a re-scan of all key sources (env, secrets, runtime session).
+
+        Fixes the stale-cache case: if the manager first initialised with zero
+        keys and the user later added one, the cached empty state would otherwise
+        never refresh within the session.
+        """
+        st.session_state.pop(_SS_KEY, None)
+        self._init_state()
+
+    def add_runtime_key(self, key: str) -> bool:
+        """Persist a user-pasted key into session_state and reload. Returns True
+        if a non-empty, not-already-present key was added."""
+        key = (key or "").strip()
+        if not key:
+            return False
+        runtime = st.session_state.get(_SS_RUNTIME_KEYS, [])
+        if key in runtime:
+            return False
+        runtime.append(key)
+        st.session_state[_SS_RUNTIME_KEYS] = runtime
+        self.reload()
+        return True
 
     @property
     def _state(self) -> List[Dict]:
