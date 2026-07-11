@@ -26,6 +26,24 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 - **Video upload**: preview-and-run video input on the main A/B simulation and a
   video preview on the AI Predictions tab (MP4/MOV/AVI/WEBM/M4V). Copy still
   drives the model; automated frame/audio analysis is flagged as future work.
+- **A/B/C testing**: the simulation now supports an optional third creative (Ad C)
+  via a checkbox in Text mode. `ABTestRunner.run_test` splits the population into
+  N disjoint cohorts (2 or 3); winner is the best of all variants and lift is
+  measured vs. the runner-up. Results, engagement chart, and forensic feedback are
+  variant-count-aware; the deep A-vs-B dashboard is unchanged. Two-variant output
+  is fully backward-compatible.
+- **Expert copilot foundation** (per `marketing_expert_copilot_plan.md`):
+  - **In-app Gemini key entry** — a paste box appears in the copilot when no key
+    is detected (runtime key source + reload path). Fixes "I added my key but it's
+    still offline": there was previously no in-app place to enter a Gemini key the
+    copilot actually reads.
+  - **Persistent brand profile** (`src/ai/brand_profile.py`, Supabase table
+    `brand_profiles`): business model (B2C/B2B/hybrid), stage, live budget, brand
+    voice, ICP, competitors, channels, seasonality — injected into every copilot
+    answer, with timestamped change-logging for corrections (plan §3.1/§3.6).
+  - **Expert system prompt**: explicit brand-vs-performance tension flagging,
+    business-model awareness, graceful correction handling, and honest guardrails
+    (plan §1.7/§5/§6) — targets the §8 worked-example behavior.
 
 ### Fixed
 - **Save-campaign RLS failure** (`new row violates row-level security policy for
