@@ -1,0 +1,877 @@
+pair_idx,pair_type,industry,ad_a_ctr_pct,ad_b_ctr_pct,ctr_gap,is_decisive,sim_score_a,sim_score_b,sim_winner,ground_truth,correct
+0,same_brand,Microfinance Companies,0.01,0.3,0.29,True,12,10,A,A,True
+1,same_brand,Health & Fitness,0.22,0.23,0.010000000000000009,False,10,10,TIE,A,False
+2,same_brand,Health & Fitness,0.22,0.23,0.010000000000000009,False,10,10,TIE,A,False
+3,same_brand,Health & Fitness,0.22,0.27,0.05000000000000002,False,10,10,TIE,A,False
+4,same_brand,Health & Fitness,0.23,0.27,0.04000000000000001,False,10,10,TIE,A,False
+5,same_brand,Health & Fitness,0.23,0.27,0.04000000000000001,False,10,10,TIE,A,False
+6,same_brand,Cell Phones,0.27,0.28,0.010000000000000009,False,14,9,A,A,True
+7,same_brand,Cell Phones,0.27,0.28,0.010000000000000009,False,14,10,A,A,True
+8,same_brand,Cell Phones,0.27,0.3,0.02999999999999997,False,14,9,A,A,True
+9,same_brand,Cell Phones,0.27,0.31,0.03999999999999998,False,14,14,TIE,A,False
+10,same_brand,Cell Phones,0.27,0.33,0.06,False,14,9,A,A,True
+11,same_brand,Cell Phones,0.28,0.3,0.019999999999999962,False,9,9,TIE,A,False
+12,same_brand,Cell Phones,0.28,0.31,0.02999999999999997,False,9,14,B,A,False
+13,same_brand,Cell Phones,0.28,0.33,0.04999999999999999,False,9,9,TIE,A,False
+14,same_brand,Cell Phones,0.28,0.3,0.019999999999999962,False,10,9,A,A,True
+15,same_brand,Cell Phones,0.28,0.31,0.02999999999999997,False,10,14,B,A,False
+16,same_brand,Cell Phones,0.28,0.33,0.04999999999999999,False,10,9,A,A,True
+17,same_brand,Cell Phones,0.3,0.31,0.010000000000000009,False,9,14,B,A,False
+18,same_brand,Cell Phones,0.3,0.33,0.030000000000000027,False,9,9,TIE,A,False
+19,same_brand,Cell Phones,0.31,0.33,0.020000000000000018,False,14,9,A,A,True
+20,same_brand,Women's Shoes,0.13,0.16,0.03,False,16,10,A,A,True
+21,same_brand,Online Shopping,0.13,0.15,0.01999999999999999,False,15,15,TIE,A,False
+22,same_brand,Online Shopping,0.13,0.15,0.01999999999999999,False,15,15,TIE,A,False
+23,same_brand,Online Shopping,0.13,0.18,0.04999999999999999,False,15,14,A,A,True
+24,same_brand,Online Shopping,0.13,0.18,0.04999999999999999,False,15,15,TIE,A,False
+25,same_brand,Online Shopping,0.13,0.32,0.19,True,15,15,TIE,A,False
+26,same_brand,Online Shopping,0.13,0.34,0.21000000000000002,True,15,15,TIE,A,False
+27,same_brand,Online Shopping,0.15,0.18,0.03,False,15,14,A,A,True
+28,same_brand,Online Shopping,0.15,0.18,0.03,False,15,15,TIE,A,False
+29,same_brand,Online Shopping,0.15,0.32,0.17,True,15,15,TIE,A,False
+30,same_brand,Online Shopping,0.15,0.34,0.19000000000000003,True,15,15,TIE,A,False
+31,same_brand,Travel,0.15,0.18,0.03,False,15,14,A,A,True
+32,same_brand,Travel,0.15,0.18,0.03,False,15,15,TIE,A,False
+33,same_brand,Travel,0.15,0.32,0.17,True,15,15,TIE,A,False
+34,same_brand,Travel,0.15,0.34,0.19000000000000003,True,15,15,TIE,A,False
+35,same_brand,Online Shopping,0.18,0.32,0.14,True,14,15,B,A,False
+36,same_brand,Online Shopping,0.18,0.34,0.16000000000000003,True,14,15,B,A,False
+37,same_brand,Online Shopping,0.18,0.32,0.14,True,15,15,TIE,A,False
+38,same_brand,Online Shopping,0.18,0.34,0.16000000000000003,True,15,15,TIE,A,False
+39,same_brand,Life & Leisure,0.32,0.34,0.020000000000000018,False,15,15,TIE,A,False
+40,same_brand,Computers,0.15,0.16,0.010000000000000009,False,10,10,TIE,A,False
+41,same_brand,Computers,0.15,0.18,0.03,False,10,14,B,A,False
+42,same_brand,Computers,0.15,0.2,0.05000000000000002,False,10,10,TIE,A,False
+43,same_brand,Computers,0.15,0.3,0.15,True,10,10,TIE,A,False
+44,same_brand,Computers,0.15,0.37,0.22,True,10,10,TIE,A,False
+45,same_brand,Computers,0.15,0.38,0.23,True,10,14,B,A,False
+46,same_brand,Computers,0.15,0.16,0.010000000000000009,False,10,10,TIE,A,False
+47,same_brand,Computers,0.15,0.18,0.03,False,10,14,B,A,False
+48,same_brand,Computers,0.15,0.2,0.05000000000000002,False,10,10,TIE,A,False
+49,same_brand,Computers,0.15,0.3,0.15,True,10,10,TIE,A,False
+50,same_brand,Computers,0.15,0.37,0.22,True,10,10,TIE,A,False
+51,same_brand,Computers,0.15,0.38,0.23,True,10,14,B,A,False
+52,same_brand,Computers,0.16,0.18,0.01999999999999999,False,10,14,B,A,False
+53,same_brand,Computers,0.16,0.2,0.04000000000000001,False,10,10,TIE,A,False
+54,same_brand,Computers,0.16,0.3,0.13999999999999999,True,10,10,TIE,A,False
+55,same_brand,Computers,0.16,0.37,0.21,True,10,10,TIE,A,False
+56,same_brand,Computers,0.16,0.38,0.22,True,10,14,B,A,False
+57,same_brand,Computers,0.18,0.2,0.020000000000000018,False,14,10,A,A,True
+58,same_brand,Computers,0.18,0.3,0.12,True,14,10,A,A,True
+59,same_brand,Computers,0.18,0.37,0.19,True,14,10,A,A,True
+60,same_brand,Computers,0.18,0.38,0.2,True,14,14,TIE,A,False
+61,same_brand,Computers,0.2,0.3,0.09999999999999998,False,10,10,TIE,A,False
+62,same_brand,Computers,0.2,0.37,0.16999999999999998,True,10,10,TIE,A,False
+63,same_brand,Computers,0.2,0.38,0.18,True,10,14,B,A,False
+64,same_brand,Computers,0.3,0.37,0.07,False,10,10,TIE,A,False
+65,same_brand,Computers,0.3,0.38,0.08000000000000002,False,10,14,B,A,False
+66,same_brand,Computers,0.37,0.38,0.010000000000000009,False,10,14,B,A,False
+67,same_brand,Life & Leisure,0.32,0.33,0.010000000000000009,False,10,10,TIE,A,False
+68,same_brand,Life & Leisure,0.32,0.34,0.020000000000000018,False,10,10,TIE,A,False
+69,same_brand,Life & Leisure,0.32,0.35,0.02999999999999997,False,10,10,TIE,A,False
+70,same_brand,Life & Leisure,0.32,0.38,0.06,False,10,10,TIE,A,False
+71,same_brand,Life & Leisure,0.33,0.34,0.010000000000000009,False,10,10,TIE,A,False
+72,same_brand,Life & Leisure,0.33,0.35,0.019999999999999962,False,10,10,TIE,A,False
+73,same_brand,Life & Leisure,0.33,0.38,0.04999999999999999,False,10,10,TIE,A,False
+74,same_brand,Life & Leisure,0.34,0.35,0.009999999999999953,False,10,10,TIE,A,False
+75,same_brand,Life & Leisure,0.34,0.38,0.03999999999999998,False,10,10,TIE,A,False
+76,same_brand,Life & Leisure,0.35,0.38,0.030000000000000027,False,10,10,TIE,A,False
+77,same_brand,Insurance,0.26,0.27,0.010000000000000009,False,15,15,TIE,A,False
+78,same_brand,Utilities,0.15,0.18,0.03,False,14,14,TIE,A,False
+79,same_brand,Utilities,0.15,0.2,0.05000000000000002,False,14,14,TIE,A,False
+80,same_brand,Utilities,0.15,0.23,0.08000000000000002,False,14,14,TIE,A,False
+81,same_brand,Utilities,0.18,0.2,0.020000000000000018,False,14,14,TIE,A,False
+82,same_brand,Utilities,0.18,0.23,0.05000000000000002,False,14,14,TIE,A,False
+83,same_brand,Utilities,0.2,0.23,0.03,False,14,14,TIE,A,False
+84,same_brand,Parenting,0.3,0.32,0.020000000000000018,False,10,10,TIE,A,False
+85,same_brand,Parenting,0.3,0.34,0.040000000000000036,False,10,10,TIE,A,False
+86,same_brand,Parenting,0.32,0.34,0.020000000000000018,False,10,10,TIE,A,False
+87,same_brand,Skincare,0.14,0.21,0.06999999999999998,False,10,10,TIE,A,False
+88,same_brand,Skincare,0.14,0.24,0.09999999999999998,False,10,10,TIE,A,False
+89,same_brand,Skincare,0.14,0.26,0.12,True,10,10,TIE,A,False
+90,same_brand,Skincare,0.14,0.35,0.20999999999999996,True,10,10,TIE,A,False
+91,same_brand,Skincare,0.14,0.36,0.21999999999999997,True,10,10,TIE,A,False
+92,same_brand,Skincare,0.14,0.37,0.22999999999999998,True,10,10,TIE,A,False
+93,same_brand,Skincare,0.14,0.38,0.24,True,10,10,TIE,A,False
+94,same_brand,Skincare,0.14,0.4,0.26,True,10,10,TIE,A,False
+95,same_brand,Skincare,0.21,0.24,0.03,False,10,10,TIE,A,False
+96,same_brand,Skincare,0.21,0.26,0.05000000000000002,False,10,10,TIE,A,False
+97,same_brand,Skincare,0.21,0.35,0.13999999999999999,True,10,10,TIE,A,False
+98,same_brand,Skincare,0.21,0.36,0.15,True,10,10,TIE,A,False
+99,same_brand,Skincare,0.21,0.37,0.16,True,10,10,TIE,A,False
+100,same_brand,Skincare,0.21,0.38,0.17,True,10,10,TIE,A,False
+101,same_brand,Skincare,0.21,0.4,0.19000000000000003,True,10,10,TIE,A,False
+102,same_brand,Skincare,0.24,0.26,0.020000000000000018,False,10,10,TIE,A,False
+103,same_brand,Skincare,0.24,0.35,0.10999999999999999,True,10,10,TIE,A,False
+104,same_brand,Skincare,0.24,0.36,0.12,True,10,10,TIE,A,False
+105,same_brand,Skincare,0.24,0.37,0.13,True,10,10,TIE,A,False
+106,same_brand,Skincare,0.24,0.38,0.14,True,10,10,TIE,A,False
+107,same_brand,Skincare,0.24,0.4,0.16000000000000003,True,10,10,TIE,A,False
+108,same_brand,Skincare,0.26,0.35,0.08999999999999997,False,10,10,TIE,A,False
+109,same_brand,Skincare,0.26,0.36,0.09999999999999998,False,10,10,TIE,A,False
+110,same_brand,Skincare,0.26,0.37,0.10999999999999999,True,10,10,TIE,A,False
+111,same_brand,Skincare,0.26,0.38,0.12,True,10,10,TIE,A,False
+112,same_brand,Skincare,0.26,0.4,0.14,True,10,10,TIE,A,False
+113,same_brand,Skincare,0.35,0.36,0.010000000000000009,False,10,10,TIE,A,False
+114,same_brand,Skincare,0.35,0.37,0.020000000000000018,False,10,10,TIE,A,False
+115,same_brand,Skincare,0.35,0.38,0.030000000000000027,False,10,10,TIE,A,False
+116,same_brand,Skincare,0.35,0.4,0.050000000000000044,False,10,10,TIE,A,False
+117,same_brand,Skincare,0.36,0.37,0.010000000000000009,False,10,10,TIE,A,False
+118,same_brand,Skincare,0.36,0.38,0.020000000000000018,False,10,10,TIE,A,False
+119,same_brand,Skincare,0.36,0.4,0.040000000000000036,False,10,10,TIE,A,False
+120,same_brand,Skincare,0.37,0.38,0.010000000000000009,False,10,10,TIE,A,False
+121,same_brand,Skincare,0.37,0.4,0.030000000000000027,False,10,10,TIE,A,False
+122,same_brand,Skincare,0.38,0.4,0.020000000000000018,False,10,10,TIE,A,False
+123,same_brand,Life & Leisure,0.2,0.26,0.06,False,10,10,TIE,A,False
+124,same_brand,Life & Leisure,0.2,0.27,0.07,False,10,12,B,A,False
+125,same_brand,Life & Leisure,0.2,0.29,0.08999999999999997,False,10,10,TIE,A,False
+126,same_brand,Life & Leisure,0.26,0.27,0.010000000000000009,False,10,12,B,A,False
+127,same_brand,Life & Leisure,0.26,0.29,0.02999999999999997,False,10,10,TIE,A,False
+128,same_brand,Life & Leisure,0.27,0.29,0.019999999999999962,False,12,10,A,A,True
+129,same_brand,Life & Leisure,0.17,0.18,0.009999999999999981,False,10,10,TIE,A,False
+130,same_brand,Life & Leisure,0.17,0.19,0.01999999999999999,False,10,10,TIE,A,False
+131,same_brand,Life & Leisure,0.17,0.19,0.01999999999999999,False,10,10,TIE,A,False
+132,same_brand,Life & Leisure,0.17,0.2,0.03,False,10,10,TIE,A,False
+133,same_brand,Life & Leisure,0.17,0.22,0.04999999999999999,False,10,10,TIE,A,False
+134,same_brand,Life & Leisure,0.17,0.25,0.07999999999999999,False,10,10,TIE,A,False
+135,same_brand,Life & Leisure,0.17,0.25,0.07999999999999999,False,10,10,TIE,A,False
+136,same_brand,Education,0.17,0.18,0.009999999999999981,False,10,10,TIE,A,False
+137,same_brand,Education,0.17,0.19,0.01999999999999999,False,10,10,TIE,A,False
+138,same_brand,Education,0.17,0.19,0.01999999999999999,False,10,10,TIE,A,False
+139,same_brand,Education,0.17,0.2,0.03,False,10,10,TIE,A,False
+140,same_brand,Education,0.17,0.22,0.04999999999999999,False,10,10,TIE,A,False
+141,same_brand,Education,0.17,0.25,0.07999999999999999,False,10,10,TIE,A,False
+142,same_brand,Education,0.17,0.25,0.07999999999999999,False,10,10,TIE,A,False
+143,same_brand,Education,0.18,0.19,0.010000000000000009,False,10,10,TIE,A,False
+144,same_brand,Education,0.18,0.19,0.010000000000000009,False,10,10,TIE,A,False
+145,same_brand,Education,0.18,0.2,0.020000000000000018,False,10,10,TIE,A,False
+146,same_brand,Education,0.18,0.22,0.04000000000000001,False,10,10,TIE,A,False
+147,same_brand,Education,0.18,0.25,0.07,False,10,10,TIE,A,False
+148,same_brand,Education,0.18,0.25,0.07,False,10,10,TIE,A,False
+149,same_brand,Education,0.19,0.2,0.010000000000000009,False,10,10,TIE,A,False
+150,same_brand,Education,0.19,0.22,0.03,False,10,10,TIE,A,False
+151,same_brand,Education,0.19,0.25,0.06,False,10,10,TIE,A,False
+152,same_brand,Education,0.19,0.25,0.06,False,10,10,TIE,A,False
+153,same_brand,Education,0.19,0.2,0.010000000000000009,False,10,10,TIE,A,False
+154,same_brand,Education,0.19,0.22,0.03,False,10,10,TIE,A,False
+155,same_brand,Education,0.19,0.25,0.06,False,10,10,TIE,A,False
+156,same_brand,Education,0.19,0.25,0.06,False,10,10,TIE,A,False
+157,same_brand,Life & Leisure,0.2,0.22,0.01999999999999999,False,10,10,TIE,A,False
+158,same_brand,Life & Leisure,0.2,0.25,0.04999999999999999,False,10,10,TIE,A,False
+159,same_brand,Life & Leisure,0.2,0.25,0.04999999999999999,False,10,10,TIE,A,False
+160,same_brand,Education,0.22,0.25,0.03,False,10,10,TIE,A,False
+161,same_brand,Education,0.22,0.25,0.03,False,10,10,TIE,A,False
+162,same_brand,Skincare,0.28,0.31,0.02999999999999997,False,10,10,TIE,A,False
+163,same_brand,Skincare,0.28,0.35,0.06999999999999995,False,10,10,TIE,A,False
+164,same_brand,Skincare,0.28,0.37,0.08999999999999997,False,10,10,TIE,A,False
+165,same_brand,Skincare,0.28,0.37,0.08999999999999997,False,10,14,B,A,False
+166,same_brand,Skincare,0.28,0.38,0.09999999999999998,False,10,10,TIE,A,False
+167,same_brand,Skincare,0.28,0.38,0.09999999999999998,False,10,15,B,A,False
+168,same_brand,Skincare,0.28,0.39,0.10999999999999999,True,10,10,TIE,A,False
+169,same_brand,Skincare,0.28,0.39,0.10999999999999999,True,10,10,TIE,A,False
+170,same_brand,Skincare,0.28,0.39,0.10999999999999999,True,10,10,TIE,A,False
+171,same_brand,Skincare,0.28,0.39,0.10999999999999999,True,10,10,TIE,A,False
+172,same_brand,Skincare,0.28,0.39,0.10999999999999999,True,10,10,TIE,A,False
+173,same_brand,Skincare,0.28,0.4,0.12,True,10,10,TIE,A,False
+174,same_brand,Skincare,0.28,0.41,0.12999999999999995,True,10,9,A,A,True
+175,same_brand,Skincare,0.31,0.35,0.03999999999999998,False,10,10,TIE,A,False
+176,same_brand,Skincare,0.31,0.37,0.06,False,10,10,TIE,A,False
+177,same_brand,Skincare,0.31,0.37,0.06,False,10,14,B,A,False
+178,same_brand,Skincare,0.31,0.38,0.07,False,10,10,TIE,A,False
+179,same_brand,Skincare,0.31,0.38,0.07,False,10,15,B,A,False
+180,same_brand,Skincare,0.31,0.39,0.08000000000000002,False,10,10,TIE,A,False
+181,same_brand,Skincare,0.31,0.39,0.08000000000000002,False,10,10,TIE,A,False
+182,same_brand,Skincare,0.31,0.39,0.08000000000000002,False,10,10,TIE,A,False
+183,same_brand,Skincare,0.31,0.39,0.08000000000000002,False,10,10,TIE,A,False
+184,same_brand,Skincare,0.31,0.39,0.08000000000000002,False,10,10,TIE,A,False
+185,same_brand,Skincare,0.31,0.4,0.09000000000000002,False,10,10,TIE,A,False
+186,same_brand,Skincare,0.31,0.41,0.09999999999999998,False,10,9,A,A,True
+187,same_brand,Skincare,0.35,0.37,0.020000000000000018,False,10,10,TIE,A,False
+188,same_brand,Skincare,0.35,0.37,0.020000000000000018,False,10,14,B,A,False
+189,same_brand,Skincare,0.35,0.38,0.030000000000000027,False,10,10,TIE,A,False
+190,same_brand,Skincare,0.35,0.38,0.030000000000000027,False,10,15,B,A,False
+191,same_brand,Skincare,0.35,0.39,0.040000000000000036,False,10,10,TIE,A,False
+192,same_brand,Skincare,0.35,0.39,0.040000000000000036,False,10,10,TIE,A,False
+193,same_brand,Skincare,0.35,0.39,0.040000000000000036,False,10,10,TIE,A,False
+194,same_brand,Skincare,0.35,0.39,0.040000000000000036,False,10,10,TIE,A,False
+195,same_brand,Skincare,0.35,0.39,0.040000000000000036,False,10,10,TIE,A,False
+196,same_brand,Skincare,0.35,0.4,0.050000000000000044,False,10,10,TIE,A,False
+197,same_brand,Skincare,0.35,0.41,0.06,False,10,9,A,A,True
+198,same_brand,Skincare,0.37,0.38,0.010000000000000009,False,10,10,TIE,A,False
+199,same_brand,Skincare,0.37,0.38,0.010000000000000009,False,10,15,B,A,False
+200,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,10,10,TIE,A,False
+201,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,10,10,TIE,A,False
+202,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,10,10,TIE,A,False
+203,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,10,10,TIE,A,False
+204,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,10,10,TIE,A,False
+205,same_brand,Skincare,0.37,0.4,0.030000000000000027,False,10,10,TIE,A,False
+206,same_brand,Skincare,0.37,0.41,0.03999999999999998,False,10,9,A,A,True
+207,same_brand,Skincare,0.37,0.38,0.010000000000000009,False,14,10,A,A,True
+208,same_brand,Skincare,0.37,0.38,0.010000000000000009,False,14,15,B,A,False
+209,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,14,10,A,A,True
+210,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,14,10,A,A,True
+211,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,14,10,A,A,True
+212,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,14,10,A,A,True
+213,same_brand,Skincare,0.37,0.39,0.020000000000000018,False,14,10,A,A,True
+214,same_brand,Skincare,0.37,0.4,0.030000000000000027,False,14,10,A,A,True
+215,same_brand,Skincare,0.37,0.41,0.03999999999999998,False,14,9,A,A,True
+216,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,10,10,TIE,A,False
+217,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,10,10,TIE,A,False
+218,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,10,10,TIE,A,False
+219,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,10,10,TIE,A,False
+220,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,10,10,TIE,A,False
+221,same_brand,Skincare,0.38,0.4,0.020000000000000018,False,10,10,TIE,A,False
+222,same_brand,Skincare,0.38,0.41,0.02999999999999997,False,10,9,A,A,True
+223,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,15,10,A,A,True
+224,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,15,10,A,A,True
+225,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,15,10,A,A,True
+226,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,15,10,A,A,True
+227,same_brand,Skincare,0.38,0.39,0.010000000000000009,False,15,10,A,A,True
+228,same_brand,Skincare,0.38,0.4,0.020000000000000018,False,15,10,A,A,True
+229,same_brand,Skincare,0.38,0.41,0.02999999999999997,False,15,9,A,A,True
+230,same_brand,Skincare,0.39,0.4,0.010000000000000009,False,10,10,TIE,A,False
+231,same_brand,Skincare,0.39,0.41,0.019999999999999962,False,10,9,A,A,True
+232,same_brand,Beauty & Personal Care,0.39,0.4,0.010000000000000009,False,10,10,TIE,A,False
+233,same_brand,Beauty & Personal Care,0.39,0.41,0.019999999999999962,False,10,9,A,A,True
+234,same_brand,Skincare,0.39,0.4,0.010000000000000009,False,10,10,TIE,A,False
+235,same_brand,Skincare,0.39,0.41,0.019999999999999962,False,10,9,A,A,True
+236,same_brand,Skincare,0.39,0.4,0.010000000000000009,False,10,10,TIE,A,False
+237,same_brand,Skincare,0.39,0.41,0.019999999999999962,False,10,9,A,A,True
+238,same_brand,Skincare,0.39,0.4,0.010000000000000009,False,10,10,TIE,A,False
+239,same_brand,Skincare,0.39,0.41,0.019999999999999962,False,10,9,A,A,True
+240,same_brand,Skincare,0.4,0.41,0.009999999999999953,False,10,9,A,A,True
+241,same_brand,Life & Leisure,0.21,0.25,0.04000000000000001,False,10,10,TIE,A,False
+242,same_brand,Life & Leisure,0.21,0.26,0.05000000000000002,False,10,10,TIE,A,False
+243,same_brand,Life & Leisure,0.25,0.26,0.010000000000000009,False,10,10,TIE,A,False
+244,same_brand,Life & Leisure,0.2,0.22,0.01999999999999999,False,16,16,TIE,A,False
+245,same_brand,Life & Leisure,0.2,0.26,0.06,False,16,16,TIE,A,False
+246,same_brand,Life & Leisure,0.2,0.29,0.08999999999999997,False,16,16,TIE,A,False
+247,same_brand,Life & Leisure,0.2,0.3,0.09999999999999998,False,16,16,TIE,A,False
+248,same_brand,Life & Leisure,0.22,0.26,0.04000000000000001,False,16,16,TIE,A,False
+249,same_brand,Life & Leisure,0.22,0.29,0.06999999999999998,False,16,16,TIE,A,False
+250,same_brand,Life & Leisure,0.22,0.3,0.07999999999999999,False,16,16,TIE,A,False
+251,same_brand,Life & Leisure,0.26,0.29,0.02999999999999997,False,16,16,TIE,A,False
+252,same_brand,Life & Leisure,0.26,0.3,0.03999999999999998,False,16,16,TIE,A,False
+253,same_brand,Life & Leisure,0.29,0.3,0.010000000000000009,False,16,16,TIE,A,False
+254,same_brand,Life & Leisure,0.17,0.18,0.009999999999999981,False,10,10,TIE,A,False
+255,same_brand,Fragrances & Perfumes,0.25,0.39,0.14,True,10,9,A,A,True
+256,same_brand,Life & Leisure,0.17,0.18,0.009999999999999981,False,10,10,TIE,A,False
+257,same_brand,Life & Leisure,0.17,0.18,0.009999999999999981,False,10,14,B,A,False
+258,same_brand,Life & Leisure,0.17,0.18,0.009999999999999981,False,10,15,B,A,False
+259,same_brand,Life & Leisure,0.17,0.21,0.03999999999999998,False,10,12,B,A,False
+260,same_brand,Life & Leisure,0.17,0.26,0.09,False,10,10,TIE,A,False
+261,same_brand,Life & Leisure,0.17,0.27,0.1,True,10,10,TIE,A,False
+262,same_brand,Life & Leisure,0.17,0.29,0.11999999999999997,True,10,12,B,A,False
+263,same_brand,Life & Leisure,0.17,0.3,0.12999999999999998,True,10,12,B,A,False
+264,same_brand,Life & Leisure,0.17,0.31,0.13999999999999999,True,10,16,B,A,False
+265,same_brand,Life & Leisure,0.17,0.31,0.13999999999999999,True,10,12,B,A,False
+266,same_brand,Life & Leisure,0.17,0.35,0.17999999999999997,True,10,17,B,A,False
+267,same_brand,Life & Leisure,0.17,0.35,0.17999999999999997,True,10,17,B,A,False
+268,same_brand,Life & Leisure,0.17,0.35,0.17999999999999997,True,10,17,B,A,False
+269,same_brand,Life & Leisure,0.17,0.36,0.18999999999999997,True,10,17,B,A,False
+270,same_brand,Life & Leisure,0.17,0.37,0.19999999999999998,True,10,14,B,A,False
+271,same_brand,Life & Leisure,0.17,0.38,0.21,True,10,17,B,A,False
+272,same_brand,Life & Leisure,0.18,0.21,0.03,False,10,12,B,A,False
+273,same_brand,Life & Leisure,0.18,0.26,0.08000000000000002,False,10,10,TIE,A,False
+274,same_brand,Life & Leisure,0.18,0.27,0.09000000000000002,False,10,10,TIE,A,False
+275,same_brand,Life & Leisure,0.18,0.29,0.10999999999999999,True,10,12,B,A,False
+276,same_brand,Life & Leisure,0.18,0.3,0.12,True,10,12,B,A,False
+277,same_brand,Life & Leisure,0.18,0.31,0.13,True,10,16,B,A,False
+278,same_brand,Life & Leisure,0.18,0.31,0.13,True,10,12,B,A,False
+279,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,10,17,B,A,False
+280,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,10,17,B,A,False
+281,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,10,17,B,A,False
+282,same_brand,Life & Leisure,0.18,0.36,0.18,True,10,17,B,A,False
+283,same_brand,Life & Leisure,0.18,0.37,0.19,True,10,14,B,A,False
+284,same_brand,Life & Leisure,0.18,0.38,0.2,True,10,17,B,A,False
+285,same_brand,Life & Leisure,0.18,0.21,0.03,False,14,12,A,A,True
+286,same_brand,Life & Leisure,0.18,0.26,0.08000000000000002,False,14,10,A,A,True
+287,same_brand,Life & Leisure,0.18,0.27,0.09000000000000002,False,14,10,A,A,True
+288,same_brand,Life & Leisure,0.18,0.29,0.10999999999999999,True,14,12,A,A,True
+289,same_brand,Life & Leisure,0.18,0.3,0.12,True,14,12,A,A,True
+290,same_brand,Life & Leisure,0.18,0.31,0.13,True,14,16,B,A,False
+291,same_brand,Life & Leisure,0.18,0.31,0.13,True,14,12,A,A,True
+292,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,14,17,B,A,False
+293,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,14,17,B,A,False
+294,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,14,17,B,A,False
+295,same_brand,Life & Leisure,0.18,0.36,0.18,True,14,17,B,A,False
+296,same_brand,Life & Leisure,0.18,0.37,0.19,True,14,14,TIE,A,False
+297,same_brand,Life & Leisure,0.18,0.38,0.2,True,14,17,B,A,False
+298,same_brand,Life & Leisure,0.18,0.21,0.03,False,15,12,A,A,True
+299,same_brand,Life & Leisure,0.18,0.26,0.08000000000000002,False,15,10,A,A,True
+300,same_brand,Life & Leisure,0.18,0.27,0.09000000000000002,False,15,10,A,A,True
+301,same_brand,Life & Leisure,0.18,0.29,0.10999999999999999,True,15,12,A,A,True
+302,same_brand,Life & Leisure,0.18,0.3,0.12,True,15,12,A,A,True
+303,same_brand,Life & Leisure,0.18,0.31,0.13,True,15,16,B,A,False
+304,same_brand,Life & Leisure,0.18,0.31,0.13,True,15,12,A,A,True
+305,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,15,17,B,A,False
+306,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,15,17,B,A,False
+307,same_brand,Life & Leisure,0.18,0.35,0.16999999999999998,True,15,17,B,A,False
+308,same_brand,Life & Leisure,0.18,0.36,0.18,True,15,17,B,A,False
+309,same_brand,Life & Leisure,0.18,0.37,0.19,True,15,14,A,A,True
+310,same_brand,Life & Leisure,0.18,0.38,0.2,True,15,17,B,A,False
+311,same_brand,Life & Leisure,0.21,0.26,0.05000000000000002,False,12,10,A,A,True
+312,same_brand,Life & Leisure,0.21,0.27,0.060000000000000026,False,12,10,A,A,True
+313,same_brand,Life & Leisure,0.21,0.29,0.07999999999999999,False,12,12,TIE,A,False
+314,same_brand,Life & Leisure,0.21,0.3,0.09,False,12,12,TIE,A,False
+315,same_brand,Life & Leisure,0.21,0.31,0.1,True,12,16,B,A,False
+316,same_brand,Life & Leisure,0.21,0.31,0.1,True,12,12,TIE,A,False
+317,same_brand,Life & Leisure,0.21,0.35,0.13999999999999999,True,12,17,B,A,False
+318,same_brand,Life & Leisure,0.21,0.35,0.13999999999999999,True,12,17,B,A,False
+319,same_brand,Life & Leisure,0.21,0.35,0.13999999999999999,True,12,17,B,A,False
+320,same_brand,Life & Leisure,0.21,0.36,0.15,True,12,17,B,A,False
+321,same_brand,Life & Leisure,0.21,0.37,0.16,True,12,14,B,A,False
+322,same_brand,Life & Leisure,0.21,0.38,0.17,True,12,17,B,A,False
+323,same_brand,Life & Leisure,0.26,0.27,0.010000000000000009,False,10,10,TIE,A,False
+324,same_brand,Life & Leisure,0.26,0.29,0.02999999999999997,False,10,12,B,A,False
+325,same_brand,Life & Leisure,0.26,0.3,0.03999999999999998,False,10,12,B,A,False
+326,same_brand,Life & Leisure,0.26,0.31,0.04999999999999999,False,10,16,B,A,False
+327,same_brand,Life & Leisure,0.26,0.31,0.04999999999999999,False,10,12,B,A,False
+328,same_brand,Life & Leisure,0.26,0.35,0.08999999999999997,False,10,17,B,A,False
+329,same_brand,Life & Leisure,0.26,0.35,0.08999999999999997,False,10,17,B,A,False
+330,same_brand,Life & Leisure,0.26,0.35,0.08999999999999997,False,10,17,B,A,False
+331,same_brand,Life & Leisure,0.26,0.36,0.09999999999999998,False,10,17,B,A,False
+332,same_brand,Life & Leisure,0.26,0.37,0.10999999999999999,True,10,14,B,A,False
+333,same_brand,Life & Leisure,0.26,0.38,0.12,True,10,17,B,A,False
+334,same_brand,Life & Leisure,0.27,0.29,0.019999999999999962,False,10,12,B,A,False
+335,same_brand,Life & Leisure,0.27,0.3,0.02999999999999997,False,10,12,B,A,False
+336,same_brand,Life & Leisure,0.27,0.31,0.03999999999999998,False,10,16,B,A,False
+337,same_brand,Life & Leisure,0.27,0.31,0.03999999999999998,False,10,12,B,A,False
+338,same_brand,Life & Leisure,0.27,0.35,0.07999999999999996,False,10,17,B,A,False
+339,same_brand,Life & Leisure,0.27,0.35,0.07999999999999996,False,10,17,B,A,False
+340,same_brand,Life & Leisure,0.27,0.35,0.07999999999999996,False,10,17,B,A,False
+341,same_brand,Life & Leisure,0.27,0.36,0.08999999999999997,False,10,17,B,A,False
+342,same_brand,Life & Leisure,0.27,0.37,0.09999999999999998,False,10,14,B,A,False
+343,same_brand,Life & Leisure,0.27,0.38,0.10999999999999999,True,10,17,B,A,False
+344,same_brand,Life & Leisure,0.29,0.3,0.010000000000000009,False,12,12,TIE,A,False
+345,same_brand,Life & Leisure,0.29,0.31,0.020000000000000018,False,12,16,B,A,False
+346,same_brand,Life & Leisure,0.29,0.31,0.020000000000000018,False,12,12,TIE,A,False
+347,same_brand,Life & Leisure,0.29,0.35,0.06,False,12,17,B,A,False
+348,same_brand,Life & Leisure,0.29,0.35,0.06,False,12,17,B,A,False
+349,same_brand,Life & Leisure,0.29,0.35,0.06,False,12,17,B,A,False
+350,same_brand,Life & Leisure,0.29,0.36,0.07,False,12,17,B,A,False
+351,same_brand,Life & Leisure,0.29,0.37,0.08000000000000002,False,12,14,B,A,False
+352,same_brand,Life & Leisure,0.29,0.38,0.09000000000000002,False,12,17,B,A,False
+353,same_brand,Life & Leisure,0.3,0.31,0.010000000000000009,False,12,16,B,A,False
+354,same_brand,Life & Leisure,0.3,0.31,0.010000000000000009,False,12,12,TIE,A,False
+355,same_brand,Life & Leisure,0.3,0.35,0.04999999999999999,False,12,17,B,A,False
+356,same_brand,Life & Leisure,0.3,0.35,0.04999999999999999,False,12,17,B,A,False
+357,same_brand,Life & Leisure,0.3,0.35,0.04999999999999999,False,12,17,B,A,False
+358,same_brand,Life & Leisure,0.3,0.36,0.06,False,12,17,B,A,False
+359,same_brand,Life & Leisure,0.3,0.37,0.07,False,12,14,B,A,False
+360,same_brand,Life & Leisure,0.3,0.38,0.08000000000000002,False,12,17,B,A,False
+361,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,16,17,B,A,False
+362,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,16,17,B,A,False
+363,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,16,17,B,A,False
+364,same_brand,Life & Leisure,0.31,0.36,0.04999999999999999,False,16,17,B,A,False
+365,same_brand,Life & Leisure,0.31,0.37,0.06,False,16,14,A,A,True
+366,same_brand,Life & Leisure,0.31,0.38,0.07,False,16,17,B,A,False
+367,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,12,17,B,A,False
+368,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,12,17,B,A,False
+369,same_brand,Life & Leisure,0.31,0.35,0.03999999999999998,False,12,17,B,A,False
+370,same_brand,Life & Leisure,0.31,0.36,0.04999999999999999,False,12,17,B,A,False
+371,same_brand,Life & Leisure,0.31,0.37,0.06,False,12,14,B,A,False
+372,same_brand,Life & Leisure,0.31,0.38,0.07,False,12,17,B,A,False
+373,same_brand,Life & Leisure,0.35,0.36,0.010000000000000009,False,17,17,TIE,A,False
+374,same_brand,Life & Leisure,0.35,0.37,0.020000000000000018,False,17,14,A,A,True
+375,same_brand,Life & Leisure,0.35,0.38,0.030000000000000027,False,17,17,TIE,A,False
+376,same_brand,Life & Leisure,0.35,0.36,0.010000000000000009,False,17,17,TIE,A,False
+377,same_brand,Life & Leisure,0.35,0.37,0.020000000000000018,False,17,14,A,A,True
+378,same_brand,Life & Leisure,0.35,0.38,0.030000000000000027,False,17,17,TIE,A,False
+379,same_brand,Life & Leisure,0.35,0.36,0.010000000000000009,False,17,17,TIE,A,False
+380,same_brand,Life & Leisure,0.35,0.37,0.020000000000000018,False,17,14,A,A,True
+381,same_brand,Life & Leisure,0.35,0.38,0.030000000000000027,False,17,17,TIE,A,False
+382,same_brand,Life & Leisure,0.36,0.37,0.010000000000000009,False,17,14,A,A,True
+383,same_brand,Life & Leisure,0.36,0.38,0.020000000000000018,False,17,17,TIE,A,False
+384,same_brand,Life & Leisure,0.37,0.38,0.010000000000000009,False,14,17,B,A,False
+385,same_brand,Relationship Information,0.03,0.04,0.010000000000000002,False,10,10,TIE,A,False
+386,same_brand,Relationship Information,0.03,0.06,0.03,False,10,14,B,A,False
+387,same_brand,Relationship Information,0.03,0.07,0.04000000000000001,False,10,10,TIE,A,False
+388,same_brand,Relationship Information,0.03,0.07,0.04000000000000001,False,10,10,TIE,A,False
+389,same_brand,Relationship Information,0.03,0.07,0.04000000000000001,False,10,14,B,A,False
+390,same_brand,Relationship Information,0.03,0.1,0.07,False,10,10,TIE,A,False
+391,same_brand,Relationship Information,0.03,0.14,0.11000000000000001,True,10,10,TIE,A,False
+392,same_brand,Relationship Information,0.04,0.06,0.019999999999999997,False,10,14,B,A,False
+393,same_brand,Relationship Information,0.04,0.07,0.030000000000000006,False,10,10,TIE,A,False
+394,same_brand,Relationship Information,0.04,0.07,0.030000000000000006,False,10,10,TIE,A,False
+395,same_brand,Relationship Information,0.04,0.07,0.030000000000000006,False,10,14,B,A,False
+396,same_brand,Relationship Information,0.04,0.1,0.060000000000000005,False,10,10,TIE,A,False
+397,same_brand,Relationship Information,0.04,0.14,0.1,True,10,10,TIE,A,False
+398,same_brand,TV Drama & Series,0.06,0.07,0.010000000000000009,False,14,10,A,A,True
+399,same_brand,TV Drama & Series,0.06,0.07,0.010000000000000009,False,14,10,A,A,True
+400,same_brand,TV Drama & Series,0.06,0.07,0.010000000000000009,False,14,14,TIE,A,False
+401,same_brand,TV Drama & Series,0.06,0.1,0.04000000000000001,False,14,10,A,A,True
+402,same_brand,TV Drama & Series,0.06,0.14,0.08000000000000002,False,14,10,A,A,True
+403,same_brand,Streaming Site,0.07,0.1,0.03,False,10,10,TIE,A,False
+404,same_brand,Streaming Site,0.07,0.14,0.07,False,10,10,TIE,A,False
+405,same_brand,Streaming Site,0.07,0.1,0.03,False,10,10,TIE,A,False
+406,same_brand,Streaming Site,0.07,0.14,0.07,False,10,10,TIE,A,False
+407,same_brand,TV Drama & Series,0.07,0.1,0.03,False,14,10,A,A,True
+408,same_brand,TV Drama & Series,0.07,0.14,0.07,False,14,10,A,A,True
+409,same_brand,Audio & Video Players,0.1,0.14,0.04000000000000001,False,10,10,TIE,A,False
+410,same_brand,Toys,0.1,0.29,0.18999999999999997,True,10,14,B,A,False
+411,same_brand,Credit Cards,0.2,0.22,0.01999999999999999,False,10,14,B,A,False
+412,same_brand,Cosmetics,0.4,0.42,0.019999999999999962,False,10,10,TIE,A,False
+413,same_brand,Cosmetics,0.4,0.43,0.02999999999999997,False,10,14,B,A,False
+414,same_brand,Cosmetics,0.4,0.44,0.03999999999999998,False,10,10,TIE,A,False
+415,same_brand,Wig & Hair Styling,0.42,0.43,0.010000000000000009,False,10,14,B,A,False
+416,same_brand,Wig & Hair Styling,0.42,0.44,0.020000000000000018,False,10,10,TIE,A,False
+417,same_brand,Wig & Hair Styling,0.43,0.44,0.010000000000000009,False,14,10,A,A,True
+418,same_brand,Life & Leisure,0.33,0.36,0.02999999999999997,False,14,14,TIE,A,False
+419,same_brand,Life & Leisure,0.33,0.37,0.03999999999999998,False,14,14,TIE,A,False
+420,same_brand,Life & Leisure,0.36,0.37,0.010000000000000009,False,14,14,TIE,A,False
+421,same_brand,Feminine Care,0.38,0.39,0.010000000000000009,False,9,9,TIE,A,False
+422,same_brand,Feminine Care,0.38,0.39,0.010000000000000009,False,9,9,TIE,A,False
+423,same_brand,Feminine Care,0.38,0.39,0.010000000000000009,False,9,9,TIE,A,False
+424,same_brand,Gaming Devices,0.22,0.32,0.1,True,12,13,B,A,False
+425,same_brand,Gaming Devices,0.22,0.34,0.12000000000000002,True,12,10,A,A,True
+426,same_brand,Gaming Devices,0.22,0.42,0.19999999999999998,True,12,10,A,A,True
+427,same_brand,Gaming Devices,0.22,0.32,0.1,True,12,13,B,A,False
+428,same_brand,Gaming Devices,0.22,0.34,0.12000000000000002,True,12,10,A,A,True
+429,same_brand,Gaming Devices,0.22,0.42,0.19999999999999998,True,12,10,A,A,True
+430,same_brand,Gaming Devices,0.32,0.34,0.020000000000000018,False,13,10,A,A,True
+431,same_brand,Gaming Devices,0.32,0.42,0.09999999999999998,False,13,10,A,A,True
+432,same_brand,Gaming Devices,0.34,0.42,0.07999999999999996,False,10,10,TIE,A,False
+433,same_brand,Gaming Devices,0.2,0.23,0.03,False,12,12,TIE,A,False
+434,same_brand,Gaming Devices,0.2,0.24,0.03999999999999998,False,12,10,A,A,True
+435,same_brand,Gaming Devices,0.2,0.28,0.08000000000000002,False,12,12,TIE,A,False
+436,same_brand,Gaming Devices,0.23,0.24,0.009999999999999981,False,12,10,A,A,True
+437,same_brand,Gaming Devices,0.23,0.28,0.05000000000000002,False,12,12,TIE,A,False
+438,same_brand,Gaming Devices,0.24,0.28,0.040000000000000036,False,10,12,B,A,False
+439,same_brand,Skincare,0.17,0.18,0.009999999999999981,False,18,14,A,A,True
+440,same_brand,Skincare,0.17,0.23,0.06,False,18,10,A,A,True
+441,same_brand,Skincare,0.17,0.25,0.07999999999999999,False,18,12,A,A,True
+442,same_brand,Skincare,0.17,0.33,0.16,True,18,10,A,A,True
+443,same_brand,Skincare,0.17,0.42,0.24999999999999997,True,18,10,A,A,True
+444,same_brand,Fragrances & Perfumes,0.18,0.23,0.05000000000000002,False,14,10,A,A,True
+445,same_brand,Fragrances & Perfumes,0.18,0.25,0.07,False,14,12,A,A,True
+446,same_brand,Fragrances & Perfumes,0.18,0.33,0.15000000000000002,True,14,10,A,A,True
+447,same_brand,Fragrances & Perfumes,0.18,0.42,0.24,True,14,10,A,A,True
+448,same_brand,Haircare,0.23,0.25,0.01999999999999999,False,10,12,B,A,False
+449,same_brand,Haircare,0.23,0.33,0.1,True,10,10,TIE,A,False
+450,same_brand,Haircare,0.23,0.42,0.18999999999999997,True,10,10,TIE,A,False
+451,same_brand,Fragrances & Perfumes,0.25,0.33,0.08000000000000002,False,12,10,A,A,True
+452,same_brand,Fragrances & Perfumes,0.25,0.42,0.16999999999999998,True,12,10,A,A,True
+453,same_brand,Fragrances & Perfumes,0.33,0.42,0.08999999999999997,False,10,10,TIE,A,False
+454,same_brand,Utilities,0.24,0.31,0.07,False,14,14,TIE,A,False
+455,same_brand,Life & Leisure,0.34,0.35,0.009999999999999953,False,16,16,TIE,A,False
+456,same_brand,Life & Leisure,0.34,0.4,0.06,False,16,16,TIE,A,False
+457,same_brand,Life & Leisure,0.34,0.4,0.06,False,16,16,TIE,A,False
+458,same_brand,Life & Leisure,0.34,0.35,0.009999999999999953,False,16,16,TIE,A,False
+459,same_brand,Life & Leisure,0.34,0.4,0.06,False,16,16,TIE,A,False
+460,same_brand,Life & Leisure,0.34,0.4,0.06,False,16,16,TIE,A,False
+461,same_brand,Life & Leisure,0.35,0.4,0.050000000000000044,False,16,16,TIE,A,False
+462,same_brand,Life & Leisure,0.35,0.4,0.050000000000000044,False,16,16,TIE,A,False
+463,same_brand,Clothing Accessories,0.23,0.26,0.03,False,12,12,TIE,A,False
+464,same_brand,Men's Clothing,0.27,0.28,0.010000000000000009,False,10,10,TIE,A,False
+465,same_brand,Photography,0.1,0.14,0.04000000000000001,False,10,12,B,A,False
+466,same_brand,Life & Leisure,0.3,0.39,0.09000000000000002,False,10,12,B,A,False
+467,same_brand,Life & Leisure,0.3,0.41,0.10999999999999999,True,10,14,B,A,False
+468,same_brand,Life & Leisure,0.3,0.41,0.10999999999999999,True,10,10,TIE,A,False
+469,same_brand,Life & Leisure,0.3,0.42,0.12,True,10,14,B,A,False
+470,same_brand,Life & Leisure,0.39,0.41,0.019999999999999962,False,12,14,B,A,False
+471,same_brand,Life & Leisure,0.39,0.41,0.019999999999999962,False,12,10,A,A,True
+472,same_brand,Life & Leisure,0.39,0.42,0.02999999999999997,False,12,14,B,A,False
+473,same_brand,Life & Leisure,0.41,0.42,0.010000000000000009,False,14,14,TIE,A,False
+474,same_brand,Life & Leisure,0.41,0.42,0.010000000000000009,False,10,14,B,A,False
+475,same_brand,Online Shopping,0.25,0.39,0.14,True,14,10,A,A,True
+476,same_brand,Online Shopping,0.25,0.4,0.15000000000000002,True,14,15,B,A,False
+477,same_brand,Online Shopping,0.39,0.4,0.010000000000000009,False,10,15,B,A,False
+478,same_brand,Haircare,0.31,0.42,0.10999999999999999,True,14,10,A,A,True
+479,same_brand,Fragrances & Perfumes,0.27,0.31,0.03999999999999998,False,10,10,TIE,A,False
+480,same_brand,Oral Care,0.21,0.27,0.060000000000000026,False,12,12,TIE,A,False
+481,same_brand,Oral Care,0.21,0.27,0.060000000000000026,False,12,12,TIE,A,False
+482,same_brand,Financial Services,0.2,0.24,0.03999999999999998,False,9,9,TIE,A,False
+483,same_brand,Audio & Video Players,0.11,0.12,0.009999999999999995,False,10,14,B,A,False
+484,same_brand,Audio & Video Players,0.11,0.12,0.009999999999999995,False,10,14,B,A,False
+485,same_brand,Petfood,0.33,0.38,0.04999999999999999,False,10,10,TIE,A,False
+486,same_brand,Travel Agencies & Services,0.06,0.09,0.03,False,14,14,TIE,A,False
+487,same_brand,Travel Agencies & Services,0.06,0.12,0.06,False,14,14,TIE,A,False
+488,same_brand,Travel Agencies & Services,0.06,0.15,0.09,False,14,14,TIE,A,False
+489,same_brand,Travel Agencies & Services,0.06,0.16,0.1,True,14,14,TIE,A,False
+490,same_brand,Travel Agencies & Services,0.06,0.16,0.1,True,14,14,TIE,A,False
+491,same_brand,Travel Agencies & Services,0.06,0.21,0.15,True,14,14,TIE,A,False
+492,same_brand,Travel Agencies & Services,0.09,0.12,0.03,False,14,14,TIE,A,False
+493,same_brand,Travel Agencies & Services,0.09,0.15,0.06,False,14,14,TIE,A,False
+494,same_brand,Travel Agencies & Services,0.09,0.16,0.07,False,14,14,TIE,A,False
+495,same_brand,Travel Agencies & Services,0.09,0.16,0.07,False,14,14,TIE,A,False
+496,same_brand,Travel Agencies & Services,0.09,0.21,0.12,True,14,14,TIE,A,False
+497,same_brand,Travel Agencies & Services,0.12,0.15,0.03,False,14,14,TIE,A,False
+498,same_brand,Travel Agencies & Services,0.12,0.16,0.04000000000000001,False,14,14,TIE,A,False
+499,same_brand,Travel Agencies & Services,0.12,0.16,0.04000000000000001,False,14,14,TIE,A,False
+500,same_brand,Travel Agencies & Services,0.12,0.21,0.09,False,14,14,TIE,A,False
+501,same_brand,Travel Agencies & Services,0.15,0.16,0.010000000000000009,False,14,14,TIE,A,False
+502,same_brand,Travel Agencies & Services,0.15,0.16,0.010000000000000009,False,14,14,TIE,A,False
+503,same_brand,Travel Agencies & Services,0.15,0.21,0.06,False,14,14,TIE,A,False
+504,same_brand,Travel Agencies & Services,0.16,0.21,0.04999999999999999,False,14,14,TIE,A,False
+505,same_brand,Travel Agencies & Services,0.16,0.21,0.04999999999999999,False,14,14,TIE,A,False
+506,same_brand,Higher Education,0.27,0.28,0.010000000000000009,False,12,15,B,A,False
+507,same_brand,Higher Education,0.27,0.31,0.03999999999999998,False,12,12,TIE,A,False
+508,same_brand,Higher Education,0.27,0.32,0.04999999999999999,False,12,12,TIE,A,False
+509,same_brand,Higher Education,0.27,0.32,0.04999999999999999,False,12,12,TIE,A,False
+510,same_brand,Higher Education,0.27,0.33,0.06,False,12,12,TIE,A,False
+511,same_brand,Higher Education,0.27,0.35,0.07999999999999996,False,12,12,TIE,A,False
+512,same_brand,Primary & Secondary Education & K-12,0.28,0.31,0.02999999999999997,False,15,12,A,A,True
+513,same_brand,Primary & Secondary Education & K-12,0.28,0.32,0.03999999999999998,False,15,12,A,A,True
+514,same_brand,Primary & Secondary Education & K-12,0.28,0.32,0.03999999999999998,False,15,12,A,A,True
+515,same_brand,Primary & Secondary Education & K-12,0.28,0.33,0.04999999999999999,False,15,12,A,A,True
+516,same_brand,Primary & Secondary Education & K-12,0.28,0.35,0.06999999999999995,False,15,12,A,A,True
+517,same_brand,Primary & Secondary Education & K-12,0.31,0.32,0.010000000000000009,False,12,12,TIE,A,False
+518,same_brand,Primary & Secondary Education & K-12,0.31,0.32,0.010000000000000009,False,12,12,TIE,A,False
+519,same_brand,Primary & Secondary Education & K-12,0.31,0.33,0.020000000000000018,False,12,12,TIE,A,False
+520,same_brand,Primary & Secondary Education & K-12,0.31,0.35,0.03999999999999998,False,12,12,TIE,A,False
+521,same_brand,Primary & Secondary Education & K-12,0.32,0.33,0.010000000000000009,False,12,12,TIE,A,False
+522,same_brand,Primary & Secondary Education & K-12,0.32,0.35,0.02999999999999997,False,12,12,TIE,A,False
+523,same_brand,Primary & Secondary Education & K-12,0.32,0.33,0.010000000000000009,False,12,12,TIE,A,False
+524,same_brand,Primary & Secondary Education & K-12,0.32,0.35,0.02999999999999997,False,12,12,TIE,A,False
+525,same_brand,Primary & Secondary Education & K-12,0.33,0.35,0.019999999999999962,False,12,12,TIE,A,False
+526,same_brand,Sports & Fitness,0.19,0.25,0.06,False,10,10,TIE,A,False
+527,same_brand,Hardware & Electrical,0.34,0.36,0.019999999999999962,False,10,10,TIE,A,False
+528,same_brand,Charity & Public Welfare,0.19,0.27,0.08000000000000002,False,10,14,B,A,False
+529,same_brand,Culture & Art,0.01,0.03,0.019999999999999997,False,10,10,TIE,A,False
+530,same_brand,Culture & Art,0.01,0.03,0.019999999999999997,False,10,10,TIE,A,False
+531,same_brand,Travel Agencies & Services,0.18,0.22,0.04000000000000001,False,14,14,TIE,A,False
+532,same_brand,Travel Agencies & Services,0.18,0.24,0.06,False,14,15,B,A,False
+533,same_brand,Tourist Information,0.22,0.24,0.01999999999999999,False,14,15,B,A,False
+534,same_brand,Hotels & Accommodation,0.32,0.37,0.04999999999999999,False,12,10,A,A,True
+535,same_brand,Tourist Information,0.34,0.46,0.12,True,10,14,B,A,False
+536,same_brand,Tours & Attractions,0.16,0.17,0.010000000000000009,False,10,10,TIE,A,False
+537,same_brand,Tours & Attractions,0.16,0.19,0.03,False,10,10,TIE,A,False
+538,same_brand,Tours & Attractions,0.16,0.2,0.04000000000000001,False,10,10,TIE,A,False
+539,same_brand,Tours & Attractions,0.17,0.19,0.01999999999999999,False,10,10,TIE,A,False
+540,same_brand,Tours & Attractions,0.17,0.2,0.03,False,10,10,TIE,A,False
+541,same_brand,Tours & Attractions,0.19,0.2,0.010000000000000009,False,10,10,TIE,A,False
+542,same_brand,Business & Economy,0.29,0.44,0.15000000000000002,True,9,14,B,A,False
+543,same_brand,Tourist Information,0.1,0.12,0.01999999999999999,False,12,12,TIE,A,False
+544,same_brand,Higher Education,0.16,0.17,0.010000000000000009,False,10,10,TIE,A,False
+545,same_brand,Higher Education,0.16,0.17,0.010000000000000009,False,10,10,TIE,A,False
+546,same_brand,Higher Education,0.16,0.29,0.12999999999999998,True,10,12,B,A,False
+547,same_brand,Higher Education,0.17,0.29,0.11999999999999997,True,10,12,B,A,False
+548,same_brand,Higher Education,0.17,0.29,0.11999999999999997,True,10,12,B,A,False
+549,same_brand,Home Decor,0.15,0.2,0.05000000000000002,False,10,10,TIE,A,False
+550,same_brand,Home Decor,0.15,0.24,0.09,False,10,10,TIE,A,False
+551,same_brand,Home Decor,0.2,0.24,0.03999999999999998,False,10,10,TIE,A,False
+552,same_brand,Financial Services,0.41,0.46,0.050000000000000044,False,14,10,A,A,True
+553,same_brand,Financial Services,0.41,0.47,0.06,False,14,10,A,A,True
+554,same_brand,Business & Economy,0.46,0.47,0.009999999999999953,False,10,10,TIE,A,False
+555,same_brand,TV Drama & Series,0.03,0.04,0.010000000000000002,False,14,14,TIE,A,False
+556,same_brand,TV Drama & Series,0.03,0.05,0.020000000000000004,False,14,10,A,A,True
+557,same_brand,TV Drama & Series,0.03,0.11,0.08,False,14,10,A,A,True
+558,same_brand,TV Drama & Series,0.04,0.05,0.010000000000000002,False,14,10,A,A,True
+559,same_brand,TV Drama & Series,0.04,0.11,0.07,False,14,10,A,A,True
+560,same_brand,TV Drama & Series,0.05,0.11,0.06,False,10,10,TIE,A,False
+561,same_brand,Culture & Art,0.11,0.17,0.06000000000000001,False,10,14,B,A,False
+562,same_brand,Culture & Art,0.11,0.24,0.13,True,10,10,TIE,A,False
+563,same_brand,Culture & Art,0.17,0.24,0.06999999999999998,False,14,10,A,A,True
+564,same_brand,Reading,0.12,0.14,0.020000000000000018,False,14,14,TIE,A,False
+565,same_brand,Reading,0.03,0.06,0.03,False,14,14,TIE,A,False
+566,same_brand,Reading,0.03,0.2,0.17,True,14,10,A,A,True
+567,same_brand,Relationship Information,0.06,0.2,0.14,True,14,10,A,A,True
+568,same_brand,Pet Healthcare,0.15,0.17,0.020000000000000018,False,10,10,TIE,A,False
+569,same_brand,Pet Healthcare,0.15,0.18,0.03,False,10,10,TIE,A,False
+570,same_brand,Pet Healthcare,0.15,0.2,0.05000000000000002,False,10,10,TIE,A,False
+571,same_brand,Pet Healthcare,0.15,0.21,0.06,False,10,10,TIE,A,False
+572,same_brand,Pet Healthcare,0.15,0.22,0.07,False,10,10,TIE,A,False
+573,same_brand,Pet Healthcare,0.15,0.25,0.1,True,10,14,B,A,False
+574,same_brand,Pet Healthcare,0.15,0.25,0.1,True,10,10,TIE,A,False
+575,same_brand,Pet Healthcare,0.17,0.18,0.009999999999999981,False,10,10,TIE,A,False
+576,same_brand,Pet Healthcare,0.17,0.2,0.03,False,10,10,TIE,A,False
+577,same_brand,Pet Healthcare,0.17,0.21,0.03999999999999998,False,10,10,TIE,A,False
+578,same_brand,Pet Healthcare,0.17,0.22,0.04999999999999999,False,10,10,TIE,A,False
+579,same_brand,Pet Healthcare,0.17,0.25,0.07999999999999999,False,10,14,B,A,False
+580,same_brand,Pet Healthcare,0.17,0.25,0.07999999999999999,False,10,10,TIE,A,False
+581,same_brand,Pet Healthcare,0.18,0.2,0.020000000000000018,False,10,10,TIE,A,False
+582,same_brand,Pet Healthcare,0.18,0.21,0.03,False,10,10,TIE,A,False
+583,same_brand,Pet Healthcare,0.18,0.22,0.04000000000000001,False,10,10,TIE,A,False
+584,same_brand,Pet Healthcare,0.18,0.25,0.07,False,10,14,B,A,False
+585,same_brand,Pet Healthcare,0.18,0.25,0.07,False,10,10,TIE,A,False
+586,same_brand,Food & Cooking,0.2,0.21,0.009999999999999981,False,10,10,TIE,A,False
+587,same_brand,Food & Cooking,0.2,0.22,0.01999999999999999,False,10,10,TIE,A,False
+588,same_brand,Food & Cooking,0.2,0.25,0.04999999999999999,False,10,14,B,A,False
+589,same_brand,Food & Cooking,0.2,0.25,0.04999999999999999,False,10,10,TIE,A,False
+590,same_brand,Food & Cooking,0.21,0.22,0.010000000000000009,False,10,10,TIE,A,False
+591,same_brand,Food & Cooking,0.21,0.25,0.04000000000000001,False,10,14,B,A,False
+592,same_brand,Food & Cooking,0.21,0.25,0.04000000000000001,False,10,10,TIE,A,False
+593,same_brand,Food & Cooking,0.22,0.25,0.03,False,10,14,B,A,False
+594,same_brand,Food & Cooking,0.22,0.25,0.03,False,10,10,TIE,A,False
+595,same_brand,TV Drama & Series,0.03,0.06,0.03,False,14,14,TIE,A,False
+596,same_brand,TV Drama & Series,0.03,0.06,0.03,False,14,14,TIE,A,False
+597,same_brand,Streaming Site,0.32,0.34,0.020000000000000018,False,14,12,A,A,True
+598,same_brand,Streaming Site,0.32,0.35,0.02999999999999997,False,14,12,A,A,True
+599,same_brand,Streaming Site,0.32,0.36,0.03999999999999998,False,14,14,TIE,A,False
+600,same_brand,Streaming Site,0.32,0.38,0.06,False,14,14,TIE,A,False
+601,same_brand,Business & Economy,0.34,0.35,0.009999999999999953,False,12,12,TIE,A,False
+602,same_brand,Business & Economy,0.34,0.36,0.019999999999999962,False,12,14,B,A,False
+603,same_brand,Business & Economy,0.34,0.38,0.03999999999999998,False,12,14,B,A,False
+604,same_brand,Business & Economy,0.35,0.36,0.010000000000000009,False,12,14,B,A,False
+605,same_brand,Business & Economy,0.35,0.38,0.030000000000000027,False,12,14,B,A,False
+606,same_brand,Streaming Site,0.36,0.38,0.020000000000000018,False,14,14,TIE,A,False
+607,same_brand,Culture & Art,0.13,0.28,0.15000000000000002,True,14,14,TIE,A,False
+608,same_brand,Culture & Art,0.13,0.29,0.15999999999999998,True,14,10,A,A,True
+609,same_brand,Streaming Site,0.13,0.28,0.15000000000000002,True,14,14,TIE,A,False
+610,same_brand,Streaming Site,0.13,0.29,0.15999999999999998,True,14,10,A,A,True
+611,same_brand,Lifestyle News,0.28,0.29,0.009999999999999953,False,14,10,A,A,True
+612,same_brand,Charity & Public Welfare,0.26,0.28,0.020000000000000018,False,9,10,B,A,False
+613,same_brand,Live Events,0.23,0.32,0.09,False,14,14,TIE,A,False
+614,same_brand,Tours & Attractions,0.14,0.16,0.01999999999999999,False,14,10,A,A,True
+615,same_brand,Vocational Training,0.38,0.43,0.04999999999999999,False,10,14,B,A,False
+616,same_brand,Charity & Public Welfare,0.13,0.16,0.03,False,10,9,A,A,True
+617,same_brand,Financial Services,0.26,0.27,0.010000000000000009,False,10,14,B,A,False
+618,same_brand,Commercial Banks,0.21,0.23,0.020000000000000018,False,14,10,A,A,True
+619,same_industry,Wig & Hair Styling,0.01,0.02,0.01,False,14,14,TIE,A,False
+620,same_industry,Wig & Hair Styling,0.01,0.02,0.01,False,14,15,B,A,False
+621,same_industry,Wig & Hair Styling,0.01,0.02,0.01,False,14,15,B,A,False
+622,same_industry,Wig & Hair Styling,0.01,0.02,0.01,False,14,10,A,A,True
+623,same_industry,Wig & Hair Styling,0.01,0.02,0.01,False,14,14,TIE,A,False
+624,same_industry,Skincare,0.01,0.33,0.32,True,14,10,A,A,True
+625,same_industry,Skincare,0.01,0.33,0.32,True,14,10,A,A,True
+626,same_industry,Skincare,0.01,0.35,0.33999999999999997,True,14,13,A,A,True
+627,same_industry,Skincare,0.01,0.35,0.33999999999999997,True,14,10,A,A,True
+628,same_industry,Skincare,0.01,0.35,0.33999999999999997,True,14,10,A,A,True
+629,same_industry,Haircare,0.01,0.31,0.3,True,15,14,A,A,True
+630,same_industry,Haircare,0.01,0.32,0.31,True,15,12,A,A,True
+631,same_industry,Haircare,0.01,0.35,0.33999999999999997,True,15,14,A,A,True
+632,same_industry,Haircare,0.01,0.36,0.35,True,15,9,A,A,True
+633,same_industry,Haircare,0.01,0.36,0.35,True,15,14,A,A,True
+634,same_industry,Cosmetics,0.01,0.08,0.07,False,12,10,A,A,True
+635,same_industry,Cosmetics,0.01,0.25,0.24,True,12,9,A,A,True
+636,same_industry,Cosmetics,0.01,0.25,0.24,True,12,10,A,A,True
+637,same_industry,Cosmetics,0.01,0.3,0.29,True,12,10,A,A,True
+638,same_industry,Cosmetics,0.01,0.3,0.29,True,12,14,B,A,False
+639,same_industry,Online Shopping,0.01,0.23,0.22,True,15,10,A,A,True
+640,same_industry,Online Shopping,0.01,0.24,0.22999999999999998,True,15,14,A,A,True
+641,same_industry,Online Shopping,0.01,0.25,0.24,True,15,14,A,A,True
+642,same_industry,Online Shopping,0.01,0.29,0.27999999999999997,True,15,10,A,A,True
+643,same_industry,Online Shopping,0.01,0.33,0.32,True,15,10,A,A,True
+644,same_industry,Fragrances & Perfumes,0.01,0.33,0.32,True,10,10,TIE,A,False
+645,same_industry,Fragrances & Perfumes,0.01,0.33,0.32,True,10,10,TIE,A,False
+646,same_industry,Fragrances & Perfumes,0.01,0.34,0.33,True,10,10,TIE,A,False
+647,same_industry,Fragrances & Perfumes,0.01,0.37,0.36,True,10,10,TIE,A,False
+648,same_industry,Fragrances & Perfumes,0.01,0.37,0.36,True,10,10,TIE,A,False
+649,same_industry,Ordinary Jewelry,0.01,0.09,0.08,False,14,14,TIE,A,False
+650,same_industry,Ordinary Jewelry,0.01,0.12,0.11,True,14,10,A,A,True
+651,same_industry,Ordinary Jewelry,0.01,0.27,0.26,True,14,14,TIE,A,False
+652,same_industry,Ordinary Jewelry,0.01,0.27,0.26,True,14,14,TIE,A,False
+653,same_industry,Ordinary Jewelry,0.01,0.42,0.41,True,14,10,A,A,True
+654,same_industry,Cleaning Supplies,0.01,0.93,0.92,True,15,10,A,A,True
+655,same_industry,Cleaning Supplies,0.01,0.93,0.92,True,15,10,A,A,True
+656,same_industry,Men's Clothing,0.01,0.11,0.1,True,10,12,B,A,False
+657,same_industry,Men's Clothing,0.01,0.12,0.11,True,10,15,B,A,False
+658,same_industry,Men's Clothing,0.01,0.12,0.11,True,10,15,B,A,False
+659,same_industry,Men's Clothing,0.01,0.13,0.12000000000000001,True,10,14,B,A,False
+660,same_industry,Men's Clothing,0.01,0.16,0.15,True,10,10,TIE,A,False
+661,same_industry,Bags,0.01,0.02,0.01,False,16,10,A,A,True
+662,same_industry,Bags,0.01,0.02,0.01,False,16,14,A,A,True
+663,same_industry,Bags,0.01,0.02,0.01,False,16,14,A,A,True
+664,same_industry,Bags,0.01,0.02,0.01,False,12,10,A,A,True
+665,same_industry,Bags,0.01,0.02,0.01,False,12,14,B,A,False
+666,same_industry,Women's Clothing,0.01,0.11,0.1,True,12,14,B,A,False
+667,same_industry,Women's Clothing,0.01,0.12,0.11,True,12,10,A,A,True
+668,same_industry,Women's Clothing,0.01,0.13,0.12000000000000001,True,12,10,A,A,True
+669,same_industry,Women's Clothing,0.01,0.13,0.12000000000000001,True,12,10,A,A,True
+670,same_industry,Women's Clothing,0.01,0.14,0.13,True,12,10,A,A,True
+671,same_industry,Apparel & Accessories,0.01,0.02,0.01,False,10,17,B,A,False
+672,same_industry,Apparel & Accessories,0.01,0.02,0.01,False,10,10,TIE,A,False
+673,same_industry,Apparel & Accessories,0.01,0.06,0.049999999999999996,False,10,14,B,A,False
+674,same_industry,Apparel & Accessories,0.01,0.82,0.8099999999999999,True,10,14,B,A,False
+675,same_industry,Apparel & Accessories,0.01,0.02,0.01,False,10,17,B,A,False
+676,same_industry,Gaming Devices,0.01,0.23,0.22,True,12,12,TIE,A,False
+677,same_industry,Gaming Devices,0.01,0.24,0.22999999999999998,True,12,10,A,A,True
+678,same_industry,Gaming Devices,0.01,0.28,0.27,True,12,12,TIE,A,False
+679,same_industry,Gaming Devices,0.01,0.32,0.31,True,12,13,B,A,False
+680,same_industry,Gaming Devices,0.01,0.34,0.33,True,12,10,A,A,True
+681,same_industry,Clothing Accessories,0.01,0.31,0.3,True,15,15,TIE,A,False
+682,same_industry,Clothing Accessories,0.01,0.35,0.33999999999999997,True,15,10,A,A,True
+683,same_industry,Clothing Accessories,0.01,0.39,0.38,True,15,10,A,A,True
+684,same_industry,Clothing Accessories,0.01,0.58,0.57,True,15,14,A,A,True
+685,same_industry,Clothing Accessories,0.01,0.31,0.3,True,17,15,A,A,True
+686,same_industry,Women's Shoes,0.01,0.13,0.12000000000000001,True,14,16,B,A,False
+687,same_industry,Aesthetic Medicine,0.01,0.15,0.13999999999999999,True,15,14,A,A,True
+688,same_industry,Storage Products,0.01,0.02,0.01,False,16,14,A,A,True
+689,same_industry,Cell Phones,0.01,0.42,0.41,True,14,10,A,A,True
+690,same_industry,Cell Phones,0.01,0.7,0.69,True,14,10,A,A,True
+691,same_industry,Cell Phones,0.01,0.72,0.71,True,14,9,A,A,True
+692,same_industry,Cell Phones,0.01,0.73,0.72,True,14,14,TIE,A,False
+693,same_industry,Cell Phones,0.01,0.75,0.74,True,14,10,A,A,True
+694,same_industry,Watches,0.01,0.06,0.049999999999999996,False,10,10,TIE,A,False
+695,same_industry,Watches,0.01,0.08,0.07,False,10,14,B,A,False
+696,same_industry,Watches,0.01,0.06,0.049999999999999996,False,14,10,A,A,True
+697,same_industry,Watches,0.01,0.08,0.07,False,14,14,TIE,A,False
+698,same_industry,Microfinance Companies,0.01,0.36,0.35,True,12,10,A,A,True
+699,same_industry,Toys,0.01,0.74,0.73,True,14,10,A,A,True
+700,same_industry,Toys,0.01,0.75,0.74,True,14,10,A,A,True
+701,same_industry,Toys,0.01,0.86,0.85,True,14,13,A,A,True
+702,same_industry,Toys,0.01,0.87,0.86,True,14,12,A,A,True
+703,same_industry,Toys,0.01,0.74,0.73,True,10,10,TIE,A,False
+704,same_industry,Computers Components,0.01,0.16,0.15,True,14,12,A,A,True
+705,same_industry,Oral Care,0.01,0.27,0.26,True,12,12,TIE,A,False
+706,same_industry,Oral Care,0.01,0.32,0.31,True,12,10,A,A,True
+707,same_industry,Oral Care,0.01,0.4,0.39,True,12,10,A,A,True
+708,same_industry,Oral Care,0.01,0.27,0.26,True,10,12,B,A,False
+709,same_industry,Oral Care,0.01,0.32,0.31,True,10,10,TIE,A,False
+710,same_industry,Feminine Care,0.01,0.39,0.38,True,14,9,A,A,True
+711,same_industry,Feminine Care,0.01,0.39,0.38,True,14,9,A,A,True
+712,same_industry,Beauty & Personal Care,0.01,0.39,0.38,True,14,12,A,A,True
+713,same_industry,Beauty & Personal Care,0.01,0.83,0.82,True,14,14,TIE,A,False
+714,same_industry,Men's Shoes,0.01,0.42,0.41,True,14,10,A,A,True
+715,same_industry,Men's Shoes,0.01,0.44,0.43,True,14,14,TIE,A,False
+716,same_industry,Men's Shoes,0.01,0.42,0.41,True,14,10,A,A,True
+717,same_industry,Men's Shoes,0.01,0.44,0.43,True,14,14,TIE,A,False
+718,same_industry,Insurance,0.01,0.32,0.31,True,14,12,A,A,True
+719,same_industry,Insurance,0.01,0.33,0.32,True,14,12,A,A,True
+720,same_industry,Insurance,0.01,0.5,0.49,True,14,16,B,A,False
+721,same_industry,Insurance,0.01,0.92,0.91,True,14,15,B,A,False
+722,same_industry,Insurance,0.01,0.32,0.31,True,14,12,A,A,True
+723,same_industry,High-end Jewelry,0.01,0.06,0.049999999999999996,False,10,10,TIE,A,False
+724,same_industry,High-end Jewelry,0.01,0.42,0.41,True,10,10,TIE,A,False
+725,same_industry,Life & Leisure,0.01,0.35,0.33999999999999997,True,14,10,A,A,True
+726,same_industry,Life & Leisure,0.01,0.36,0.35,True,14,14,TIE,A,False
+727,same_industry,Life & Leisure,0.01,0.36,0.35,True,14,17,B,A,False
+728,same_industry,Life & Leisure,0.01,0.37,0.36,True,14,14,TIE,A,False
+729,same_industry,Life & Leisure,0.01,0.37,0.36,True,14,14,TIE,A,False
+730,same_industry,Daily Essentials,0.01,0.02,0.01,False,14,18,B,A,False
+731,same_industry,Kitchen Accessories,0.01,0.17,0.16,True,10,10,TIE,A,False
+732,same_industry,Kitchen Accessories,0.01,0.26,0.25,True,10,14,B,A,False
+733,same_industry,Computers,0.01,0.37,0.36,True,9,10,B,A,False
+734,same_industry,Computers,0.01,0.38,0.37,True,9,14,B,A,False
+735,same_industry,Computers,0.01,0.54,0.53,True,9,9,TIE,A,False
+736,same_industry,Computers,0.01,0.37,0.36,True,10,10,TIE,A,False
+737,same_industry,Computers,0.01,0.38,0.37,True,10,14,B,A,False
+738,same_industry,Other Apparel & Accessories,0.01,0.02,0.01,False,10,14,B,A,False
+739,same_industry,Audio & Video Players,0.01,0.22,0.21,True,10,10,TIE,A,False
+740,same_industry,Audio & Video Players,0.01,0.23,0.22,True,10,14,B,A,False
+741,same_industry,Audio & Video Players,0.01,0.23,0.22,True,10,10,TIE,A,False
+742,same_industry,Audio & Video Players,0.01,0.53,0.52,True,10,14,B,A,False
+743,same_industry,Audio & Video Players,0.01,0.58,0.57,True,10,10,TIE,A,False
+744,same_industry,Social,0.04,0.27,0.23,True,10,9,A,A,True
+745,same_industry,Social,0.04,0.27,0.23,True,10,12,B,A,False
+746,same_industry,Social,0.04,0.27,0.23,True,10,10,TIE,A,False
+747,same_industry,Social,0.04,0.28,0.24000000000000002,True,10,10,TIE,A,False
+748,same_industry,Social,0.04,0.28,0.24000000000000002,True,10,10,TIE,A,False
+749,same_industry,Health & Fitness,0.11,0.27,0.16000000000000003,True,14,10,A,A,True
+750,same_industry,Health & Fitness,0.11,0.29,0.18,True,14,15,B,A,False
+751,same_industry,Health & Fitness,0.11,0.3,0.19,True,14,15,B,A,False
+752,same_industry,Health & Fitness,0.11,0.3,0.19,True,14,10,A,A,True
+753,same_industry,Health & Fitness,0.13,0.27,0.14,True,10,10,TIE,A,False
+754,same_industry,Utilities,0.01,0.31,0.3,True,12,14,B,A,False
+755,same_industry,Utilities,0.01,0.32,0.31,True,12,10,A,A,True
+756,same_industry,Utilities,0.01,0.38,0.37,True,12,10,A,A,True
+757,same_industry,Utilities,0.01,0.78,0.77,True,12,10,A,A,True
+758,same_industry,Utilities,0.01,0.91,0.9,True,12,10,A,A,True
+759,same_industry,Education,0.11,0.24,0.13,True,10,14,B,A,False
+760,same_industry,Education,0.11,0.25,0.14,True,10,10,TIE,A,False
+761,same_industry,Education,0.11,0.25,0.14,True,10,10,TIE,A,False
+762,same_industry,Education,0.11,0.25,0.14,True,10,14,B,A,False
+763,same_industry,Education,0.11,0.27,0.16000000000000003,True,10,10,TIE,A,False
+764,same_industry,Traditional & Ceremonial Clothing,0.01,0.33,0.32,True,14,9,A,A,True
+765,same_industry,Photography,0.01,0.33,0.32,True,17,14,A,A,True
+766,same_industry,Photography,0.01,0.35,0.33999999999999997,True,17,10,A,A,True
+767,same_industry,Photography,0.01,0.38,0.37,True,17,12,A,A,True
+768,same_industry,Photography,0.01,0.39,0.38,True,17,14,A,A,True
+769,same_industry,Photography,0.01,0.64,0.63,True,17,14,A,A,True
+770,same_industry,Travel,0.15,0.28,0.13000000000000003,True,15,14,A,A,True
+771,same_industry,Cleaning Appliances,0.01,0.41,0.39999999999999997,True,17,9,A,A,True
+772,same_industry,Financial Services,0.18,0.35,0.16999999999999998,True,14,14,TIE,A,False
+773,same_industry,Financial Services,0.18,0.37,0.19,True,14,12,A,A,True
+774,same_industry,Financial Services,0.18,0.41,0.22999999999999998,True,14,14,TIE,A,False
+775,same_industry,Financial Services,0.19,0.35,0.15999999999999998,True,10,14,B,A,False
+776,same_industry,Financial Services,0.19,0.37,0.18,True,10,12,B,A,False
+777,same_industry,Tours & Attractions,0.04,0.23,0.19,True,10,14,B,A,False
+778,same_industry,Tours & Attractions,0.04,0.25,0.21,True,10,10,TIE,A,False
+779,same_industry,Tours & Attractions,0.04,0.36,0.32,True,10,12,B,A,False
+780,same_industry,Tours & Attractions,0.14,0.23,0.09,False,12,14,B,A,False
+781,same_industry,Tours & Attractions,0.14,0.25,0.10999999999999999,True,12,10,A,A,True
+782,same_industry,Petfood,0.25,0.43,0.18,True,14,10,A,A,True
+783,same_industry,Petfood,0.25,0.47,0.21999999999999997,True,14,10,A,A,True
+784,same_industry,Petfood,0.25,0.43,0.18,True,10,10,TIE,A,False
+785,same_industry,Petfood,0.25,0.47,0.21999999999999997,True,10,10,TIE,A,False
+786,same_industry,Business & Economy,0.02,0.44,0.42,True,9,14,B,A,False
+787,same_industry,Business & Economy,0.02,0.46,0.44,True,9,10,B,A,False
+788,same_industry,Business & Economy,0.02,0.47,0.44999999999999996,True,9,10,B,A,False
+789,same_industry,Business & Economy,0.02,0.85,0.83,True,9,10,B,A,False
+790,same_industry,Business & Economy,0.08,0.44,0.36,True,10,14,B,A,False
+791,same_industry,Hotels & Accommodation,0.32,0.4,0.08000000000000002,False,12,10,A,A,True
+792,same_industry,Hotels & Accommodation,0.32,0.42,0.09999999999999998,False,12,10,A,A,True
+793,same_industry,Travel Agencies & Services,0.06,0.51,0.45,True,14,12,A,A,True
+794,same_industry,Travel Agencies & Services,0.06,0.51,0.45,True,14,10,A,A,True
+795,same_industry,Travel Agencies & Services,0.06,0.53,0.47000000000000003,True,14,14,TIE,A,False
+796,same_industry,Travel Agencies & Services,0.06,0.54,0.48000000000000004,True,14,10,A,A,True
+797,same_industry,Travel Agencies & Services,0.06,0.77,0.71,True,14,10,A,A,True
+798,same_industry,Other News & Entertainment,0.05,0.97,0.9199999999999999,True,10,12,B,A,False
+799,same_industry,Other News & Entertainment,0.05,0.98,0.9299999999999999,True,10,12,B,A,False
+800,same_industry,Science & Technology,0.33,0.91,0.5800000000000001,True,9,14,B,A,False
+801,same_industry,Primary & Secondary Education & K-12,0.28,0.34,0.06,False,15,14,A,A,True
+802,same_industry,Sports & Fitness,0.01,0.25,0.24,True,10,10,TIE,A,False
+803,same_industry,Sports & Fitness,0.01,0.38,0.37,True,10,12,B,A,False
+804,same_industry,Sports & Fitness,0.04,0.25,0.21,True,10,10,TIE,A,False
+805,same_industry,Sports & Fitness,0.04,0.38,0.34,True,10,12,B,A,False
+806,same_industry,Games & Utility Software,0.09,0.34,0.25,True,14,12,A,A,True
+807,same_industry,Games & Utility Software,0.09,0.34,0.25,True,14,14,TIE,A,False
+808,same_industry,Games & Utility Software,0.09,0.35,0.26,True,14,14,TIE,A,False
+809,same_industry,Games & Utility Software,0.09,0.38,0.29000000000000004,True,14,17,B,A,False
+810,same_industry,Games & Utility Software,0.09,0.4,0.31000000000000005,True,14,10,A,A,True
+811,same_industry,Lifestyle News,0.04,0.51,0.47000000000000003,True,10,10,TIE,A,False
+812,same_industry,Lifestyle News,0.04,0.88,0.84,True,10,14,B,A,False
+813,same_industry,Lifestyle News,0.04,0.88,0.84,True,10,12,B,A,False
+814,same_industry,Lifestyle News,0.05,0.51,0.46,True,12,10,A,A,True
+815,same_industry,Lifestyle News,0.05,0.88,0.83,True,12,14,B,A,False
+816,same_industry,Streaming Site,0.04,0.32,0.28,True,10,14,B,A,False
+817,same_industry,Streaming Site,0.04,0.36,0.32,True,10,14,B,A,False
+818,same_industry,Streaming Site,0.04,0.38,0.34,True,10,14,B,A,False
+819,same_industry,Streaming Site,0.04,0.88,0.84,True,10,10,TIE,A,False
+820,same_industry,Streaming Site,0.07,0.32,0.25,True,10,14,B,A,False
+821,same_industry,Culture & Art,0.01,0.19,0.18,True,10,10,TIE,A,False
+822,same_industry,Culture & Art,0.01,0.2,0.19,True,10,10,TIE,A,False
+823,same_industry,Culture & Art,0.01,0.22,0.21,True,10,14,B,A,False
+824,same_industry,Culture & Art,0.01,0.24,0.22999999999999998,True,10,10,TIE,A,False
+825,same_industry,Culture & Art,0.01,0.27,0.26,True,10,10,TIE,A,False
+826,same_industry,TV Drama & Series,0.02,0.06,0.039999999999999994,False,18,14,A,A,True
+827,same_industry,TV Drama & Series,0.02,0.07,0.05,False,18,10,A,A,True
+828,same_industry,TV Drama & Series,0.02,0.07,0.05,False,18,10,A,A,True
+829,same_industry,TV Drama & Series,0.02,0.07,0.05,False,18,14,A,A,True
+830,same_industry,TV Drama & Series,0.02,0.13,0.11,True,18,14,A,A,True
+831,same_industry,Home Decor,0.12,0.24,0.12,True,10,10,TIE,A,False
+832,same_industry,Home Decor,0.12,0.33,0.21000000000000002,True,10,14,B,A,False
+833,same_industry,Home Decor,0.12,0.34,0.22000000000000003,True,10,10,TIE,A,False
+834,same_industry,Home Decor,0.13,0.24,0.10999999999999999,True,12,10,A,A,True
+835,same_industry,Home Decor,0.13,0.33,0.2,True,12,14,B,A,False
+836,same_industry,Tourist Information,0.09,0.94,0.85,True,12,14,B,A,False
+837,same_industry,Tourist Information,0.09,0.94,0.85,True,12,10,A,A,True
+838,same_industry,Tourist Information,0.09,0.97,0.88,True,12,14,B,A,False
+839,same_industry,Tourist Information,0.09,0.94,0.85,True,14,14,TIE,A,False
+840,same_industry,Tourist Information,0.09,0.94,0.85,True,14,10,A,A,True
+841,same_industry,Construction Materials & Lighting,0.3,0.37,0.07,False,17,12,A,A,True
+842,same_industry,Construction Materials & Lighting,0.3,0.38,0.08000000000000002,False,17,12,A,A,True
+843,same_industry,Charity & Public Welfare,0.11,0.3,0.19,True,14,10,A,A,True
+844,same_industry,Charity & Public Welfare,0.11,0.32,0.21000000000000002,True,14,10,A,A,True
+845,same_industry,Charity & Public Welfare,0.11,0.34,0.23000000000000004,True,14,12,A,A,True
+846,same_industry,Charity & Public Welfare,0.11,0.44,0.33,True,14,9,A,A,True
+847,same_industry,Charity & Public Welfare,0.13,0.3,0.16999999999999998,True,10,10,TIE,A,False
+848,same_industry,Movies,0.19,0.33,0.14,True,12,12,TIE,A,False
+849,same_industry,Movies,0.19,0.4,0.21000000000000002,True,12,12,TIE,A,False
+850,same_industry,Reading,0.01,0.19,0.18,True,10,10,TIE,A,False
+851,same_industry,Reading,0.01,0.25,0.24,True,10,14,B,A,False
+852,same_industry,General Information,0.22,0.41,0.18999999999999997,True,9,10,B,A,False
+853,same_industry,Furniture,0.04,0.27,0.23,True,14,17,B,A,False
+854,same_industry,Furniture,0.04,0.3,0.26,True,14,16,B,A,False
+855,same_industry,Higher Education,0.05,0.23,0.18,True,14,14,TIE,A,False
+856,same_industry,Higher Education,0.05,0.24,0.19,True,14,13,A,A,True
+857,same_industry,Higher Education,0.05,0.27,0.22000000000000003,True,14,12,A,A,True
+858,same_industry,Higher Education,0.05,0.27,0.22000000000000003,True,14,14,TIE,A,False
+859,same_industry,Higher Education,0.05,0.68,0.63,True,14,10,A,A,True
+860,same_industry,Vocational Training,0.09,0.38,0.29000000000000004,True,14,10,A,A,True
+861,same_industry,Vocational Training,0.09,0.43,0.33999999999999997,True,14,14,TIE,A,False
+862,same_industry,Food & Cooking,0.2,0.42,0.21999999999999997,True,10,10,TIE,A,False
+863,same_industry,Toys for Kids,0.1,0.42,0.31999999999999995,True,16,10,A,A,True
+864,same_industry,Live Events,0.01,0.22,0.21,True,12,10,A,A,True
+865,same_industry,Live Events,0.01,0.22,0.21,True,12,14,B,A,False
+866,same_industry,Live Events,0.01,0.22,0.21,True,12,12,TIE,A,False
+867,same_industry,Live Events,0.01,0.22,0.21,True,12,12,TIE,A,False
+868,same_industry,Live Events,0.01,0.23,0.22,True,12,12,TIE,A,False
+869,same_industry,Other Education,0.29,0.35,0.06,False,14,14,TIE,A,False
+870,same_industry,Pet Healthcare,0.15,0.33,0.18000000000000002,True,10,10,TIE,A,False
+871,same_industry,Relationship Information,0.03,0.2,0.17,True,10,10,TIE,A,False
+872,same_industry,Relationship Information,0.03,0.25,0.22,True,10,10,TIE,A,False
+873,same_industry,Baby Bedding,0.11,0.38,0.27,True,14,10,A,A,True
+874,same_industry,Home Improvement,0.18,0.19,0.010000000000000009,False,10,14,B,A,False
+875,same_industry,Commercial Banks,0.21,0.35,0.13999999999999999,True,14,10,A,A,True
