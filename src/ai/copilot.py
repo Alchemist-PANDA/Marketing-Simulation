@@ -132,6 +132,7 @@ def call_gemini(
     if km.key_count == 0:
         return {
             "status": "error",
+            "no_keys": True,
             "message": (
                 "No Gemini API key configured. Add GEMINI_API_KEY (or numbered "
                 "variants GEMINI_API_KEY_1 / GEMINI_API_KEY_2 …) to your .env "
@@ -400,7 +401,11 @@ def get_copilot_response(
                 ),
                 "quota_exhausted": True,
             }
-        return _fallback_response(user_message, report_context)
+        # Distinguish "no keys configured" (user action needed) from a transient
+        # API/network error (keys exist but the call failed) so the UI banner is
+        # accurate instead of always telling the user to add keys.
+        reason = "no_keys" if result.get("no_keys") else "api_error"
+        return _fallback_response(user_message, report_context, reason=reason)
 
     return result
 
@@ -418,9 +423,17 @@ def reset_key_rotation() -> None:
 # ── Rule-based fallback ───────────────────────────────────────────────────────
 
 def _fallback_response(
-    user_message: str, report_context: Optional[Dict[str, Any]] = None
+    user_message: str,
+    report_context: Optional[Dict[str, Any]] = None,
+    reason: str = "no_keys",
 ) -> Dict[str, Any]:
-    """Rule-based fallback when the API is unavailable (non-quota errors)."""
+    """Rule-based fallback when the API is unavailable.
+
+    `reason` is either "no_keys" (no Gemini key configured — the user should add
+    one) or "api_error" (keys exist but the request failed — a transient/service
+    issue, so telling the user to add keys would be wrong). It is surfaced to the
+    UI as `fallback_reason` so the banner can be accurate.
+    """
     msg = user_message.lower()
 
     if report_context:
@@ -434,14 +447,14 @@ def _fallback_response(
             "status": "success",
             "content": (
                 f"Based on your simulation results, **Ad {winner}** outperformed with a "
-                f"**{lift:.2f}%** lift. To get deeper AI-powered analysis, please configure "
-                f"your Gemini API key in the environment settings.\n\n"
+                f"**{lift:.2f}%** lift.\n\n"
                 f"💡 **Quick tips:**\n"
                 f"- Review the failure reasons for the losing ad\n"
                 f"- Test variations of the winning ad's key phrases\n"
                 f"- Consider A/B testing on different channels"
             ),
             "fallback": True,
+            "fallback_reason": reason,
         }
 
     if any(w in msg for w in ["facebook", "meta", "instagram"]):
@@ -451,10 +464,10 @@ def _fallback_response(
                 "For Meta/Facebook advertising, focus on:\n"
                 "- **Hook in 3 seconds** — lead with value or curiosity\n"
                 "- **Social proof** — numbers, testimonials, trust badges\n"
-                "- **Clear CTA** — one action per ad\n\n"
-                "Configure your Gemini API key for personalized AI advice."
+                "- **Clear CTA** — one action per ad"
             ),
             "fallback": True,
+            "fallback_reason": reason,
         }
 
     return {
@@ -464,9 +477,8 @@ def _fallback_response(
             "- 📊 Analyzing your simulation results\n"
             "- 💡 Ad copy optimization strategies\n"
             "- 🎯 Channel-specific recommendations\n"
-            "- 📁 Analyzing uploaded marketing data\n\n"
-            "⚠️ For full AI-powered responses, add your Gemini API key "
-            "to `.env` or Streamlit secrets."
+            "- 📁 Analyzing uploaded marketing data"
         ),
         "fallback": True,
+        "fallback_reason": reason,
     }
