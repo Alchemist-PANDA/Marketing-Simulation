@@ -1,0 +1,32 @@
+[project]
+name = "marketing-simulation"
+version = "1.0.0"
+description = "Digital Wind Tunnel — agent-based ad pre-testing with AI CTR prediction."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["landing_component", "data", "models", "outputs"]
+
+[tool.ruff.lint]
+# Pragmatic default set: pyflakes (F), pycodestyle (E/W), isort (I),
+# bugbear (B), comprehensions (C4), pyupgrade (UP).
+select = ["F", "E", "W", "I", "B", "C4", "UP"]
+ignore = [
+    "E501",   # line length handled by black
+    "B008",   # function calls in argument defaults (common in Streamlit)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

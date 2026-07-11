@@ -115,7 +115,8 @@ def _compose(rng, product):
     head, tail = parts[0], parts[1:]
     rng.shuffle(tail)
     text = head + ". " + ". ".join(w.capitalize() for w in tail) + "."
-    return text, dict(urgency=u_lv, social=s_lv, spec=sp_lv, cta=c_lv, curiosity=cu_lv, price=pf_lv)
+    return text, {"urgency": u_lv, "social": s_lv, "spec": sp_lv,
+                  "cta": c_lv, "curiosity": cu_lv, "price": pf_lv}
 
 
 def _latent_ctr(rng, base, f):

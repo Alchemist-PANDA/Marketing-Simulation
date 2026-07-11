@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import os
 import pickle
+
 import numpy as np
-from typing import Dict, Optional
 
 ENSEMBLE_PATH = "models/ensemble_model.pkl"
 
-_instance: Optional["EnsemblePredictor"] = None
+_instance: EnsemblePredictor | None = None
 
 
 class EnsemblePredictor:
@@ -33,7 +33,7 @@ class EnsemblePredictor:
             self.model_version = self._bundle.get("model_version", "ensemble")
             self.available = True
 
-    def predict(self, text: str) -> Dict:
+    def predict(self, text: str) -> dict:
         """Return {predicted_ctr, model_version, confidence, per_model} for one ad."""
         if not self.available:
             raise RuntimeError("Ensemble model not loaded")

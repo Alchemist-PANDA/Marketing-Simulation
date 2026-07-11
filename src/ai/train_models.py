@@ -21,15 +21,15 @@ from __future__ import annotations
 import json
 import os
 import pickle
+
 import numpy as np
 import pandas as pd
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import Ridge
-from sklearn.ensemble import HistGradientBoostingRegressor
-from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import GridSearchCV, KFold
 from scipy.stats import pearsonr, spearmanr
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
 
 from src.ai import synth_data
 from src.ai.feature_extractor import build_features
@@ -50,7 +50,8 @@ def directional_accuracy(y_true, y_pred, n_pairs=40000, seed=SEED, margin=0.0):
     you to call a winner when a real winner exists; margin=0 counts every pair
     including near-ties.
     """
-    y_true = np.asarray(y_true); y_pred = np.asarray(y_pred)
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
     n = len(y_true)
     rng = np.random.default_rng(seed)
     i = rng.integers(0, n, size=n_pairs)
@@ -83,7 +84,9 @@ def _load_split():
         tr, val, hold = synth_data.split(df)
         os.makedirs(DATA_DIR, exist_ok=True)
         df.to_csv(f"{DATA_DIR}/expanded_real_dataset.csv", index=False)
-        tr.to_csv(paths[0], index=False); val.to_csv(paths[1], index=False); hold.to_csv(paths[2], index=False)
+        tr.to_csv(paths[0], index=False)
+        val.to_csv(paths[1], index=False)
+        hold.to_csv(paths[2], index=False)
         return tr, val, hold
     return (pd.read_csv(paths[0]), pd.read_csv(paths[1]), pd.read_csv(paths[2]))
 
@@ -110,14 +113,16 @@ def _train_models(Xtr, ytr):
     ridge = GridSearchCV(Ridge(random_state=SEED),
                          {"alpha": [0.1, 1.0, 5.0, 10.0, 30.0]},
                          cv=kf, scoring="neg_root_mean_squared_error")
-    ridge.fit(Xtr, ytr); models["ridge"] = ridge.best_estimator_
+    ridge.fit(Xtr, ytr)
+    models["ridge"] = ridge.best_estimator_
 
     print("  · HistGradientBoosting …")
     hgb = GridSearchCV(HistGradientBoostingRegressor(random_state=SEED),
                        {"max_depth": [3, 5, None], "learning_rate": [0.05, 0.1],
                         "max_iter": [300], "l2_regularization": [0.0, 1.0]},
                        cv=kf, scoring="neg_root_mean_squared_error")
-    hgb.fit(Xtr, ytr); models["hist_gbr"] = hgb.best_estimator_
+    hgb.fit(Xtr, ytr)
+    models["hist_gbr"] = hgb.best_estimator_
 
     # NOTE: A RandomForest was evaluated but pickled to ~49 MB (300 deep trees
     # over 401 features) for only a ~0.6pp gain over Ridge — too heavy to ship in
@@ -128,7 +133,8 @@ def _train_models(Xtr, ytr):
                        {"hidden_layer_sizes": [(128, 64), (256, 128)],
                         "alpha": [1e-4, 1e-3]},
                        cv=3, scoring="neg_root_mean_squared_error")
-    mlp.fit(Xtr, ytr); models["mlp"] = mlp.best_estimator_
+    mlp.fit(Xtr, ytr)
+    models["mlp"] = mlp.best_estimator_
     return models
 
 
@@ -147,7 +153,7 @@ def _learn_weights(models, Xval, yval):
         da = directional_accuracy(yval, w @ P)
         if da > best_da:
             best_da, best_w = da, np.asarray(w)
-    return dict(zip(names, best_w.tolist())), best_da
+    return dict(zip(names, best_w.tolist(), strict=False)), best_da
 
 
 def main():

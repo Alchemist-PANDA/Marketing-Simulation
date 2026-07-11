@@ -12,8 +12,8 @@ inference stays within Streamlit Cloud's memory budget (MiniLM is ~90 MB).
 from __future__ import annotations
 
 import re
+
 import numpy as np
-from typing import List
 
 EMBED_MODEL = "all-MiniLM-L6-v2"
 EMBED_DIM = 384
@@ -38,8 +38,6 @@ _NEG_WORDS = {
     "warning", "problem", "hard", "difficult", "stop", "lose", "losing", "fail",
 }
 
-_VOWELS = "aeiouy"
-
 _embedder = None
 
 
@@ -61,7 +59,7 @@ def _count_syllables(word: str) -> int:
     return max(1, n)
 
 
-def _flesch_reading_ease(text: str, words: List[str], n_sentences: int) -> float:
+def _flesch_reading_ease(text: str, words: list[str], n_sentences: int) -> float:
     n_words = len(words)
     if n_words == 0 or n_sentences == 0:
         return 0.0
@@ -105,7 +103,7 @@ def text_stats(text: str) -> np.ndarray:
     return np.array(stats, dtype=np.float32)
 
 
-def embed(texts: List[str], batch_size: int = 64) -> np.ndarray:
+def embed(texts: list[str], batch_size: int = 64) -> np.ndarray:
     """Return the (n, EMBED_DIM) embedding matrix for a list of texts."""
     model = _get_embedder()
     return np.asarray(
@@ -115,7 +113,7 @@ def embed(texts: List[str], batch_size: int = 64) -> np.ndarray:
     )
 
 
-def build_features(texts: List[str]) -> np.ndarray:
+def build_features(texts: list[str]) -> np.ndarray:
     """Full feature matrix: [stats | embeddings], shape (n, len(STAT_COLUMNS)+EMBED_DIM)."""
     texts = list(texts)
     stats = np.vstack([text_stats(t) for t in texts])
@@ -123,5 +121,5 @@ def build_features(texts: List[str]) -> np.ndarray:
     return np.hstack([stats, embs]).astype(np.float32)
 
 
-def feature_names() -> List[str]:
+def feature_names() -> list[str]:
     return list(STAT_COLUMNS) + [f"emb_{i}" for i in range(EMBED_DIM)]
