@@ -24,6 +24,7 @@ class ABTestRunner:
                  ad_c_text: str = None,
                  channel: str = 'facebook', price: float = 20.0,
                  objective: str = 'conversions',
+                 visual_quality: Dict[str, float] = None,
                  progress_callback=None) -> Dict[str, Any]:
         """
         Run an A/B (or A/B/C) test with strictly independent cohorts.
@@ -112,10 +113,52 @@ class ABTestRunner:
             'ad_a': results['A'],
             'ad_b': results['B'],
             'winner': winner,
+            'winner_source': 'simulation',
             'lift_percentage': round(lift, 2),
             'objective': objective,
         }
         if 'C' in results:
             out['ad_c'] = results['C']
             out['variants'] = [lbl for lbl, _ in variant_texts]
+
+        # Learned creative ranker (validated against real TikTok Creative
+        # Center outcomes). When it makes a confident call, its pick
+        # overrides the simulation heuristic; when the race is too close,
+        # we say so instead of faking certainty.
+        try:
+            from src.ai import creative_ranker as cr
+            if cr.is_available():
+                tmap = dict(variant_texts)
+                # visual_quality: {label: visual feature dict} (or legacy float)
+                vis = {}
+                for lbl, v in (visual_quality or {}).items():
+                    vis[lbl] = v if isinstance(v, dict) else (
+                        {"visual_quality": float(v), "available": True}
+                        if v is not None else None)
+                qualities = {
+                    lbl: cr.score_ad(text, visual=vis.get(lbl))
+                    for lbl, text in variant_texts
+                }
+                q_ranked = sorted(qualities, key=qualities.get, reverse=True)
+                top1, top2 = q_ranked[0], q_ranked[1]
+                verdict = cr.compare(tmap[top1], tmap[top2],
+                                     visual_a=vis.get(top1),
+                                     visual_b=vis.get(top2))
+                ranker_winner = top1 if verdict['winner'] == 'A' else top2
+                out['ranker'] = {
+                    'available': True,
+                    'winner': ranker_winner,
+                    'confidence': verdict['confidence'],
+                    'called': verdict['called'],
+                    'threshold': verdict['threshold'],
+                    'qualities': {k: round(v, 4) for k, v in qualities.items()},
+                }
+                if verdict['called']:
+                    out['winner'] = ranker_winner
+                    out['winner_source'] = 'validated_model'
+                else:
+                    out['winner_source'] = 'too_close_to_call'
+        except Exception:
+            out['ranker'] = {'available': False}
+
         return out

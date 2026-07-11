@@ -660,6 +660,26 @@ with tab1:
                     st.info(f"**Extracted Ad A text:** {ad1_text}")
                     st.info(f"**Extracted Ad B text:** {ad2_text}")
 
+            # Visual creative analysis (Phase 3/4): image or video features
+            # feed a small, clearly-heuristic bonus into the creative ranker
+            # and are displayed for transparency.
+            visual_report = {}
+            try:
+                from src.ai.visual_features import image_features, video_features
+                if input_method == "Image Upload" and uploaded_img_a and uploaded_img_b:
+                    visual_report["A"] = image_features(uploaded_img_a.getvalue())
+                    visual_report["B"] = image_features(uploaded_img_b.getvalue())
+                elif input_method == "Video Upload":
+                    va = st.session_state.get("vid_a_bytes")
+                    vb = st.session_state.get("vid_b_bytes")
+                    if va:
+                        visual_report["A"] = video_features(va)
+                    if vb:
+                        visual_report["B"] = video_features(vb)
+            except Exception:
+                visual_report = {}
+            st.session_state["visual_report"] = visual_report
+
             if not ad1_text or not ad1_text.strip():
                 st.error("Ad Creative A text cannot be empty. Please enter ad copy or upload an image.")
                 st.stop()
@@ -681,10 +701,16 @@ with tab1:
                     status_text.markdown(f"**{msg}** — Processing agent {agent_count:,} / {num_agents:,}")
 
                 t0 = time.perf_counter()
+                _vq = {
+                    lbl: rep
+                    for lbl, rep in (st.session_state.get("visual_report") or {}).items()
+                    if rep.get("available")
+                }
                 result = runner.run_test(
                     ad1_text, ad2_text,
                     ad_c_text=(ad3_text if st.session_state.get("enable_variant_c") else None),
                     channel=channel, price=price, objective=objective,
+                    visual_quality=_vq or None,
                     progress_callback=on_progress
                 )
                 runtime_ms = (time.perf_counter() - t0) * 1000
@@ -738,6 +764,50 @@ with tab1:
             f"{test_kind} Test Complete! Winner: **Ad {result['winner']}** "
             f"(Objective: {result['objective']})"
         )
+
+        # Confidence verdict from the learned ranker (validated on real
+        # TikTok Creative Center outcomes — see docs/VALIDATION.md).
+        _rk = result.get("ranker") or {}
+        if _rk.get("available"):
+            if _rk.get("called"):
+                st.info(
+                    f"🎯 **Validated model pick: Ad {_rk['winner']}** — "
+                    f"confidence {_rk['confidence']*100:.0f}%. This verdict comes "
+                    f"from a model backtested end-to-end on real TikTok ad "
+                    f"outcomes: 82.8% holdout accuracy on confident calls "
+                    f"(87.5% on decisive ones). See docs/VALIDATION.md."
+                )
+            else:
+                st.warning(
+                    f"⚖️ **Too close to call** (model confidence "
+                    f"{_rk['confidence']*100:.0f}%, below the "
+                    f"{_rk['threshold']*100:.0f}% calling bar). The creatives are "
+                    f"too similar to rank reliably — run both in a real small-"
+                    f"budget test. The winner shown above is the simulation's "
+                    f"pick and should be treated as directional only."
+                )
+
+        # Visual creative analysis (image/video uploads)
+        _vrep = st.session_state.get("visual_report") or {}
+        if any(r.get("available") for r in _vrep.values()):
+            with st.expander("🎬 Visual creative analysis", expanded=False):
+                st.caption(
+                    "Heuristic visual signals (brightness, pacing, hook "
+                    "strength). These nudge the creative score slightly; the "
+                    "validated text model remains the primary signal."
+                )
+                vcols = st.columns(len(_vrep))
+                for col, (lbl, rep) in zip(vcols, sorted(_vrep.items())):
+                    with col:
+                        st.markdown(f"**Ad {lbl}**")
+                        if not rep.get("available"):
+                            st.caption(rep.get("note", "not analyzed"))
+                            continue
+                        for key in ("visual_quality", "brightness", "contrast",
+                                    "colorfulness", "hook_strength_2s",
+                                    "motion_energy", "cut_rate", "duration_s"):
+                            if key in rep:
+                                st.text(f"{key}: {rep[key]}")
 
         # Metrics: Lift + one conversion card per variant.
         metric_cols = st.columns(1 + len(variant_ads))

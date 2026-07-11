@@ -6,6 +6,24 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **Validated creative ranker** (`src/ai/creative_ranker.py` +
+  `models/creative_ranker.joblib`): pairwise model trained on 2,489 real
+  TikTok ads / 3,211 outcome pairs (Creative Center CTR tiers via Apify),
+  plus visual features trained on 1,374 real ad thumbnails. End-to-end
+  holdout accuracy through the app path: **82.8% on confident calls, 87.5%
+  on decisive+called** (call rate ~11–16%; the model honestly abstains on
+  too-close races). Replaces the keyword scorer as the winner decision —
+  the old scorer measured 50.1% (pure chance) on real data. Full write-up
+  incl. limitations: `docs/VALIDATION.md`.
+- **Confidence verdict UI**: results now show either "🎯 Validated model
+  pick (confidence N%)" or "⚖️ Too close to call — run both", instead of
+  always declaring a winner.
+- **Visual creative analysis** (`src/ai/visual_features.py`): PIL image
+  features (brightness/contrast/colorfulness/edge density/aspect) feeding
+  the ranker; OpenCV video frame sampling (hook strength, cut rate, motion
+  energy) with graceful fallback when opencv is unavailable.
+- **Validation pipeline** (`validation_data/`): dataset builder, thumbnail
+  featurizer, leakage-safe trainer, and end-to-end backtest.
 - **CTR ensemble** (Ridge + HistGradientBoosting + MLP) over MiniLM embeddings +
   text-statistic/sentiment features, with a validation-weighted blend and a
   documented synthetic benchmark (96.2% decisive-pair directional accuracy —

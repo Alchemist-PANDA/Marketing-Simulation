@@ -1,18 +1,21 @@
 """
-Build validation dataset from Apify TikTok Creative Center scrapes.
+Build validation dataset (v2) from all Apify TikTok Creative Center scrapes.
 
-Reads persisted tool-result JSON files, deduplicates by ad ID,
-creates ad pairs (brand-based and industry-based), and writes
-a CSV ready for the simulator backtest.
+Reads every persisted tool-result JSON file, deduplicates by ad ID, creates
+ad pairs (same-brand and same-industry), and writes CSVs for training and
+backtesting. v2 changes: merges the new ~2k-ad scrape wave, keeps
+video_cover/video_url_720p for future visual training, and pairs far more
+aggressively (the v1 5-pairs-per-industry cap threw away most of the signal).
 
-CTR field from TikTok Creative Center: 0.01 = "Top 1%" (best),
-0.50 = "Top 50%" (median). LOWER = better performing ad.
+CTR ground truth: TikTok CTR percentile tier (0.01 = Top 1% = best).
 """
 
 import json
 import csv
 import os
 import glob
+import random
+from collections import Counter
 
 RESULTS_DIR = (
     "/root/.claude/projects/-home-user-Marketing-Simulation/"
@@ -20,17 +23,16 @@ RESULTS_DIR = (
 )
 OUT_DIR = "/home/user/Marketing-Simulation/validation_data"
 
-all_ads = {}
+random.seed(42)
 
+all_ads = {}
 for fpath in sorted(glob.glob(os.path.join(RESULTS_DIR, "*.txt"))):
     try:
         with open(fpath, "r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, UnicodeDecodeError):
         continue
-
-    items = data.get("items", [])
-    for item in items:
+    for item in data.get("items", []):
         ad_id = item.get("id", "")
         ad_title = (item.get("ad_title") or "").strip()
         if not ad_id or not ad_title or len(ad_title) < 10:
@@ -40,10 +42,11 @@ for fpath in sorted(glob.glob(os.path.join(RESULTS_DIR, "*.txt"))):
 
 print(f"Total unique ads with text >= 10 chars: {len(all_ads)}")
 
-# Filter to English-ish ads (basic heuristic: mostly ASCII)
+
 def is_english_text(text):
     ascii_count = sum(1 for c in text if ord(c) < 128)
     return ascii_count / max(1, len(text)) > 0.7
+
 
 ads = []
 for ad_id, item in all_ads.items():
@@ -51,7 +54,7 @@ for ad_id, item in all_ads.items():
     if not is_english_text(title):
         continue
     ctr = item.get("ctr", 0)
-    if ctr <= 0:
+    if not ctr or ctr <= 0:
         continue
     ads.append({
         "id": ad_id,
@@ -63,159 +66,146 @@ for ad_id, item in all_ads.items():
         "industry": item.get("industry", ""),
         "objective": item.get("objective", ""),
         "video_duration": item.get("video_duration", 0),
+        "video_cover": item.get("video_cover", ""),
+        "video_url_720p": item.get("video_url_720p", ""),
     })
 
 print(f"After English + valid CTR filter: {len(ads)}")
-
-# --- Stats ---
-from collections import Counter
-ctr_dist = Counter(a["ctr_readable"] for a in ads)
 industry_dist = Counter(a["industry"] for a in ads)
+print(f"Industries covered: {len(industry_dist)}")
 
-print("\nCTR tier distribution:")
-for tier, count in sorted(ctr_dist.items(), key=lambda x: float(x[0].replace("Top ", "").replace("%", "")) if x[0].startswith("Top") else 999):
-    print(f"  {tier}: {count}")
+# ------------------------------------------------------------- splits
+# Assign each ad to a split FIRST (by brand-group hash), then pair only
+# within splits. v2 fix: pairing before splitting wasted ~1,800 pairs.
+import hashlib
 
-print(f"\nIndustry distribution (top 20):")
-for ind, count in industry_dist.most_common(20):
-    print(f"  {ind}: {count}")
 
-# --- Build pairs ---
-# Strategy 1: Same brand, different CTR tier
+def bucket_of_ad(ad):
+    group = ad["brand_name"].strip().lower() or f"ad_{ad['id']}"
+    h = int(hashlib.md5(group.encode()).hexdigest(), 16) % 100
+    return "train" if h < 60 else ("val" if h < 80 else "holdout")
+
+
+for ad in ads:
+    ad["split"] = bucket_of_ad(ad)
+
+from collections import Counter as _C
+print(f"Ad splits: {_C(a['split'] for a in ads)}")
+
+
+# ---------------------------------------------------------------- pairs
+def make_pair(a, b, pair_type):
+    """a must be the better ad (lower ctr percentile)."""
+    return {
+        "split": a["split"],
+        "pair_type": pair_type,
+        "brand": a["brand_name"] or a["industry"],
+        "industry": a["industry"],
+        "ad_a_id": a["id"], "ad_a_text": a["ad_title"],
+        "ad_a_ctr_pct": a["ctr_percentile"], "ad_a_ctr_label": a["ctr_readable"],
+        "ad_a_likes": a["likes"],
+        "ad_b_id": b["id"], "ad_b_text": b["ad_title"],
+        "ad_b_ctr_pct": b["ctr_percentile"], "ad_b_ctr_label": b["ctr_readable"],
+        "ad_b_likes": b["likes"],
+        "winner_ground_truth": "A",
+        "ctr_gap": round(abs(b["ctr_percentile"] - a["ctr_percentile"]), 4),
+    }
+
+
+# Same-brand pairs: every combination with a CTR-tier difference
 brand_groups = {}
 for ad in ads:
-    b = ad["brand_name"]
-    if b:
-        brand_groups.setdefault(b, []).append(ad)
+    if ad["brand_name"]:
+        brand_groups.setdefault(ad["brand_name"], []).append(ad)
 
 brand_pairs = []
 for brand, group in brand_groups.items():
-    if len(group) < 2:
-        continue
     group.sort(key=lambda x: x["ctr_percentile"])
     for i in range(len(group)):
         for j in range(i + 1, len(group)):
             a, b = group[i], group[j]
-            if a["ctr_percentile"] != b["ctr_percentile"]:
-                brand_pairs.append({
-                    "pair_type": "same_brand",
-                    "brand": brand,
-                    "industry": a["industry"],
-                    "ad_a_id": a["id"],
-                    "ad_a_text": a["ad_title"],
-                    "ad_a_ctr_pct": a["ctr_percentile"],
-                    "ad_a_ctr_label": a["ctr_readable"],
-                    "ad_a_likes": a["likes"],
-                    "ad_b_id": b["id"],
-                    "ad_b_text": b["ad_title"],
-                    "ad_b_ctr_pct": b["ctr_percentile"],
-                    "ad_b_ctr_label": b["ctr_readable"],
-                    "ad_b_likes": b["likes"],
-                    "winner_ground_truth": "A",
-                    "ctr_gap": abs(b["ctr_percentile"] - a["ctr_percentile"]),
-                })
+            if a["ctr_percentile"] != b["ctr_percentile"] \
+                    and a["ad_title"].strip() != b["ad_title"].strip() \
+                    and a["split"] == b["split"]:
+                brand_pairs.append(make_pair(a, b, "same_brand"))
 
-print(f"\nBrand-based pairs (same brand, different CTR): {len(brand_pairs)}")
+print(f"Same-brand pairs: {len(brand_pairs)}")
 
-# Strategy 2: Same industry, different CTR tier (random sampling)
-import random
-random.seed(42)
-
+# Same-industry pairs: aggressive sampling, up to 60 per industry,
+# preferring larger gaps but including close races too.
 industry_groups = {}
 for ad in ads:
-    ind = ad["industry"]
-    if ind:
-        industry_groups.setdefault(ind, []).append(ad)
+    if ad["industry"]:
+        industry_groups.setdefault(ad["industry"], []).append(ad)
 
 industry_pairs = []
 for ind, group in industry_groups.items():
     if len(group) < 2:
         continue
-    # Sort by CTR percentile
-    group.sort(key=lambda x: x["ctr_percentile"])
-    # Take pairs from different CTR tiers (top quartile vs bottom quartile)
+    group = sorted(group, key=lambda x: x["ctr_percentile"])
+    candidates = []
     n = len(group)
-    top_quarter = group[:max(1, n // 4)]
-    bottom_quarter = group[max(1, 3 * n // 4):]
-    if not bottom_quarter:
-        bottom_quarter = group[n // 2:]
+    for _ in range(min(400, n * 4)):
+        a = random.choice(group)
+        b = random.choice(group)
+        if a["id"] == b["id"] or a["ctr_percentile"] == b["ctr_percentile"]:
+            continue
+        if a["ad_title"].strip() == b["ad_title"].strip():
+            continue
+        if a["split"] != b["split"]:
+            continue
+        if a["ctr_percentile"] > b["ctr_percentile"]:
+            a, b = b, a
+        candidates.append(make_pair(a, b, "same_industry"))
+    # dedupe within industry, keep up to 60 preferring big gaps
+    seen = set()
+    uniq = []
+    for p in sorted(candidates, key=lambda x: -x["ctr_gap"]):
+        key = tuple(sorted([p["ad_a_id"], p["ad_b_id"]]))
+        if key not in seen:
+            seen.add(key)
+            uniq.append(p)
+    # 70% big-gap, 30% random of remainder for diversity
+    keep = uniq[:42]
+    rest = uniq[42:]
+    random.shuffle(rest)
+    keep += rest[:18]
+    industry_pairs.extend(keep)
 
-    sampled = 0
-    for top_ad in top_quarter:
-        for bot_ad in bottom_quarter:
-            if top_ad["id"] == bot_ad["id"]:
-                continue
-            if top_ad["ctr_percentile"] == bot_ad["ctr_percentile"]:
-                continue
-            industry_pairs.append({
-                "pair_type": "same_industry",
-                "brand": f"{ind}",
-                "industry": ind,
-                "ad_a_id": top_ad["id"],
-                "ad_a_text": top_ad["ad_title"],
-                "ad_a_ctr_pct": top_ad["ctr_percentile"],
-                "ad_a_ctr_label": top_ad["ctr_readable"],
-                "ad_a_likes": top_ad["likes"],
-                "ad_b_id": bot_ad["id"],
-                "ad_b_text": bot_ad["ad_title"],
-                "ad_b_ctr_pct": bot_ad["ctr_percentile"],
-                "ad_b_ctr_label": bot_ad["ctr_readable"],
-                "ad_b_likes": bot_ad["likes"],
-                "winner_ground_truth": "A",
-                "ctr_gap": abs(bot_ad["ctr_percentile"] - top_ad["ctr_percentile"]),
-            })
-            sampled += 1
-            if sampled >= 5:
-                break
-        if sampled >= 5:
-            break
+print(f"Same-industry pairs: {len(industry_pairs)}")
 
-print(f"Industry-based pairs (same industry, different CTR): {len(industry_pairs)}")
-
-# Combine and deduplicate
-all_pairs = brand_pairs + industry_pairs
-# Deduplicate by pair of IDs
-seen_pair_ids = set()
+# merge + dedupe
+seen = set()
 unique_pairs = []
-for p in all_pairs:
+for p in brand_pairs + industry_pairs:
     key = tuple(sorted([p["ad_a_id"], p["ad_b_id"]]))
-    if key not in seen_pair_ids:
-        seen_pair_ids.add(key)
+    if key not in seen:
+        seen.add(key)
         unique_pairs.append(p)
 
-# Label decisive vs close
 for p in unique_pairs:
     p["is_decisive"] = p["ctr_gap"] >= 0.10
 
 decisive = sum(1 for p in unique_pairs if p["is_decisive"])
-close = len(unique_pairs) - decisive
 print(f"\nTotal unique pairs: {len(unique_pairs)}")
-print(f"  Decisive (CTR gap >= 10pp): {decisive}")
-print(f"  Close race (CTR gap < 10pp): {close}")
+print(f"  Decisive (gap >= 10pp): {decisive}")
+print(f"  Close (gap < 10pp):     {len(unique_pairs) - decisive}")
 
-# Write all ads
+# ------------------------------------------------------------------ write
 ads_path = os.path.join(OUT_DIR, "tiktok_ads_clean.csv")
 with open(ads_path, "w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=[
         "id", "ad_title", "brand_name", "likes", "ctr_percentile",
-        "ctr_readable", "industry", "objective", "video_duration"
+        "ctr_readable", "industry", "objective", "video_duration",
+        "video_cover", "video_url_720p", "split",
     ])
     writer.writeheader()
-    for ad in ads:
-        writer.writerow(ad)
-print(f"\nSaved {len(ads)} clean ads to {ads_path}")
+    writer.writerows(ads)
+print(f"\nSaved {len(ads)} ads -> {ads_path}")
 
-# Write pairs
 pairs_path = os.path.join(OUT_DIR, "validation_pairs.csv")
-pair_fields = [
-    "pair_type", "brand", "industry",
-    "ad_a_id", "ad_a_text", "ad_a_ctr_pct", "ad_a_ctr_label", "ad_a_likes",
-    "ad_b_id", "ad_b_text", "ad_b_ctr_pct", "ad_b_ctr_label", "ad_b_likes",
-    "winner_ground_truth", "ctr_gap", "is_decisive"
-]
 with open(pairs_path, "w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=pair_fields)
+    writer = csv.DictWriter(f, fieldnames=list(unique_pairs[0].keys()))
     writer.writeheader()
-    for p in unique_pairs:
-        writer.writerow(p)
-print(f"Saved {len(unique_pairs)} pairs to {pairs_path}")
+    writer.writerows(unique_pairs)
+print(f"Saved {len(unique_pairs)} pairs -> {pairs_path}")
