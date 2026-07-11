@@ -1,7 +1,12 @@
 [server]
-maxUploadSize = 200
+# 25 MB is plenty for ad images / CSV exports and bounds the upload
+# resource-exhaustion surface (was 200 MB).
+maxUploadSize = 25
 headless = true
-enableCORS = false
+# Keep CORS + XSRF protection ON. enableCORS=false conflicts with XSRF
+# protection (Streamlit overrides it back to true anyway) and weakens
+# cross-origin safety, so it is explicitly enabled here.
+enableCORS = true
 enableXsrfProtection = true
 
 [theme]

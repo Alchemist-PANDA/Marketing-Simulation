@@ -34,6 +34,17 @@ from src.ui.save_results_ui import render_save_results_section
 from src.ui.export_ui import render_export_buttons
 from src.ui.copilot_ui import render_copilot, render_copilot_toggle
 from src.ui.dashboard_ui import render_full_dashboard
+from src.core.logging_config import get_logger, report_error, safe_block
+
+logger = get_logger("app")
+
+# ── Health check (uptime monitors / operators): app URL + ?health=1 ──
+if st.query_params.get("health") in ("1", "true"):
+    from src.core.health import health_check
+    status = health_check()
+    st.json(status)
+    st.stop()
+
 
 def apply_theme():
     """Apply custom Streamlit theme and CSS styling."""
@@ -560,8 +571,9 @@ with tab1:
                                 st.stop()
 
                     except Exception as e:
-                        st.error(f"❌ OCR failed: {e}")
-                        st.code(traceback.format_exc())
+                        eid = report_error(logger, e, "ocr")
+                        st.error(f"❌ OCR couldn't read the image. Please enter the ad copy "
+                                 f"manually below. (error id: `{eid}`)")
 
                         # Fallback to manual entry
                         st.warning("📝 OCR failed. Please enter the ad copy manually below.")
@@ -653,9 +665,9 @@ with tab1:
             del master_population, runner
             gc.collect()
         except Exception as e:
-            import traceback
-            st.error(f"❌ Simulation failed: {e}")
-            st.code(traceback.format_exc())
+            eid = report_error(logger, e, "simulation")
+            st.error(f"❌ The simulation hit an unexpected error. Please adjust your "
+                     f"inputs and try again. (error id: `{eid}`)")
 
     result = st.session_state.get("sim_results")
     if result:
@@ -690,22 +702,15 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
 
         # ── Full Marketing Intelligence Dashboard ──────────────────────
-        # NOTE: This call has been silently dropped by multiple merges (PR #6, PR #7).
-        # The try/except is intentionally loud: st.error + expanded traceback so
-        # any future regression is immediately visible in the UI, never silent.
-        try:
+        # Isolated so a rendering error here can't take down the rest of the page;
+        # the full traceback is logged server-side (never shown to the user).
+        with safe_block("Marketing Intelligence Dashboard", logger):
             render_full_dashboard(
                 result,
                 ad1_text=ad1_text_display,
                 ad2_text=ad2_text_display,
                 price=price,
             )
-        except Exception as _dash_err:
-            import traceback as _tb
-            st.error(f"❌ Marketing Intelligence Dashboard failed to render: {_dash_err}")
-            with st.expander("🔍 Error details (for debugging)", expanded=True):
-                st.code(_tb.format_exc())
-                st.write("Available result keys:", list(result.keys()))
 
         render_section_header("Forensic Feedback", "🕵️")
         fa1, fa2 = st.columns(2)
@@ -823,7 +828,8 @@ with tab1:
 
 
 with tab2:
-    render_history_tab()
+    with safe_block("Report History", logger):
+        render_history_tab()
 
 with tab3:
     st.header("AI-Enhanced CTR Prediction")

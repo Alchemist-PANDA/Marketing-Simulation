@@ -1,5 +1,6 @@
 import streamlit as st
 from src.core.supabase_client import SupabaseManager
+from src.core.validation import validate_email, validate_password
 
 st.set_page_config(page_title="Register", page_icon="📝", layout="centered", initial_sidebar_state="collapsed")
 
@@ -11,17 +12,22 @@ st.markdown('<h1>Create Account</h1>', unsafe_allow_html=True)
 
 with st.form("register_form"):
     email = st.text_input("Email", placeholder="you@company.com")
-    password = st.text_input("Password", type="password", placeholder="Min 6 characters")
+    password = st.text_input("Password", type="password",
+                             placeholder="Min 8 chars, with a letter and a number")
     password_confirm = st.text_input("Confirm Password", type="password")
     submit = st.form_submit_button("Sign Up")
 
 if submit:
+    email_ok, email_msg = validate_email(email or "")
+    pw_ok, pw_msg = validate_password(password or "")
     if not email or not password:
         st.error("Please fill in all fields.")
+    elif not email_ok:
+        st.error(email_msg)
     elif password != password_confirm:
         st.error("Passwords do not match.")
-    elif len(password) < 6:
-        st.error("Password must be at least 6 characters.")
+    elif not pw_ok:
+        st.error(pw_msg)
     else:
         manager = SupabaseManager()
         with st.spinner("Creating account..."):
