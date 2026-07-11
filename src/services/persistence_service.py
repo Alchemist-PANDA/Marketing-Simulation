@@ -210,6 +210,7 @@ class PersistenceService:
         if not client:
             return {"status": "error", "message": "Database unavailable"}
         try:
+            self.manager._apply_user_auth(client)
             response = (client.table("simulation_reports")
                         .delete()
                         .eq("id", report_id)

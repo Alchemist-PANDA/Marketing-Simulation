@@ -277,7 +277,12 @@ def _render_chat_interface():
         if response.get("status") == "success":
             content = response["content"]
             if response.get("fallback"):
-                content = "*[Offline mode — add your Gemini API keys for full AI responses]*\n\n" + content
+                if response.get("fallback_reason") == "api_error":
+                    banner = ("*[⚠️ AI is temporarily unavailable (service/network issue). "
+                              "Showing a quick rule-based answer — please try again shortly.]*")
+                else:
+                    banner = ("*[Offline mode — add your Gemini API keys for full AI responses]*")
+                content = banner + "\n\n" + content
             st.session_state["copilot_messages"].append({"role": "assistant", "content": content})
         else:
             st.session_state["copilot_messages"].append({

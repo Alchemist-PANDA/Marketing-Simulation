@@ -96,6 +96,30 @@ class SupabaseManager:
             "client_initialized": self._initialized
         }
 
+    def _apply_user_auth(self, client) -> None:
+        """Attach the logged-in user's JWT to the PostgREST client.
+
+        Row-Level-Security policies like ``WITH CHECK (auth.uid() = user_id)``
+        evaluate ``auth.uid()`` from the JWT sent with the request. The client is
+        created with the anon key, so without this step ``auth.uid()`` is NULL and
+        every insert/select is rejected by RLS. We read the access token that the
+        auth flow stored in ``st.session_state`` and set it on the request so the
+        database sees the request as the authenticated user.
+        """
+        token = None
+        try:
+            import streamlit as st
+            token = st.session_state.get("access_token")
+        except Exception:
+            token = None
+        if not token:
+            return
+        try:
+            client.postgrest.auth(token)
+        except Exception:
+            # Older/newer supabase-py may expose this differently; never hard-fail.
+            pass
+
     def insert(self, table: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert data into a Supabase table, or return disabled status."""
         client = self._get_client()
@@ -103,8 +127,7 @@ class SupabaseManager:
             return {"status": "disabled", "message": f"Persistence disabled. Data not saved to {table}."}
 
         try:
-            # We don't execute yet as we need .execute() which makes it a real call
-            # but for safety/interface definition, we'll try to execute it
+            self._apply_user_auth(client)
             response = client.table(table).insert(data).execute()
             return {"status": "success", "data": response.data}
         except Exception as e:
@@ -116,6 +139,7 @@ class SupabaseManager:
         if not client or not self.enabled:
             return {"status": "disabled", "message": f"Persistence disabled."}
         try:
+            self._apply_user_auth(client)
             q = client.table(table).update(data)
             for k, v in filters.items():
                 q = q.eq(k, v)
@@ -131,6 +155,7 @@ class SupabaseManager:
             return {"status": "disabled", "data": [], "message": "Persistence disabled."}
 
         try:
+            self._apply_user_auth(client)
             q = client.table(table).select(query)
             if filters:
                 for k, v in filters.items():

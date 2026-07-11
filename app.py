@@ -444,7 +444,7 @@ with tab1:
 
 
 
-    input_method = st.radio("Input Method", ["Text", "Image Upload"], horizontal=True)
+    input_method = st.radio("Input Method", ["Text", "Image Upload", "Video Upload"], horizontal=True)
 
     ad1_text = ""
     ad2_text = ""
@@ -464,6 +464,42 @@ with tab1:
             ad1_text = st.text_area("Ad Creative A", "Save 50% on your first purchase today!", height=150)
         with col2:
             ad2_text = st.text_area("Ad Creative B", "Experience luxury like never before.", height=150)
+    elif input_method == "Video Upload":
+        st.caption(
+            "Upload each ad's video to preview it, then add the ad copy below. "
+            "Automated video analysis (frames, audio, on-screen text) is on the roadmap — "
+            "for now the simulation runs on the copy you provide."
+        )
+        _VIDEO_TYPES = ["mp4", "mov", "avi", "webm", "m4v"]
+        vcol1, vcol2 = st.columns(2)
+        with vcol1:
+            st.subheader("Ad A Video")
+            uploaded_vid_a = st.file_uploader(
+                "Upload Ad A video", type=_VIDEO_TYPES, key="vid_a"
+            )
+            if uploaded_vid_a is not None:
+                st.session_state["vid_a_bytes"] = uploaded_vid_a.getvalue()
+            if st.session_state.get("vid_a_bytes"):
+                st.video(st.session_state["vid_a_bytes"])
+            ad1_text = st.text_area(
+                "Ad A Copy", value=st.session_state.get("vid_a_text", ""),
+                key="vid_a_text", height=110,
+                placeholder="Describe or paste the ad copy / voiceover script for Ad A",
+            )
+        with vcol2:
+            st.subheader("Ad B Video")
+            uploaded_vid_b = st.file_uploader(
+                "Upload Ad B video", type=_VIDEO_TYPES, key="vid_b"
+            )
+            if uploaded_vid_b is not None:
+                st.session_state["vid_b_bytes"] = uploaded_vid_b.getvalue()
+            if st.session_state.get("vid_b_bytes"):
+                st.video(st.session_state["vid_b_bytes"])
+            ad2_text = st.text_area(
+                "Ad B Copy", value=st.session_state.get("vid_b_text", ""),
+                key="vid_b_text", height=110,
+                placeholder="Describe or paste the ad copy / voiceover script for Ad B",
+            )
     else:
         col1, col2 = st.columns(2)
         with col1:
@@ -516,9 +552,12 @@ with tab1:
                 st.session_state["ad2_manual"] = ad2_text
 
     if run_sim:
-        if input_method == "Text":
+        if input_method in ("Text", "Video Upload"):
             if not ad1_text or not ad2_text:
-                st.error("⚠️ Please enter ad copy for both Ad A and Ad B.")
+                if input_method == "Video Upload":
+                    st.error("⚠️ Please add the ad copy for both Ad A and Ad B below their videos.")
+                else:
+                    st.error("⚠️ Please enter ad copy for both Ad A and Ad B.")
                 st.stop()
 
         try:
@@ -852,6 +891,22 @@ with tab3:
     if selected_mode == "ensemble":
         ai_weight = st.slider("AI Model Weight", 0.0, 1.0, 0.5, step=0.1, key="ai_weight_slider",
                               help="0.0 = pure simulation, 1.0 = pure AI model")
+
+    ai_input_method = st.radio(
+        "Ad Input", ["Text", "Video Upload"], horizontal=True, key="ai_input_method"
+    )
+    if ai_input_method == "Video Upload":
+        ai_vid = st.file_uploader(
+            "Upload ad video", type=["mp4", "mov", "avi", "webm", "m4v"], key="ai_vid"
+        )
+        if ai_vid is not None:
+            st.session_state["ai_vid_bytes"] = ai_vid.getvalue()
+        if st.session_state.get("ai_vid_bytes"):
+            st.video(st.session_state["ai_vid_bytes"])
+        st.caption(
+            "Video preview only — CTR is predicted from the ad copy below. "
+            "Frame/audio analysis is a planned enhancement."
+        )
 
     ai_ad_text = st.text_area("Ad Creative Text", "Save 50% on your first purchase today!",
                               height=120, key="ai_ad_text")
