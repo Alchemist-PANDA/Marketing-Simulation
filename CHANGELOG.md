@@ -5,22 +5,38 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-### Investigated (2026-07-12) — ecommerce vertical readiness
+### Added (2026-07-12) — creative ranker v6, ecommerce-focused rescrape
+- **Shipped v6 of the creative ranker** (`models/creative_ranker.joblib`),
+  trained on a third scrape wave targeted at fixing the ecommerce gap found
+  earlier the same day (below). 24 varied TikTok Creative Center queries
+  ($4.50 of a $5 budget) returned 3,071 raw items, 284 genuinely new after
+  dedup, 175 ecommerce. Caught and fixed a data-quality bug before training:
+  two scraped "brand names" were actually platform-wide promo campaigns
+  (`Shopee Brands Festival`, 84 ads; `Celebrate 12.12 with Shopee`, 70 ads)
+  that would have taught the model unrelated sellers' ads are same-brand
+  variants — blanked before pairing, which removed ~5,928 spurious pairs.
+  Retrained on the merged 3-wave corpus (3,058 ads, 3,710 pairs). **Real
+  app-path result on the ecommerce holdout: 80.6% accuracy on called pairs
+  (n=62, 95% CI 69.1–88.6%), same-brand accuracy 70.6% (n=17)** — up from
+  0/5 same-brand correct two iterations earlier. Clears the 75%
+  point-estimate target; CI lower bound (69.1%) means this should be
+  communicated as "~80% in validation" rather than a guaranteed floor.
+  Previous model kept at `models/creative_ranker_v5_backup.joblib`. Full
+  account: `docs/VALIDATION.md` § "The v6 rescrape."
+
+### Investigated (2026-07-12) — ecommerce vertical readiness (first attempt, superseded above)
 - **Attempted to specialize the creative ranker for ecommerce and hit a
-  defensible 75% accuracy floor for a business sale. Result: not there yet,
-  and the shipped model was left unchanged.** Filtered the existing
-  two-wave corpus to 1,497 ecommerce ads / 1,846 pairs (no new scraping —
-  `APIFY_TOKEN` wasn't available this session). Training an ecommerce-only
-  model from scratch made things *worse* (62.4% vs v5's 69.6%, same-brand
-  fell to chance) — 1,498 pairs isn't enough data for this feature space.
-  Re-tuning only the confidence threshold on ecommerce validation data and
-  testing through the real `ABTestRunner` app path gave **70.5% accuracy on
-  called pairs (n=44, 95% CI 55.8–81.8%)** — below target, and **same-brand
-  pairs (comparing two of your own ad variants) scored 0/5 when called**,
-  which is the actual product use case. `models/creative_ranker.joblib`
-  (v5) remains shipped as-is. Full account incl. what it would take to
-  actually clear 75%: `docs/VALIDATION.md` § "The ecommerce specialization
-  attempt."
+  defensible 75% accuracy floor for a business sale, using only
+  already-scraped data (no `APIFY_TOKEN` available yet). Result: not there
+  yet.** Filtered the existing two-wave corpus to 1,497 ecommerce ads /
+  1,846 pairs. Training an ecommerce-only model from scratch made things
+  *worse* (62.4% vs v5's 69.6%, same-brand fell to chance) — 1,498 pairs
+  isn't enough data for this feature space. Re-tuning only the confidence
+  threshold on ecommerce validation data and testing through the real
+  `ABTestRunner` app path gave **70.5% accuracy on called pairs (n=44, 95%
+  CI 55.8–81.8%)** — below target, and **same-brand pairs (comparing two of
+  your own ad variants) scored 0/5 when called**. This result is what
+  motivated getting a real scrape token and running the v6 rescrape above.
 
 ### Fixed (2026-07-12)
 - **Creative ranker v4 → v5: fixed single-wave overfitting.** v4 (below)
