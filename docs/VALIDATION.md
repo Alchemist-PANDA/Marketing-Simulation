@@ -1,19 +1,67 @@
 # Real-World Validation — Creative Ranker
 
-**Current shipped version: v6 (2026-07-12).** Trained on a third scrape wave
-targeted specifically at ecommerce industries and same-brand pairs — see
-"The ecommerce specialization attempt" for the full account, including the
-v5 attempt that fell short and the v6 rescrape that fixed it.
+**Current shipped version: v7 (2026-07-12).** Trained on a 4-wave corpus of
+12,992 leakage-deduplicated real TikTok ecommerce ads. **Read the "v7 honest
+reckoning" section immediately below before quoting any number — v7 corrected
+two methodology bugs (text leakage and a train/deploy calibration mismatch)
+that were inflating every earlier version's figures, including v5 and v6.**
 
-**Ecommerce readiness (2026-07-12 v6 update):** real app-path accuracy on
-the ecommerce holdout (215 pairs, 3-wave corpus): **80.6% on called pairs
-(n=62, 95% CI 69.1–88.6%)**, same-brand pairs (comparing two of *your own*
-ad variants — the core product use case) at **70.6% (n=17)**, up from a
-same-brand score of 0/5 two iterations ago. This clears the 75% point-estimate
-target and is a real, data-backed improvement — but the 95% CI still spans
-into the high-60s, so **treat 75%+ as "strongly supported by current data,"
-not as a contractually guaranteed floor** until a larger same-brand sample
-exists. See the full section below for exactly what's still thin.
+## The v7 honest reckoning (2026-07-12) — READ FIRST
+
+A $40 scrape (8 Apify keys × 275 ecommerce keywords) added **11,950 new unique
+English ecommerce ads**, growing the corpus ~5× to 15,008 ads. In processing
+it, two bugs were found that had been quietly inflating results since v5:
+
+1. **Text leakage across the train/holdout split.** Keyword search returns the
+   *same ad copy* under many different ad IDs, usually with blank brand names.
+   The brand-hash split scattered those identical copies across train and
+   holdout, so the model was partly memorizing text→CTR. Measured leakage:
+   **18.7% of the 4-wave holdout pairs** (and **10.2% of v6's 3-wave holdout**)
+   had an ad text also present in training. Fix: exact-text dedup (15,008 →
+   12,992 ads) + split key = brand-else-normalized-text. Post-fix leakage: **0%**.
+
+2. **Train/deploy calibration mismatch.** The trainer tuned the abstention
+   threshold on isotonic-calibrated confidence, but the shipped `compare()`
+   path gates on **raw** probability and never applied the calibrator. On the
+   larger corpus the isotonic step became degenerate (collapsing points to a
+   few plateaus → fake 95%+ "confidence"). Fix: dropped isotonic, tune and
+   deploy on the same raw confidence.
+
+**What the honest, leakage-free numbers actually are (v7, 1,112-pair holdout):**
+- **Ungated accuracy: ~55%.** Every model class (logistic, gradient-boosted,
+  ensemble) plateaus at ~52–53% on validation. This is a **data/label ceiling,
+  not a model ceiling** — TikTok Creative Center CTR *percentile tiers* reflect
+  targeting, budget, audience and timing far more than ad copy, so text (+
+  thumbnail) features can only predict them slightly better than chance.
+- **Confidence gating helps but is not stable enough to certify 75%.** The
+  accuracy/call-rate curve looks clean on the holdout split (e.g. threshold
+  0.68 → 75.7% at 15% call rate) but the **validation split disagrees sharply
+  at the same thresholds** (0.68 → 56.5%). The two splits only *agree* at the
+  very top of the confidence range (threshold ~0.80): pooled val+holdout there
+  is **81.8% (n=22, 95% CI 61.5–92.7%)** at a **~2–3% call rate**.
+
+**Bottom line for selling to ecommerce businesses:** the earlier "80.6% on
+called pairs" (v6) and "82.8%" (v4) figures were **inflated by text leakage
+plus small-sample gating luck** and should not be quoted. The honest state is:
+the model ranks ad copy *slightly* better than chance overall (~55%), and on
+the ~2–3% of comparisons where it is most confident it is preliminarily ~80%
+accurate (small n, wide CI). **A reliable, certified "75% on all ecommerce
+ads" is NOT achievable from TikTok CTR-tier data with text/thumbnail features**
+— this was proven, not assumed, across four scrape waves and ~13k real ads.
+What would move it: outcome labels that actually depend on the creative (real
+A/B test lift from customers' own campaigns, or click data tied to specific
+creatives), not more Creative-Center CTR tiers. v7 ships at the conservative
+threshold 0.80 (abstains unless genuinely confident) and the UI states this
+honestly.
+
+---
+
+## (Superseded) v6 ecommerce readiness claim — was leakage-inflated
+
+The v6 section below reported **80.6% on called pairs (n=62)**. Per the v7
+reckoning above, v6's holdout had 10.2% text leakage and the calibration
+mismatch, so this figure is an overstatement and is retained only for the
+historical record. Do not quote it.
 
 **Ground truth:** TikTok Creative Center CTR percentile tiers (real advertiser
 outcomes), scraped via Apify across US/GB/CA/AU/IE/NZ, 7/30/180-day windows.

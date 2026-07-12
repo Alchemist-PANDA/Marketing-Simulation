@@ -34,8 +34,36 @@ ads = list(by_id.values())
 print(f"Merged unique ads: {len(ads)} (w1={len(wave1)}, w2={len(wave2)}, w3={len(wave3)}, w4={len(wave4)})")
 
 
+def norm_text(t):
+    return " ".join((t or "").lower().split())
+
+
+# --- De-duplicate by normalized ad text (leakage fix) --------------------
+# Keyword search returns the SAME ad copy under many different ad IDs (often
+# with blank brand names). If those copies scatter across train/holdout the
+# model memorizes text->CTR and holdout accuracy is inflated. Keep exactly
+# one ad per normalized text (prefer a branded, higher-info copy), so no
+# identical text can ever straddle the split.
+by_text = {}
+for a in ads:
+    key = norm_text(a["ad_title"])
+    cur = by_text.get(key)
+    if cur is None:
+        by_text[key] = a
+    else:
+        # prefer the one with a real brand name; tie-break: keep existing
+        if not cur["brand_name"].strip() and a["brand_name"].strip():
+            by_text[key] = a
+before = len(ads)
+ads = list(by_text.values())
+print(f"After exact-text dedup: {len(ads)} ads (removed {before - len(ads)} duplicate-copy ads)")
+
+
 def bucket_of_ad(ad):
-    group = ad["brand_name"].strip().lower() or f"ad_{ad['id']}"
+    # Split key = brand when known, else the normalized TEXT (not the ad id).
+    # This keeps same-brand pairs within one split AND keeps any residual
+    # identical/near-identical blank-brand copies from crossing the split.
+    group = ad["brand_name"].strip().lower() or f"txt::{norm_text(ad['ad_title'])}"
     h = int(hashlib.md5(group.encode()).hexdigest(), 16) % 100
     return "train" if h < 60 else ("val" if h < 80 else "holdout")
 

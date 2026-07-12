@@ -165,18 +165,23 @@ best_name = max(val_scores, key=val_scores.get)
 model = ens if best_name == "ensemble" else candidates[best_name]
 print(f"Selected: {best_name}")
 
+# CALIBRATION FIX (v7): the shipped inference path (creative_ranker.compare)
+# gates on the RAW averaged both-orderings probability and never applied the
+# isotonic calibrator — but earlier trainers tuned the threshold on
+# iso-calibrated confidence, a train/deploy mismatch. On the larger clean
+# corpus the isotonic step became degenerate (collapsing most points to a
+# few plateau values -> fake 95%+ "confidence"). We drop it and store an
+# identity calibrator, and tune/evaluate the threshold on RAW confidence so
+# the trainer's operating point is exactly what the app deploys.
 p_va = avg_prob(model, X_va_f, X_va_r)
-iso = IsotonicRegression(out_of_bounds="clip").fit(
-    p_va, np.ones(len(p_va)))
-# NOTE: isotonic on all-ones labels is degenerate — calibrate on the
-# symmetric augmented set instead:
-p_va_sym = np.concatenate([p_va, 1.0 - p_va])
-y_va_sym = np.concatenate([np.ones(len(p_va)), np.zeros(len(p_va))])
-iso = IsotonicRegression(out_of_bounds="clip").fit(p_va_sym, y_va_sym)
+# No calibrator stored (iso=None): the shipped compare() gates on raw
+# probability, so evaluation here uses raw too. Storing None keeps the
+# artifact picklable/loadable outside this script.
+iso = None
 
 
 def evaluate(Xf, Xr, meta, threshold):
-    p = iso.predict(avg_prob(model, Xf, Xr))
+    p = avg_prob(model, Xf, Xr)  # raw = deployed
     conf = np.maximum(p, 1 - p)
     called = conf >= threshold
     pred = (p >= 0.5).astype(int)
@@ -209,19 +214,30 @@ def evaluate(Xf, Xr, meta, threshold):
     return out
 
 
+# Tune threshold on RAW val confidence: pick the LOWEST threshold (highest
+# call rate) that clears the 75% target on val with a usable called sample.
+# Falls back to the highest-accuracy threshold if none clears 75%.
+TARGET = 0.75
+MIN_CALLED = 40
 best_t, best_ev = 0.50, evaluate(X_va_f, X_va_r, meta_va, 0.50)
-for t in np.arange(0.55, 0.93, 0.01):
+qualifying = []
+acc_fallback = (best_t, best_ev)
+for t in np.arange(0.52, 0.95, 0.01):
     ev = evaluate(X_va_f, X_va_r, meta_va, float(t))
-    if ev["called_frac"] < 0.15 or ev["called_acc"] is None:
-        break
-    if ev["called_acc"] > (best_ev["called_acc"] or 0):
-        best_t, best_ev = float(t), ev
-    if ev["called_acc"] >= 0.85:
-        best_t, best_ev = float(t), ev
-        break
+    if ev["called_acc"] is None or ev["called_n"] < MIN_CALLED:
+        continue
+    if ev["called_acc"] > (acc_fallback[1]["called_acc"] or 0):
+        acc_fallback = (float(t), ev)
+    if ev["called_acc"] >= TARGET:
+        qualifying.append((float(t), ev))
+if qualifying:
+    best_t, best_ev = qualifying[0]  # lowest threshold clearing target
+else:
+    best_t, best_ev = acc_fallback
 
-print(f"\nThreshold (val): {best_t:.2f} -> called "
-      f"{best_ev['called_frac']*100:.0f}% @ {100*(best_ev['called_acc'] or 0):.1f}%")
+print(f"\nThreshold (val, RAW conf): {best_t:.2f} -> called "
+      f"{best_ev['called_frac']*100:.1f}% (n={best_ev['called_n']}) @ "
+      f"{100*(best_ev['called_acc'] or 0):.1f}%")
 
 ho_all = evaluate(X_ho_f, X_ho_r, meta_ho, 0.5)
 ho = evaluate(X_ho_f, X_ho_r, meta_ho, best_t)

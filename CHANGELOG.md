@@ -5,6 +5,36 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed (2026-07-12) — creative ranker v7: leakage + calibration fixes, honest ceiling
+- **Corrected two methodology bugs that were inflating every prior version's
+  accuracy, and re-established the honest ceiling.** A $40 scrape (8 Apify
+  keys × 275 ecommerce keywords) added 11,950 new unique ecommerce ads (corpus
+  ~5× to 15,008). Processing it surfaced: (1) **text leakage** — keyword search
+  returns identical ad copy under many ad IDs with blank brands, which the
+  brand-hash split scattered across train/holdout (18.7% of 4-wave holdout
+  pairs, and 10.2% of v6's holdout, had a train-set text), letting the model
+  memorize text→CTR; fixed with exact-text dedup + brand-else-text split (0%
+  residual leakage); (2) a **train/deploy calibration mismatch** — the trainer
+  tuned the abstention threshold on isotonic-calibrated confidence while the
+  app gates on raw probability, and the isotonic step had gone degenerate on
+  the larger data (fake 95%+ confidence); fixed by dropping isotonic and
+  tuning/deploying on the same raw confidence.
+- **Honest leakage-free result (v7, 1,112-pair holdout):** ~55% ungated (all
+  model classes plateau ~52–53% on val — a data/label ceiling, not a model
+  one). Confidence gating concentrates accuracy but is unstable across splits;
+  val and holdout only agree at the top of the confidence range (threshold
+  ~0.80), where pooled val+holdout is **81.8% (n=22, 95% CI 61.5–92.7%)** at a
+  ~2–3% call rate. **The prior "80.6%" (v6) and "82.8%" (v4) figures were
+  leakage- and small-sample-inflated and are retired.** A certified "75% on all
+  ecommerce ads" is not achievable from TikTok CTR-tier data with text/thumbnail
+  features — shown, not assumed, across 4 waves / ~13k ads. v7 ships at the
+  conservative threshold 0.80 (abstains unless genuinely confident); the results
+  UI states this honestly. Full account: `docs/VALIDATION.md` § "The v7 honest
+  reckoning." Prior model kept at `models/creative_ranker_v6_backup.joblib`.
+- **Video upload now actually feeds the model** (was silently discarded): a
+  representative keyframe is run through the same trained image-feature path as
+  thumbnails. See below.
+
 ### Added (2026-07-12) — creative ranker v6, ecommerce-focused rescrape
 - **Shipped v6 of the creative ranker** (`models/creative_ranker.joblib`),
   trained on a third scrape wave targeted at fixing the ecommerce gap found

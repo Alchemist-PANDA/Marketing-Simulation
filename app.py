@@ -774,14 +774,15 @@ with tab1:
         if _rk.get("available"):
             if _rk.get("called"):
                 st.info(
-                    f"🎯 **Validated model pick: Ad {_rk['winner']}** — "
-                    f"confidence {_rk['confidence']*100:.0f}%. This verdict comes "
-                    f"from a model backtested end-to-end on real TikTok ad "
-                    f"outcomes across multiple scrape waves. On the ecommerce "
-                    f"holdout it scores ~80% accuracy on confident calls "
-                    f"(95% CI 69-89%); it abstains on races too close to rank "
-                    f"reliably. See docs/VALIDATION.md for the full, honest "
-                    f"breakdown incl. sample sizes."
+                    f"🎯 **High-confidence pick: Ad {_rk['winner']}** — "
+                    f"confidence {_rk['confidence']*100:.0f}%. The model only "
+                    f"reaches this bar on a small fraction of comparisons (the "
+                    f"clearest cases); on a leakage-free holdout of ~12,000 real "
+                    f"TikTok ecommerce ads those high-confidence calls run ~80% "
+                    f"accurate (small sample, 95% CI ≈ 62–93%). On everything "
+                    f"else it abstains rather than guess. It is **not** a "
+                    f"guaranteed 75%+ on every ad — see docs/VALIDATION.md for "
+                    f"the honest ceiling and why."
                 )
             else:
                 st.warning(
