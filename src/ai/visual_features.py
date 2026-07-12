@@ -104,7 +104,7 @@ def video_features(file_bytes: bytes, suffix: str = ".mp4",
         duration = n_frames / fps if fps > 0 else 0.0
 
         idxs = np.linspace(0, max(0, n_frames - 1), max_frames).astype(int)
-        frames, image_stats = [], []
+        frames, image_stats, native_frames = [], [], []
         for idx in idxs:
             cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
             ok, frame = cap.read()
@@ -113,6 +113,7 @@ def video_features(file_bytes: bytes, suffix: str = ".mp4",
             small = cv2.resize(frame, (160, 284))
             frames.append(cv2.cvtColor(small, cv2.COLOR_BGR2GRAY).astype(np.float32))
             image_stats.append(small.astype(np.float32))
+            native_frames.append(frame)  # native-res BGR for keyframe features
         cap.release()
 
         if len(frames) < 2:
@@ -128,20 +129,47 @@ def video_features(file_bytes: bytes, suffix: str = ".mp4",
         brightness = float(np.mean([f.mean() for f in frames])) / 255.0
         h, w = image_stats[0].shape[:2]
 
-        # heuristic: strong hooks, active pacing, 10-40s duration sweet spot
-        quality = 0.5
-        quality += 0.12 * min(hook_strength, 1.0)
-        quality += 0.08 * min(motion_energy, 1.0)
-        quality += 0.05 * (1.0 - abs(brightness - 0.5) * 2)
-        if 8.0 <= duration <= 40.0:
-            quality += 0.10
-        elif duration > 90.0:
-            quality -= 0.05
-        quality = float(min(1.0, max(0.0, quality)))
+        # --- Keyframe still features (the part the trained model consumes) ---
+        # The creative ranker's visual branch was trained on the 6 static
+        # thumbnail features (brightness/contrast/colorfulness/edge_density/
+        # aspect/quality). A video must expose those SAME keys or the ranker
+        # silently discards its visual signal (visual_vector falls back to
+        # neutral means, flag=0). We pick the frame nearest the median
+        # brightness (a representative, non-black-cut still) and run it
+        # through the exact same image_features() path used for thumbnails,
+        # so an uploaded video feeds the trained visual model just like an
+        # image upload does — via a real keyframe, not motion heuristics.
+        still = {}
+        try:
+            fb = [float(f.mean()) for f in frames]
+            mid_i = int(np.argsort(fb)[len(fb) // 2])
+            bgr = native_frames[mid_i]  # native resolution -> real aspect ratio
+            rgb = bgr[:, :, ::-1].astype(np.uint8)  # BGR -> RGB
+            from PIL import Image as _Image
+            buf = io.BytesIO()
+            _Image.fromarray(rgb, "RGB").save(buf, format="PNG")
+            still = image_features(buf.getvalue())
+        except Exception:
+            still = {}
 
-        return {
+        # heuristic pacing quality (for display) blended with the trained-
+        # feature still quality (what actually correlates with real outcomes)
+        pacing_q = 0.5
+        pacing_q += 0.12 * min(hook_strength, 1.0)
+        pacing_q += 0.08 * min(motion_energy, 1.0)
+        pacing_q += 0.05 * (1.0 - abs(brightness - 0.5) * 2)
+        if 8.0 <= duration <= 40.0:
+            pacing_q += 0.10
+        elif duration > 90.0:
+            pacing_q -= 0.05
+        pacing_q = float(min(1.0, max(0.0, pacing_q)))
+
+        still_q = float(still.get("visual_quality", pacing_q)) if still.get("available") else pacing_q
+        quality = round(0.5 * still_q + 0.5 * pacing_q, 4)
+
+        out = {
             "available": True,
-            "visual_quality": round(quality, 4),
+            "visual_quality": quality,
             "duration_s": round(duration, 2),
             "sampled_frames": len(frames),
             "motion_energy": round(motion_energy, 4),
@@ -149,6 +177,15 @@ def video_features(file_bytes: bytes, suffix: str = ".mp4",
             "hook_strength_2s": round(hook_strength, 4),
             "brightness": round(brightness, 4),
         }
+        # Expose the 6 trained-model keys from the keyframe so visual_vector
+        # actually uses them (this is what makes the video affect the pick).
+        if still.get("available"):
+            for k in ("brightness", "contrast", "colorfulness",
+                      "edge_density", "aspect_ratio"):
+                if k in still:
+                    out[k] = still[k]
+            out["keyframe_features"] = True
+        return out
     except Exception:
         return {"available": False, "visual_quality": 0.5}
     finally:

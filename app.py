@@ -478,8 +478,11 @@ with tab1:
     elif input_method == "Video Upload":
         st.caption(
             "Upload each ad's video to preview it, then add the ad copy below. "
-            "Automated video analysis (frames, audio, on-screen text) is on the roadmap — "
-            "for now the simulation runs on the copy you provide."
+            "The simulation samples video frames and feeds a representative "
+            "keyframe's visual features (brightness, contrast, colorfulness, "
+            "aspect, pacing/hook strength) into the validated creative ranker, "
+            "alongside your ad copy — the copy remains the primary signal. "
+            "On-screen-text OCR and audio analysis are still on the roadmap."
         )
         _VIDEO_TYPES = ["mp4", "mov", "avi", "webm", "m4v"]
         vcol1, vcol2 = st.columns(2)
@@ -774,9 +777,11 @@ with tab1:
                     f"🎯 **Validated model pick: Ad {_rk['winner']}** — "
                     f"confidence {_rk['confidence']*100:.0f}%. This verdict comes "
                     f"from a model backtested end-to-end on real TikTok ad "
-                    f"outcomes across two separate scrape waves: 69.8% holdout "
-                    f"accuracy on confident calls (80.8% on decisive ones, "
-                    f"95% CI 54.9-81.4%). See docs/VALIDATION.md."
+                    f"outcomes across multiple scrape waves. On the ecommerce "
+                    f"holdout it scores ~80% accuracy on confident calls "
+                    f"(95% CI 69-89%); it abstains on races too close to rank "
+                    f"reliably. See docs/VALIDATION.md for the full, honest "
+                    f"breakdown incl. sample sizes."
                 )
             else:
                 st.warning(
