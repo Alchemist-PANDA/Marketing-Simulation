@@ -4,6 +4,15 @@
 be overfit to a single scrape wave — see "The v4 → v5 correction" for the
 full honest account of how that was discovered and fixed.
 
+**Ecommerce vertical-specialization attempt (2026-07-12) — read this before
+selling to ecommerce businesses.** See "The ecommerce specialization attempt"
+below. Short version: **not sellable yet at a defensible 75% floor.**
+Real app-path accuracy on ecommerce-only holdout pairs: 70.5% (n=44, 95% CI
+55.8%–81.8%), and same-brand pairs (comparing two of *your own* ad variants —
+the actual product use case) scored 0/5 when the model was confident enough
+to call a winner. v5 remains shipped as-is; no ecommerce-specific model was
+promoted to production.
+
 **Ground truth:** TikTok Creative Center CTR percentile tiers (real advertiser
 outcomes), scraped via Apify across US/GB/CA/AU/IE/NZ, 7/30/180-day windows.
 **Dataset (v5):** 2,774 unique English ads from **two separate scrape waves**
@@ -46,6 +55,77 @@ for the query tried, and the remaining Apify budget ($1.25 of the original
 $5) wasn't enough to responsibly keep exploring query combinations. This is
 flagged, not hidden: the 69.8% figure is validated across two waves, not
 three, and should be treated as directionally strong rather than final.
+
+---
+
+## The ecommerce specialization attempt (2026-07-12)
+
+**Goal:** get to a defensible 75%+ accuracy floor specifically on ecommerce
+ads (Skincare, Apparel, Cosmetics, Haircare, Jewelry, Home Decor, Pet,
+Beauty, etc.), so the app could be honestly sold to ecommerce businesses.
+
+**What was available:** 1,497 real ecommerce ads / 1,846 pairs (194 in
+holdout, 154 in val) already inside the existing two-wave TikTok Creative
+Center corpus — filtered by industry, no new scraping needed for this part.
+**What was NOT available:** `APIFY_TOKEN` was not present in this session's
+environment, so no fresh scraping was possible. Every result below is from
+the existing corpus only.
+
+**Attempt 1 — train an ecommerce-only model from scratch.** Retrained the
+full pipeline (embeddings, PCA, HGB ensemble, isotonic calibration) using
+only the 1,498 ecommerce training pairs instead of the full 2,887-pair mixed
+corpus. Result: **worse, not better** — 62.4% ungated accuracy on the
+ecommerce holdout (vs 69.6% for the mixed-industry v5 model on its full
+holdout), same-brand accuracy fell to 49.2% (chance), and the confidence
+threshold selected on the small ecommerce val set (n=154) badly overfit —
+84% call rate at only 61.8% holdout accuracy. **Conclusion: 1,498 pairs is
+not enough training data for this feature space; the "irrelevant" industries
+in the mixed corpus were providing useful signal, not just noise.**
+
+**Attempt 2 — keep v5's model, re-tune only the confidence threshold on
+ecommerce validation data.** This isolates "does the model need
+retraining" (no) from "does the abstention cutoff need retuning for this
+vertical." Offline, scoring the shipped v5 model directly on the 194-pair
+ecommerce holdout at *its own* threshold (0.72) gave a promising 83.3% (n=36,
+95% CI 66.1–89.2%). Retuning the threshold down to 0.65 using ecommerce val
+data raised the call rate to 23.2% (n=45) at a statistically indistinguishable
+80.0% (95% CI 66.2–89.1%).
+
+**The real test — same 194 pairs through the actual `ABTestRunner` app path**
+(randomized position, visual features wired in, exactly what a customer's
+session does), using the ecommerce-tuned threshold:
+
+- Confident calls: 44/194 (22.7%)
+- **Accuracy on called: 70.5%** (95% CI 55.8–81.8%, n=44) — below offline estimate
+- Decisive + called: 76.5% (n=34)
+- **Same-brand + called: 0/5 correct** — the model's rare same-brand calls were wrong every time
+
+**Decision: did not ship.** The ecommerce-tuned model was not promoted to
+production. Reasons: (1) the real app-path number misses the 75% target and
+its CI spans 56–82%, too wide to defend to a paying customer; (2) same-brand
+pairs — literally the core product use case, "which of my two ad variants is
+better" — are both rarely called and wrong when they are; (3) the point
+estimate gain over v5's un-tuned threshold is not statistically
+distinguishable from noise at this sample size. `models/creative_ranker.joblib`
+(v5, mixed-industry) remains shipped unchanged.
+
+**What it would actually take to hit a defensible 75% ecommerce floor:**
+1. **More ecommerce data — this is the real bottleneck, not the model.**
+   Needs a live `APIFY_TOKEN` to scrape additional ecommerce-industry ad
+   waves (target: 3,000+ ecommerce ads to get same-brand called-pair counts
+   into the hundreds, not single digits).
+2. **Specifically more same-brand pairs.** The holdout only had 61
+   same-brand pairs total and the model called just 5 of them — that's the
+   exact scenario a paying customer runs constantly, and it's the least
+   validated.
+3. A genuinely independent third scrape wave, ecommerce-filtered, for a
+   blind test — same gap flagged in the v4→v5 section above, now doubly true
+   for the ecommerce subset.
+
+Reproduce: `validation_data/build_ecommerce_dataset.py` →
+`validation_data/train_ranker_ecom.py` (attempt 1, negative result) /
+`validation_data/retune_threshold_ecom.py` (attempt 2) →
+`validation_data/e2e_backtest_ecom.py` (real app-path number above).
 
 ---
 

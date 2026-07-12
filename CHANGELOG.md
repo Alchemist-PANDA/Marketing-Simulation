@@ -5,6 +5,23 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Investigated (2026-07-12) — ecommerce vertical readiness
+- **Attempted to specialize the creative ranker for ecommerce and hit a
+  defensible 75% accuracy floor for a business sale. Result: not there yet,
+  and the shipped model was left unchanged.** Filtered the existing
+  two-wave corpus to 1,497 ecommerce ads / 1,846 pairs (no new scraping —
+  `APIFY_TOKEN` wasn't available this session). Training an ecommerce-only
+  model from scratch made things *worse* (62.4% vs v5's 69.6%, same-brand
+  fell to chance) — 1,498 pairs isn't enough data for this feature space.
+  Re-tuning only the confidence threshold on ecommerce validation data and
+  testing through the real `ABTestRunner` app path gave **70.5% accuracy on
+  called pairs (n=44, 95% CI 55.8–81.8%)** — below target, and **same-brand
+  pairs (comparing two of your own ad variants) scored 0/5 when called**,
+  which is the actual product use case. `models/creative_ranker.joblib`
+  (v5) remains shipped as-is. Full account incl. what it would take to
+  actually clear 75%: `docs/VALIDATION.md` § "The ecommerce specialization
+  attempt."
+
 ### Fixed (2026-07-12)
 - **Creative ranker v4 → v5: fixed single-wave overfitting.** v4 (below)
   was trained and holdout-tested on ads from one scrape wave only. Tested
