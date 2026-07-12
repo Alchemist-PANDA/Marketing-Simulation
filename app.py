@@ -774,8 +774,9 @@ with tab1:
                     f"🎯 **Validated model pick: Ad {_rk['winner']}** — "
                     f"confidence {_rk['confidence']*100:.0f}%. This verdict comes "
                     f"from a model backtested end-to-end on real TikTok ad "
-                    f"outcomes: 82.8% holdout accuracy on confident calls "
-                    f"(87.5% on decisive ones). See docs/VALIDATION.md."
+                    f"outcomes across two separate scrape waves: 69.8% holdout "
+                    f"accuracy on confident calls (80.8% on decisive ones, "
+                    f"95% CI 54.9-81.4%). See docs/VALIDATION.md."
                 )
             else:
                 st.warning(

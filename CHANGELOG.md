@@ -5,6 +5,30 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed (2026-07-12)
+- **Creative ranker v4 → v5: fixed single-wave overfitting.** v4 (below)
+  was trained and holdout-tested on ads from one scrape wave only. Tested
+  against 285 genuinely new ads scraped a day later, it collapsed to 49.7%
+  ungated accuracy (n=547, 95% CI 45.6–53.9%) — statistically pure chance,
+  despite the fresh pairs matching the original holdout's CTR-gap
+  distribution almost exactly. Root cause: brand-hash splitting within a
+  single scrape wave doesn't test generalization across time, only across
+  brands. **Fix:** merged both scrape waves (2,774 ads total) and re-split
+  by brand-hash across the combined pool, so holdout now contains ads from
+  both waves. Retrained (`models/creative_ranker.joblib`, old version kept
+  at `models/creative_ranker_v4_backup.joblib`). New end-to-end result
+  through the real app path: **69.8% on confident calls (95% CI 54.9–81.4%,
+  n=43), 80.8% on decisive+called (95% CI 62.1–91.5%, n=26)**. This is
+  centered at the 70% target but not a guaranteed floor — a fully
+  independent third scrape wave for a true blind test wasn't obtainable
+  this round (the scraper's top-ads leaderboard proved heavily saturated
+  across query variations). Full honest account: `docs/VALIDATION.md`.
+- **Pretraining data lake** (session-local, not committed): 330k+ real rows
+  from Criteo 1TB Click Logs, Criteo Kaggle CTR, Avazu, iPinYou RTB, and
+  Taobao ad-behavior, stored as independent pretraining satellites with
+  zero fabricated joins to the TikTok creative hub. Not yet integrated into
+  the ranker — see `docs/VALIDATION.md` for what that would take.
+
 ### Added
 - **Validated creative ranker** (`src/ai/creative_ranker.py` +
   `models/creative_ranker.joblib`): pairwise model trained on 2,489 real
@@ -12,9 +36,10 @@ based on [Keep a Changelog](https://keepachangelog.com/).
   plus visual features trained on 1,374 real ad thumbnails. End-to-end
   holdout accuracy through the app path: **82.8% on confident calls, 87.5%
   on decisive+called** (call rate ~11–16%; the model honestly abstains on
-  too-close races). Replaces the keyword scorer as the winner decision —
-  the old scorer measured 50.1% (pure chance) on real data. Full write-up
-  incl. limitations: `docs/VALIDATION.md`.
+  too-close races) — **superseded by v5 above; this figure was overfit to
+  a single scrape wave and should not be quoted.** Replaces the keyword
+  scorer as the winner decision — the old scorer measured 50.1% (pure
+  chance) on real data. Full write-up incl. limitations: `docs/VALIDATION.md`.
 - **Confidence verdict UI**: results now show either "🎯 Validated model
   pick (confidence N%)" or "⚖️ Too close to call — run both", instead of
   always declaring a winner.

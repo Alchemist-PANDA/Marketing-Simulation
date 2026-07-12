@@ -1,11 +1,55 @@
-# Real-World Validation — Creative Ranker v2 (Deployable Mode)
+# Real-World Validation — Creative Ranker
 
-**Date:** 2026-07-11
+**Current shipped version: v5 (2026-07-12).** v4's numbers below turned out to
+be overfit to a single scrape wave — see "The v4 → v5 correction" for the
+full honest account of how that was discovered and fixed.
+
 **Ground truth:** TikTok Creative Center CTR percentile tiers (real advertiser
 outcomes), scraped via Apify across US/GB/CA/AU/IE/NZ, 7/30/180-day windows.
-**Dataset:** 2,489 unique English ads → 3,211 pairs (2,044 decisive).
-**Visual ground truth:** 1,374 real ad cover thumbnails, featurized and
+**Dataset (v5):** 2,774 unique English ads from **two separate scrape waves**
+(2,489 from 2026-07-11, 285 from 2026-07-12) → 3,520 pairs (2,281 decisive).
+**Visual ground truth:** 1,659 real ad cover thumbnails, featurized and
 trained against the same CTR tiers.
+
+## The v4 → v5 correction (read this first)
+
+v4 was trained and holdout-evaluated on ads from a **single scrape wave**
+(one 7-day window), with brand-hash splitting only. It reported 82.8%
+end-to-end accuracy on confident calls. When tested against 285 genuinely
+new ads scraped a day later (never seen in training, zero retraining), it
+collapsed to **49.7% ungated accuracy (n=547, 95% CI 45.6–53.9%)** —
+statistically indistinguishable from chance, despite the fresh pairs having
+a nearly identical CTR-gap distribution to the original holdout. The model
+had learned wave-specific artifacts, not durable ad-quality signal.
+
+**Fix:** merged both waves into one corpus (2,774 ads) and re-split by
+brand-hash across the *combined* pool, so both train and holdout now contain
+ads from both scrape dates. Retrained with the same deployable-mode protocol
+(no objective/industry features, averaged-both-orderings evaluation).
+
+**Result (v5, holdout spans both waves, through the real ABTestRunner app path):**
+- Confident calls: 43/355 (12.1% call rate)
+- **Accuracy on called: 69.8%** (95% CI 54.9–81.4%, n=43)
+- **Decisive + called: 80.8%** (95% CI 62.1–91.5%, n=26)
+
+This is centered at the 70% target but the confidence interval is wide — n=43
+called pairs isn't huge. It is a real, methodologically honest improvement
+over v4's wave-specific overfit, not a guaranteed 70%+ in all conditions.
+
+**What we could NOT do:** get a third, fully independent scrape wave for a
+true blind test. The scraper's "top ads" leaderboard mode is heavily
+saturated — re-querying with different orderings (cvr, impression),
+periods, and start dates against the same country set returned largely the
+same ~126 ads each time (only 9 were genuinely new after two more scrape
+attempts). The `library`/keyword-search mode exists but returned 0 results
+for the query tried, and the remaining Apify budget ($1.25 of the original
+$5) wasn't enough to responsibly keep exploring query combinations. This is
+flagged, not hidden: the 69.8% figure is validated across two waves, not
+three, and should be treated as directionally strong rather than final.
+
+---
+
+# v4 numbers (superseded, kept for the historical record)
 
 ---
 
@@ -68,15 +112,30 @@ trained against the same CTR tiers.
   trained visual features are from static thumbnails. Training temporal
   features against outcomes needs video downloads (next milestone).
 
-## Reproduce
+## Reproduce (v5, current)
 
 ```bash
-python3 validation_data/build_validation_dataset.py   # rebuild pairs from scrapes
-python3 validation_data/download_thumbnails.py        # visual ground truth
-python3 validation_data/train_ranker.py               # train + holdout eval
-python3 validation_data/e2e_backtest.py               # end-to-end app-path test
+python3 validation_data/build_merged_dataset.py   # merge waves, wave-diverse split
+python3 validation_data/train_ranker_v5.py        # train + offline holdout eval
+python3 validation_data/e2e_backtest_v5.py         # end-to-end app-path test (temporarily
+                                                    # point models/creative_ranker.joblib at
+                                                    # the candidate before running)
 ```
 
 Model artifact: `models/creative_ranker.joblib` (loaded by
 `src/ai/creative_ranker.py`; the app integrates it in
 `src/simulation/ab_test_runner.py` and surfaces confidence in `app.py`).
+Previous version kept at `models/creative_ranker_v4_backup.joblib` for
+rollback/comparison.
+
+## Data lake (pretraining corpus, not yet integrated into the ranker)
+
+`/home/user/datalake/` (session-local, not committed to git — see its
+`README.md`) holds 330k+ real rows from Criteo 1TB Click Logs, Criteo
+Kaggle-lineage CTR, Avazu, iPinYou RTB, and Taobao ad-behavior logs, plus
+the merged TikTok creative hub. These are stored as **independent
+pretraining satellites** — anonymized/hashed features with zero ID overlap
+to the creative hub, deliberately never joined row-to-row with it. They are
+not yet used in the ranker; using them would require training a separate
+CTR encoder on them and transferring the learned weights, which is future
+work, not something this session claims to have done.
