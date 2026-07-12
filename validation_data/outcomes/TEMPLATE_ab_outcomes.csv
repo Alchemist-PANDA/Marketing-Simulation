@@ -1,0 +1,6 @@
+test_id,creative_text,impressions,clicks,conversions,channel,objective,industry,brand,date,source
+summer_sale_hero_2026,"Summer Sale: 40% off all sandals — today only",10420,318,52,meta,conversions,Women's Shoes,acme_footwear,2026-06-01,customer_meta
+summer_sale_hero_2026,"These sandals sell out every summer. Grab yours before they're gone.",10380,401,71,meta,conversions,Women's Shoes,acme_footwear,2026-06-01,customer_meta
+summer_sale_hero_2026,"Free shipping on sandals this weekend",10510,275,44,meta,conversions,Women's Shoes,acme_footwear,2026-06-01,customer_meta
+serum_launch_email_apr,"Your skin will thank you: new vitamin C serum",8800,1540,120,email,clicks,Skincare,glow_labs,2026-04-15,customer_email
+serum_launch_email_apr,"We reformulated our best-seller. Here's what changed.",8790,1712,138,email,clicks,Skincare,glow_labs,2026-04-15,customer_email

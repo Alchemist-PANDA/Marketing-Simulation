@@ -35,3 +35,7 @@ outputs/*.txt
 
 # Regenerable feature caches
 models/feat_*.npy
+
+# Outcome pipeline: large reproducible raw download + proof-of-concept candidate
+validation_data/outcomes/upworthy_exploratory.csv
+models/creative_ranker_outcome_candidate.joblib

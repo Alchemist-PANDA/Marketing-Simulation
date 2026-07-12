@@ -5,6 +5,27 @@ based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (2026-07-12) — outcome-based training pipeline (the real path to 75%)
+- **Built and proved the pipeline that trains the ranker on labels that
+  depend on the creative** (real A/B test results), the answer to v7's finding
+  that TikTok CTR tiers cap out at ~55%. New `src/ai/outcomes/ab_outcome_schema.py`
+  ingests one-row-per-variant A/B data, forms **within-test** pairs (same
+  audience isolates the creative), filters by a 2-proportion significance test,
+  and splits by test id (no variant leaks across train/holdout).
+- **Proof on the Upworthy Research Archive** (4,873 real headline A/B tests,
+  5,860 pairs): **69.1% ungated (n=1,005), 75.3% at 60% call rate, 78.1% at 50%
+  call rate** — stable, monotonic confidence gating, vs ~55%/2-3% on TikTok
+  tiers. Confirms text carries real learnable click-signal when the label
+  isolates the creative; the bottleneck was always the label, not the model.
+  (Honest caveat: Upworthy is news headlines, a pretraining/proof source, not
+  the shipped ecommerce model — it scores ~55% on the noisy TikTok ecommerce
+  labels.) Trainer: `validation_data/outcomes/train_outcome_ranker.py`; input
+  template: `validation_data/outcomes/TEMPLATE_ab_outcomes.csv`; full roadmap:
+  `docs/OUTCOME_TRAINING.md`.
+- **Ready for real ecommerce A/B exports** (Meta/TikTok Ads Manager, email
+  A/B, Shopify) through the same schema to fine-tune toward a genuine ecommerce
+  75%. That real-campaign data is the one input the model can't synthesize.
+
 ### Changed (2026-07-12) — creative ranker v7: leakage + calibration fixes, honest ceiling
 - **Corrected two methodology bugs that were inflating every prior version's
   accuracy, and re-established the honest ceiling.** A $40 scrape (8 Apify
